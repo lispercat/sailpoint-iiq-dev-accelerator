@@ -1,0 +1,8 @@
+{
+  "remote.SSH.defaultForwardedPorts": [
+  
+  ],
+  "remote.SSH.lockfilesInTmp": true,
+  "scss.lint.duplicateProperties": "warning",
+  "remote.SSH.connectTimeout": 29
+}

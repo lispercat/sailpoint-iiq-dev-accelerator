@@ -1,0 +1,247 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Workflow PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Workflow explicitTransitions="true" name="IIQDevAccelWF">
+  <Variable name="transient" initializer="true"/>
+  <Variable name="payload" type="java.lang.Object" output="true"/>
+  <Step icon="Start" name="Start">
+    <Script>
+      <Source>
+        import org.apache.log4j.Logger;
+        Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAccelWF"); 
+        iidDevAccelLogger.debug("Workflow IIQDevAccelWF started for operation: " + operation); 
+      </Source>
+    </Script>
+    <Transition to="Import" when='"Import".equals(operation);'/>    
+    <Transition to="Get Task List" when='"getTaskList".equals(operation);'/>
+    <Transition to="Run Task" when='"runTask".equals(operation);'/>
+    <Transition to="Get Rules" when='"getRules".equals(operation);'/>
+    <Transition to="Run Rule" when='"runRule".equals(operation);'/>
+    <Transition to="Eval BS" when='"evalBS".equals(operation);'/>
+    <Transition to="Reload Log File" when='"reloadLog".equals(operation);'/>
+    <Transition to="Invalid operation"/>
+  </Step>
+  <Step icon="Provision" name="Import" resultVariable="payload">
+    <Script>
+      <Source>
+        <![CDATA[ 
+          import sailpoint.server.Importer; 
+          import sailpoint.tools.GeneralException; 
+          import sailpoint.web.system.ImportBean.ImportMonitor; 
+          import org.apache.log4j.Logger;
+          Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAccelWF"); 
+
+          iidDevAccelLogger.debug("Started Importer"); 
+          Importer importer = new Importer(context, new ImportMonitor()); 
+          try { 
+            iidDevAccelLogger.debug("File content: " + resource); 
+            importer.importXml(resource); 
+            context.commitTransaction(); 
+          } 
+          catch (Exception e) {
+            iidDevAccelLogger.error("Importer failed with exception: " + e); 
+            return "fail"; 
+          } 
+          return "success"; 
+          ]]>
+      </Source>
+    </Script>
+    <Transition to="Stop"/>
+  </Step>
+  <Step icon="Default" name="Get Task List" resultVariable="payload">
+    <Script>
+      <Source>
+        <![CDATA[ 
+          import sailpoint.object.*; 
+          import org.apache.log4j.Logger;
+          Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAccelWF"); 
+          iidDevAccelLogger.debug("Started Get Task List"); 
+
+          List taskDefinitions = context.getObjects(TaskDefinition.class); 
+          List resultArray = new ArrayList(); 
+          for (TaskDefinition taskDefinition: taskDefinitions) { 
+            if(!taskDefinition.isHidden() && !taskDefinition.isTemplate() ){ 
+              resultArray.add(taskDefinition.getName()); 
+            } 
+          } 
+          iidDevAccelLogger.debug("Exiting Get Task List with  " + resultArray.size() + " tasks"); 
+          return resultArray; 
+          ]]>
+      </Source>
+    </Script>
+    <Transition to="Stop"/>
+  </Step>
+  <Step icon="Default" name="Run Task" resultVariable="payload">
+    <Script>
+      <Source>
+        <![CDATA[ 
+          import sailpoint.object.*; 
+          import sailpoint.api.TaskManager; 
+          import org.apache.log4j.Logger;
+          Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAccelWF"); 
+          iidDevAccelLogger.debug("Started Run Task: " + taskName); 
+
+          TaskManager tm = new TaskManager(context); 
+          TaskDefinition taskDefinition = context.getObjectByName(TaskDefinition.class, taskName); 
+          if(null == taskDefinition) { 
+            iidDevAccelLogger.debug("Couldn't fine task: " + taskName); 
+            return "fail"; 
+          } 
+          TaskSchedule ts = tm.run(taskDefinition, inputArgs); 
+          TaskResult tr = null; 
+          iidDevAccelLogger.debug("Start monitoring for task results..."); 
+          while (null == tr) { 
+            tr = ts.getLatestResult(); 
+            Thread.sleep(50);
+          } 
+          iidDevAccelLogger.debug("Finished monitoring task results, result: " + tr); 
+          return tr.getId(); 
+          ]]>
+      </Source>
+    </Script>
+    <Transition to="Stop"/>
+  </Step>
+  <Step icon="Default" name="Get Rules" resultVariable="payload">
+    <Script>
+      <Source>
+        <![CDATA[ 
+          import sailpoint.object.*; 
+          import org.apache.log4j.Logger;
+          Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAccelWF"); 
+          List rules=context.getObjects(Rule.class); 
+          iidDevAccelLogger.debug("got " + rules.size()); 
+          Map objMap = new HashMap();
+
+          for (Rule rule: rules) { 
+            List args = new ArrayList(); 
+            for (Argument arg: rule.getSignature().getArguments()) { 
+              args.add(arg.getName()); 
+            } 
+            objMap.put(rule.getName(), args);
+          } 
+          iidDevAccelLogger.debug("returning " + objMap.keySet().size() + " rules"); 
+          return objMap; 
+          ]]>
+      </Source>
+    </Script>
+    <Transition to="Stop"/>
+  </Step>
+  <Step icon="Default" name="Run Rule" resultVariable="payload">
+    <Script>
+      <Source>
+        <![CDATA[ 
+          import sailpoint.object.*;
+          import java.util.*;
+          import org.apache.log4j.Logger;
+          Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAccelWF"); 
+          iidDevAccelLogger.debug("Run Rule: " + ruleName); 
+          Rule rule = (Rule)context.getObjectByName(Rule.class, ruleName);
+          Object result = context.runRule(rule, inputArgs);
+          return result; 
+          ]]>
+      </Source>
+    </Script>
+    <Transition to="Stop"/>
+  </Step>
+  <Step icon="Default" name="Eval BS" resultVariable="payload">
+    <Script>
+      <Source>
+        <![CDATA[ 
+          import sailpoint.object.*;
+          import java.util.*;
+          import java.io.*;
+          import bsh.Interpreter;
+          import org.apache.log4j.Logger;
+          String injectContext = "import sailpoint.api.*;SailPointContext context = SailPointFactory.createPrivateContext();";
+
+          Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAccelWF"); 
+          iidDevAccelLogger.debug("Evaluating beanshell script" + script); 
+          File scriptFile = File.createTempFile("beanshell", null);
+          //iidDevAccelLogger.debug("temp path: " + scriptFile.getAbsolutePath()); 
+          BufferedWriter bw = new BufferedWriter(new FileWriter(scriptFile));
+          bw.write(injectContext + script);
+          bw.close();
+          Object result = null;
+          try{
+            Interpreter interpreter = new Interpreter();
+            result = interpreter.source(scriptFile.getAbsolutePath());
+          }
+          catch(Exception e){
+            result = e.toString();
+          }
+          scriptFile.deleteOnExit();
+          if(null == result){
+            result = "empty result";
+          }
+          iidDevAccelLogger.debug("Script evaluated with: " + result); 
+          return result; 
+          ]]>
+      </Source>
+    </Script>
+    <Transition to="Stop"/>
+  </Step>
+  <Step icon="Default" name="Reload Log File" resultVariable="payload">
+    <Script>
+      <Source>
+        <![CDATA[ 
+          import sailpoint.object.*;
+          import java.util.*;
+          import java.io.*;
+          import org.apache.log4j.Logger;
+          import org.apache.logging.log4j.LogManager;
+          import org.apache.logging.log4j.core.LoggerContext;
+          Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAccelWF"); 
+          iidDevAccelLogger.debug("Reloading logging config...");
+          String logToSearch = (null != logFileName) ? logFileName:"log4j2.properties";
+          iidDevAccelLogger.debug("Searing for " + logToSearch + "...");
+          String logFileName = Util.findFile("user.dir", logToSearch, true);
+          File logFile = new File(logFileName);
+          boolean refreshed = false;
+          if (logFile.exists()) {
+            if(null != logContent){
+              try{
+                FileWriter myWriter = new FileWriter(logFileName);
+                myWriter.write(logContent);
+                myWriter.close();
+                iidDevAccelLogger.debug("Updated " + logToSearch + " with " + logContent.length() + " bytes of content");
+              }
+              catch(Exception e){
+                iidDevAccelLogger.debug("Exception during writing to file: " + e.toString());
+                return "failed";
+              }
+            }
+            LoggerContext loggerContext = (LoggerContext)LogManager.getContext(false);
+            loggerContext.setConfigLocation(logFile.toURI());
+            refreshed = true;
+          } 
+          else {
+            refreshed = false;
+          }
+
+          iidDevAccelLogger.debug("Finished reloading logging config with reslut: " + refreshed); 
+          return true == refreshed ? "succeeded":"failed"; 
+          ]]>
+      </Source>
+    </Script>
+    <Transition to="Stop"/>
+  </Step>
+  <Step icon="Default" name="Invalid operation" resultVariable="payload">
+    <Script>
+      <Source>
+        import org.apache.log4j.Logger;
+        Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAccelWF"); 
+        iidDevAccelLogger.debug("Not supported operation: " + operation);         
+        return "fail";
+      </Source>
+    </Script>
+    <Transition to="Stop"/>
+  </Step>
+  <Step icon="Stop" name="Stop">
+    <Script>
+      <Source>
+        import org.apache.log4j.Logger;
+        Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAccelWF"); 
+        iidDevAccelLogger.debug("Workflow IIQDevAccelWF stopped for operation: " + operation);
+      </Source>
+    </Script>
+  </Step>
+</Workflow>
