@@ -3,7 +3,7 @@
 This is the README for  extension "Sailpoint IIQ Development Accelerator". 
 The main goal to accelerate and facilitate development by direct interacting with the target IIQ server via VSCode commands.
 To use the extension, you need to:
-* install the "IIQDevAccelWF" workflow 
+* Import in IIQ the ["IIQDevAccelWF" workflow](https://raw.githubusercontent.com/lispercat/iiq-dev-accelerator/master/src/iiq-dev-accel-workflow.xml) 
 * update the configuration of the extension with the name of your target IIQ environment (sandbox, dev, uat etc.)
 
 
