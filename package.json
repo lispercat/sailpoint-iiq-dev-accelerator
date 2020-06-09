@@ -26,33 +26,34 @@
 		"onCommand:iiq-dev-accelerator.runTask",
 		"onCommand:iiq-dev-accelerator.runRule",
 		"onCommand:iiq-dev-accelerator.evalBS",
-    "onCommand:iiq-dev-accelerator.runTaskWithAttr",
-    "onCommand:iiq-dev-accelerator.reloadLog"
+		"onCommand:iiq-dev-accelerator.runTaskWithAttr",
+		"onCommand:iiq-dev-accelerator.getLog",
+		"onCommand:iiq-dev-accelerator.reloadLog"
 	],
 	"main": "./src/extension.js",
 	"contributes": {
 		"configuration": {
 			"title": "Sailpoint IIQ Development Accelerator",
 			"properties": {
-				"iiq.dev-accelerator.environment": {
+				"iiq-dev-accelerator.environment": {
 					"type": "string",
 					"description": "iiq environment (dev, uat, prod, etc)",
 					"default": "",
 					"scope": "application"
 				},
-				"iiq.dev-accelerator.iiq_url": {
+				"iiq-dev-accelerator.iiq_url": {
 					"type": "string",
 					"description": "url for your iiq site",
 					"default": "",
 					"scope": "application"
 				},
-				"iiq.dev-accelerator.username": {
+				"iiq-dev-accelerator.username": {
 					"type": "string",
 					"description": "username",
 					"default": "",
 					"scope": "application"
 				},
-				"iiq.dev-accelerator.password": {
+				"iiq-dev-accelerator.password": {
 					"type": "string",
 					"description": "password",
 					"default": "",
@@ -71,7 +72,7 @@
 			},
 			{
 				"command": "iiq-dev-accelerator.runTaskWithAttr",
-				"title": "iiq: Run Task With Attributes"
+				"title": "iiq: Run Task With Parameters"
 			},
 			{
 				"command": "iiq-dev-accelerator.runRule",
@@ -79,11 +80,21 @@
 			},
 			{
 				"command": "iiq-dev-accelerator.evalBS",
-				"title": "iiq: Evaluate BeanShell"
-      },
+				"title": "iiq: Evaluate BeanShell Script"
+			},
+			{
+				"command": "iiq-dev-accelerator.getLog",
+				"title": "iiq: Get Logging Config"
+			},
 			{
 				"command": "iiq-dev-accelerator.reloadLog",
 				"title": "iiq: Reload Logging Config"
+			}
+		],
+		"snippets": [
+			{
+				"language": "xml",
+				"path": "./snippets/xml.json"
 			}
 		]
 	},
@@ -106,6 +117,7 @@
 		"base-64": "^0.1.0",
 		"node-fetch": "^2.6.0",
 		"properties-reader": "^2.0.0",
+		"tmp": "^0.2.1",
 		"xml2js": "^0.4.23"
 	}
 }

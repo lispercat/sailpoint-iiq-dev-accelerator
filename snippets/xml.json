@@ -1,0 +1,22 @@
+{
+	"Sailpoint rule" : {
+		"prefix": "rule",
+		"body": [
+			"<?xml version='1.0' encoding='UTF-8'?>",
+			"<!DOCTYPE Rule PUBLIC \"sailpoint.dtd\" \"sailpoint.dtd\">",
+			"<Rule language=\"beanshell\" name=\"$1\">",
+			"\t<Description>$2</Description>",
+			"\t<Signature>",
+			"\t\t<Inputs>",
+			"\t\t\t<Argument name=\"$3arg1\"/>",
+			"\t\t</Inputs>",
+			"\t</Signature>",
+			"<Source><![CDATA[",
+			"$4//Just a sample code, update me",
+			"return arg1;",
+			"]]></Source>",
+			"</Rule>"
+		],
+		"description": "Create a Sailpoint IIQ rule"
+	}
+}

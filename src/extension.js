@@ -29,9 +29,11 @@ function activate(context) {
 	let disposableEvalBS = vscode.commands.registerCommand('iiq-dev-accelerator.evalBS', impFile.evalBS);
   context.subscriptions.push(disposableEvalBS);
 
+	let disposableGetLog = vscode.commands.registerCommand('iiq-dev-accelerator.getLog', impFile.getLog);
+  context.subscriptions.push(disposableGetLog);
+
 	let disposableReloadLog = vscode.commands.registerCommand('iiq-dev-accelerator.reloadLog', impFile.reloadLog);
   context.subscriptions.push(disposableReloadLog);
-  
 }
 
 function deactivate() {}

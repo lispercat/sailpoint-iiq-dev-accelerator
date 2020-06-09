@@ -4,6 +4,8 @@ const base64 = require('base-64');
 const fs = require('fs');
 const propertiesReader = require('properties-reader');
 const xml2js = require('xml2js');
+const tmp = require('tmp');
+
 const xmlParser = new xml2js.Parser({ attrkey: "ATTR" });
 
 
@@ -15,6 +17,7 @@ module.exports = {
   runTaskWithAttr,
   runRule,
   evalBS,
+  getLog,
   reloadLog
 }
 
@@ -33,7 +36,7 @@ function canUseCachedProp(){
 }
 
 async function getEnvironment(){
-  var environment = vscode.workspace.getConfiguration('iiq.dev-accelerator').get('environment');
+  var environment = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('environment');
   if(!environment){
     environment = await vscode.window.showInputBox({
       prompt: "Your environment configuration appears to be empty, please specify it here", 
@@ -48,8 +51,9 @@ async function getEnvironment(){
     if(environment === undefined){
       return null;
     }
-    vscode.workspace.getConfiguration('iiq.dev-accelerator').update('environment', environment, true);
-    environment = vscode.workspace.getConfiguration('iiq.dev-accelerator').get('environment');
+    await vscode.workspace.getConfiguration('iiq-dev-accelerator').
+          update('environment', environment, true);
+    environment = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('environment');
   }
   
   return environment;
@@ -95,9 +99,9 @@ function processFileContent(fileContent, props){
 async function getSiteConfig(){
   
   var environment = await getEnvironment();
-  var url = vscode.workspace.getConfiguration('iiq.dev-accelerator').get('iiq_url');
-  var username = vscode.workspace.getConfiguration('iiq.dev-accelerator').get('username');
-  var password = vscode.workspace.getConfiguration('iiq.dev-accelerator').get('password');
+  var url = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('iiq_url');
+  var username = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('username');
+  var password = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('password');
 
   if(!url || !username || !password){
     const props = await loadTargetProps();
@@ -123,9 +127,9 @@ async function getSiteConfig(){
         return;
       }
       [url, username, password] = configParams.split(";");
-      vscode.workspace.getConfiguration('iiq.dev-accelerator').update('iiq_url', url, true);
-      vscode.workspace.getConfiguration('iiq.dev-accelerator').update('username', username, true);
-      vscode.workspace.getConfiguration('iiq.dev-accelerator').update('password', password, true);
+      vscode.workspace.getConfiguration('iiq-dev-accelerator').update('iiq_url', url, true);
+      vscode.workspace.getConfiguration('iiq-dev-accelerator').update('username', username, true);
+      vscode.workspace.getConfiguration('iiq-dev-accelerator').update('password', password, true);
     }
   }
   return [url, username, password];
@@ -145,7 +149,7 @@ async function postRequest(post_body){
   
   await (async () => {
     try {
-      let full_url = `${url.replace(/\/$/g, "")}/rest/workflows/IIQDevAccelWF/launch`;
+      let full_url = `${url.replace(/\/$/g, "")}/rest/workflows/IIQDevAcceleratorWF/launch`;
       const response = await fetch(full_url, {
         method: 'POST', 
         body: post_body,
@@ -154,7 +158,7 @@ async function postRequest(post_body){
       const json = await response.json();
       const payload = await json.attributes.payload;
       if(response.ok){
-        result["success"] = payload;
+        result["payload"] = payload;
       }
       else{
         result["fail"] = response.status;
@@ -197,9 +201,8 @@ async function importFile(){
       progress => {return postRequest(JSON.stringify(post_body));
     });
 
-  if(result["success"]  !== undefined ){
-    const url = vscode.workspace.getConfiguration('iiq.dev-accelerator').get('iiq_url');
-    vscode.window.showInformationMessage(`File was successfully imported`);
+  if(result["payload"]){
+    vscode.window.showInformationMessage(`File import result: ${result["payload"]}`);
   }
   else{
     vscode.window.showInformationMessage(`Operation failed`);
@@ -223,7 +226,7 @@ async function getTasksNames(){
       progress => {return postRequest(JSON.stringify(post_body));
     });
 
-  return result["success"];
+  return result["payload"];
 }
 
 
@@ -249,8 +252,8 @@ async function runTask(){
     });
 
 
-  if(result["success"]  !== undefined ){
-    vscode.window.showInformationMessage(`Successfully launched "${taskName} with taskId=${result["success"]}"`);
+  if(result["payload"]){
+    vscode.window.showInformationMessage(`Launched "${taskName} with result: ${result["payload"]}"`);
   }
   else{
     vscode.window.showInformationMessage(`Operation failed`);
@@ -348,8 +351,8 @@ async function runTaskWithAttr(){
     });
 
 
-  if(result["success"]  !== undefined ){
-    vscode.window.showInformationMessage(`Successfully launched "${taskName} with taskId=${result["success"]}"`);
+  if(result["payload"]){
+    vscode.window.showInformationMessage(`Launched "${taskName} with result: ${result["payload"]}"`);
   }
   else{
     vscode.window.showInformationMessage(`Operation failed`);
@@ -375,7 +378,7 @@ async function getRuleNames(){
       progress => {return postRequest(JSON.stringify(post_body));
     });
 
-  return result["success"];
+  return result["payload"];
 }
 
 function argsIntersect(ruleArgs, fileArgs){
@@ -386,12 +389,19 @@ function argsIntersect(ruleArgs, fileArgs){
 async function runRule(){
   let rulesMap = await getRuleNames();
   let ruleName = await vscode.window.showQuickPick(Object.keys(rulesMap), { placeHolder: 'Pick rule...' });
+  if(!ruleName){
+    vscode.window.showInformationMessage(`Rule name wasn't specified, exiting`);
+    return;
+  }
   let ruleArgs = rulesMap[ruleName];
-  let inputArgs = null;
+  let inputArgs = {};
   if(ruleArgs.length > 0){
     inputArgs = await getArgumentsFromBuffer();
     if(!inputArgs || !argsIntersect(ruleArgs, Object.keys(inputArgs))){
       inputArgs = await getArgumentsFromInput("Please enter arguments (arg1->value1 arg2->'value two' etc.): ",  ruleArgs.join('-> ') + "->");
+    }
+    if(!inputArgs){
+      inputArgs = {};
     }
   }
   var post_body = 
@@ -412,8 +422,8 @@ async function runRule(){
   progress => {return postRequest(JSON.stringify(post_body));
   });
 
-  if(result["success"]  !== undefined ){
-    vscode.window.showInformationMessage(`Reslut: ${result["success"]}`);
+  if(result["payload"]){
+    vscode.window.showInformationMessage(`Reslut: ${result["payload"]}`);
   }
   else{
     vscode.window.showInformationMessage(`Operation failed`);
@@ -452,8 +462,37 @@ async function evalBS(){
     progress => {return postRequest(JSON.stringify(post_body));
     });
 
-  if(result["success"]  !== undefined ){
-    vscode.window.showInformationMessage(`Reslut: ${result["success"]}`);
+  if(result["payload"]){
+    vscode.window.showInformationMessage(`Reslut: ${result["payload"]}`);
+  }
+  else{
+    vscode.window.showInformationMessage(`Operation failed`);
+  }
+}
+
+async function getLog(){
+  var post_body = 
+  {
+    "workflowArgs":
+    {
+      "operation": "getLog"
+    }
+  };
+
+  var result = await vscode.window.withProgress({
+    location: vscode.ProgressLocation.Notification,
+    title: "Retrieving logging configuration...",
+    cancellable: true
+    }, 
+    progress => {return postRequest(JSON.stringify(post_body));
+    });
+
+  if(result["payload"]){
+    //let rootFolder = vscode.workspace.rootPath;
+    const tempFile = tmp.fileSync({ prefix: 'log4j-', postfix: '.properties' });
+    fs.writeFileSync(tempFile.name, result["payload"]);
+    let doc = await vscode.workspace.openTextDocument(tempFile.name); 
+    await vscode.window.showTextDocument(doc);
   }
   else{
     vscode.window.showInformationMessage(`Operation failed`);
@@ -468,51 +507,30 @@ async function reloadLog(){
   var foundLogFileName = null;
   console.log(`Looking for and loading ${searchFileName}`);
 
-  var folders  = vscode.workspace.workspaceFolders;
-  for(var i = 0; i < folders.length; i++){
-    const uris = await vscode.workspace.findFiles(`**/${searchFileName}`, `${folders[i].uri.fsPath}/**`);
-    console.log("now trying to go over files...");
-    uris.forEach((uri) => {
-      console.log(`Trying to read ${uri.fsPath} file`);
-      logContent = fs.readFileSync(uri.fsPath, {encoding:'utf8', flag:'r'}); 
-      foundFullLogFileName = require('path').basename(uri.fsPath);
-      var [env, log4j, prop] = foundFullLogFileName.split(".");
-      foundLogFileName = log4j + '.' + prop;
-    });
-  }
-
-  let options = {};
-
   //Priority #1
   var editor = vscode.window.activeTextEditor;
-  if(editor && editor.document && 
+  if(!logContent && editor && editor.document && 
     editor.document.getText(editor.selection)){
-    options[`Currently selected text`] = editor.document.getText(editor.selection);
+    logContent = editor.document.getText(editor.selection);
   }
 
   //Priority #2
-  if(editor && editor.document &&
-    editor.document.fileName.includes("log4j") &&
-    !editor.document.fileName.includes(foundFullLogFileName)){
-      options[`Currently opened document`] = editor.document.getText();
+  if(!logContent && editor && editor.document &&
+    editor.document.fileName.includes("log4j")){
+      logContent = editor.document.getText();
   }
 
   //Priority #3
   if(foundLogFileName){
-    options[`Detected ${foundFullLogFileName} file`] = logContent;
-  }
-
-  if(Object.keys(options).length > 1){
-    let whatToDo = await vscode.window.showQuickPick(Object.keys(options), { placeHolder: 'Pick an option out of those detected...' });
-    if(!whatToDo){
-      logContent = options[Object.keys(options)[0]];
+    var folders  = vscode.workspace.workspaceFolders;
+    for(var i = 0; i < folders.length; i++){
+      const uris = await vscode.workspace.findFiles(`**/${searchFileName}`, `${folders[i].uri.fsPath}/**`);
+      console.log("now trying to go over files...");
+      uris.forEach((uri) => {
+        console.log(`Trying to read ${uri.fsPath} file`);
+        logContent = fs.readFileSync(uri.fsPath, {encoding:'utf8', flag:'r'}); 
+      });
     }
-    else{
-      logContent = options[whatToDo];
-    }
-  }
-  else{
-    logContent = options[Object.keys(options)[0]];
   }
 
   var post_body = 
@@ -520,8 +538,7 @@ async function reloadLog(){
     "workflowArgs":
     {
       "operation": "reloadLog",
-      "logContent": logContent,
-      "logFileName": foundLogFileName
+      "logContent": logContent
     }
   };
   
@@ -534,8 +551,8 @@ async function reloadLog(){
     });
 
 
-  if(result["success"]  !== undefined ){
-    vscode.window.showInformationMessage(`Refreshing from ${foundLogFileName ? foundLogFileName:'server log file'}: ${result["success"]}"`);
+  if(result["payload"]){
+    vscode.window.showInformationMessage(`Refreshing from ${foundLogFileName ? foundLogFileName:'server log file'}: ${result["payload"]}"`);
   }
   else{
     vscode.window.showInformationMessage(`Operation failed`);
