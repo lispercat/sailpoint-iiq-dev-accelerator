@@ -201,7 +201,7 @@ async function importFile(){
       progress => {return postRequest(JSON.stringify(post_body));
     });
 
-  if(result["payload"]){
+  if(result["payload"] !== undefined){
     vscode.window.showInformationMessage(`File import result: ${result["payload"]}`);
   }
   else{
@@ -252,7 +252,7 @@ async function runTask(){
     });
 
 
-  if(result["payload"]){
+  if(result["payload"] !== undefined){
     vscode.window.showInformationMessage(`Launched "${taskName} with result: ${result["payload"]}"`);
   }
   else{
@@ -351,7 +351,7 @@ async function runTaskWithAttr(){
     });
 
 
-  if(result["payload"]){
+  if(result["payload"] !== undefined){
     vscode.window.showInformationMessage(`Launched "${taskName} with result: ${result["payload"]}"`);
   }
   else{
@@ -386,12 +386,41 @@ function argsIntersect(ruleArgs, fileArgs){
   return result.length > 0;
 }
 
+async function retrieveCurrentRuleName(){
+  var ruleName = null;
+  var argText = vscode.window.activeTextEditor.document.getText();
+  var parsedXml = null;
+  xmlParser.parseString(argText, function(error, result) {
+    if(error === null) {
+      parsedXml = result;
+    }
+    else {
+        console.log(error);
+    }
+  });
+  
+  if(parsedXml){
+    try{
+      ruleName = parsedXml["Rule"]["ATTR"]["name"];
+    }
+    catch(error){}
+  }
+
+  return ruleName;
+}
+
 async function runRule(){
   let rulesMap = await getRuleNames();
-  let ruleName = await vscode.window.showQuickPick(Object.keys(rulesMap), { placeHolder: 'Pick rule...' });
+  let ruleName = await vscode.window.showQuickPick(Object.keys(rulesMap), { placeHolder: 'Pick a rule or press Esc to run the currently open rule' });
   if(!ruleName){
-    vscode.window.showInformationMessage(`Rule name wasn't specified, exiting`);
-    return;
+    ruleName = await retrieveCurrentRuleName();
+    if(!ruleName){
+      let ruleName = await vscode.window.showQuickPick(Object.keys(rulesMap), { placeHolder: 'Please pick a rule (could not retrive one from the current file)'});
+      if(!ruleName){
+        vscode.window.showInformationMessage(`No rule name was specified, exiting`);
+        return;
+      }
+    }
   }
   let ruleArgs = rulesMap[ruleName];
   let inputArgs = {};
@@ -422,7 +451,7 @@ async function runRule(){
   progress => {return postRequest(JSON.stringify(post_body));
   });
 
-  if(result["payload"]){
+  if(result["payload"] !== undefined){
     vscode.window.showInformationMessage(`Reslut: ${result["payload"]}`);
   }
   else{
@@ -462,7 +491,7 @@ async function evalBS(){
     progress => {return postRequest(JSON.stringify(post_body));
     });
 
-  if(result["payload"]){
+  if(result["payload"] !== undefined){
     vscode.window.showInformationMessage(`Reslut: ${result["payload"]}`);
   }
   else{
@@ -487,7 +516,7 @@ async function getLog(){
     progress => {return postRequest(JSON.stringify(post_body));
     });
 
-  if(result["payload"]){
+  if(result["payload"] !== undefined){
     //let rootFolder = vscode.workspace.rootPath;
     const tempFile = tmp.fileSync({ prefix: 'log4j-', postfix: '.properties' });
     fs.writeFileSync(tempFile.name, result["payload"]);
@@ -551,7 +580,7 @@ async function reloadLog(){
     });
 
 
-  if(result["payload"]){
+  if(result["payload"] !== undefined){
     vscode.window.showInformationMessage(`Refreshing from ${foundLogFileName ? foundLogFileName:'server log file'}: ${result["payload"]}"`);
   }
   else{

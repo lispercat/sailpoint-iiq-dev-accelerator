@@ -19,6 +19,7 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
   * Once you select a task you'll be presented with an input dialog to specify your arguments 
 * **Run Rule** (with parameters)
   * Given a list of rules you select one to execute
+    * You can press escape not to select a rule, then your currently open rule gets selected
   * If the rule requires arguments you'll be presented with an input diaglog to specify your arguments
   * If instead, you have an open argument document (which follows SST layout Map->entry), this file will be used to retrieve arguments
 * **Evaluate BeanShell Script** 
