@@ -32,7 +32,8 @@
 		"onCommand:iiq-dev-accelerator.evalBS",
 		"onCommand:iiq-dev-accelerator.runTaskWithAttr",
 		"onCommand:iiq-dev-accelerator.getLog",
-		"onCommand:iiq-dev-accelerator.reloadLog"
+		"onCommand:iiq-dev-accelerator.reloadLog",
+		"onCommand:iiq-dev-accelerator.getObject"
 	],
 	"main": "./src/extension.js",
 	"contributes": {
@@ -93,7 +94,22 @@
 			{
 				"command": "iiq-dev-accelerator.reloadLog",
 				"title": "iiq: Reload Logging Config"
+			},
+			{
+				"command": "iiq-dev-accelerator.getObject",
+				"title": "iiq: Get Object"
 			}
+		],
+		"keybindings":[
+			{
+				"key": "ctrl+alt+x",
+				"command": "iiq-dev-accelerator.evalBS",
+				"when": "editorTextFocus"
+			},{
+				"key": "ctrl+alt+s",
+				"command": "iiq-dev-accelerator.importFile",
+				"when": "editorTextFocus"
+			}			
 		],
 		"snippets": [
 			{

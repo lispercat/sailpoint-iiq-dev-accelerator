@@ -11,7 +11,10 @@
         iidDevAccelLogger.debug("Workflow IIQDevAcceleratorWF started for operation: " + operation); 
       </Source>
     </Script>
-    <Transition to="Import" when='"Import".equals(operation);'/>    
+    <Transition to="Import" when='"Import".equals(operation);'/>
+    <Transition to="Get Classes" when='"getClasses".equals(operation);'/>
+    <Transition to="Get Class Objects" when='"getClassObjects".equals(operation);'/>
+    <Transition to="Get Object" when='"getObject".equals(operation);'/>
     <Transition to="Get Task List" when='"getTaskList".equals(operation);'/>
     <Transition to="Run Task" when='"runTask".equals(operation);'/>
     <Transition to="Get Rules" when='"getRules".equals(operation);'/>
@@ -43,6 +46,101 @@
             return e.toString(); 
           } 
           return "success"; 
+          ]]>
+      </Source>
+    </Script>
+    <Transition to="Stop"/>
+  </Step>
+  <Step icon="Default" name="Get Classes" resultVariable="payload">
+    <Script>
+      <Source>
+        <![CDATA[ 
+          import sailpoint.object.*; 
+          import org.apache.log4j.Logger;
+          Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
+          iidDevAccelLogger.debug("Started getting classes"); 
+          List resultArray = new ArrayList();
+          for(Class cls : ClassLists.MajorClasses){
+            resultArray.add(cls.getSimpleName());
+          }
+          iidDevAccelLogger.debug("Finished getting classes"); 
+          return resultArray; 
+          ]]>
+      </Source>
+    </Script>
+    <Transition to="Stop"/>
+  </Step>
+  <Step icon="Default" name="Get Class Objects" resultVariable="payload">
+    <Script>
+      <Source>
+        <![CDATA[ 
+          import sailpoint.object.*; 
+          import org.apache.log4j.Logger;
+          Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
+          iidDevAccelLogger.debug("Started getting class objects for " + theClass); 
+          Class myClass = null;
+          for(Class cls : ClassLists.MajorClasses){
+            if(cls.getSimpleName().equals(theClass)){
+              myClass = cls;
+              break;
+            }
+          }
+          if(null == myClass){
+            iidDevAccelLogger.debug("Couldn't find class " + theClass);
+            return "fail"; 
+          }
+
+          String field = "name";
+          if(theClass.equals("Identity")){
+            field = "displayName";
+          }
+          List resultArray = new ArrayList();
+          Iterator it = context.search(myClass, null, field);
+          while(it.hasNext()){
+            Object[] obj = it.next();
+            resultArray.add(obj[0]);
+          }
+          
+          iidDevAccelLogger.debug("Finished getting class objects"); 
+          return resultArray; 
+          ]]>
+      </Source>
+    </Script>
+    <Transition to="Stop"/>
+  </Step>
+  <Step icon="Default" name="Get Object" resultVariable="payload">
+    <Script>
+      <Source>
+        <![CDATA[ 
+          import sailpoint.object.*; 
+          import org.apache.log4j.Logger;
+          Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
+          iidDevAccelLogger.debug("Started getting object for " + theClass + " and " + objName); 
+          Class myClass = null;
+          for(Class cls : ClassLists.MajorClasses){
+            if(cls.getSimpleName().equals(theClass)){
+              myClass = cls;
+              break;
+            }
+          }
+          if(null == myClass){
+            iidDevAccelLogger.error("Couldn't find class " + theClass);
+            return "fail"; 
+          }
+
+          String field = "name";
+          if(theClass.equals("Identity")){
+            field = "displayName";
+          }
+
+          SailPointObject obj = context.getUniqueObject(myClass, Filter.eq(field, objName));
+          if(null == obj){
+            iidDevAccelLogger.error("Couldn't find the object");
+            return "fail"; 
+          }
+          
+          iidDevAccelLogger.debug("Finished getting class objects"); 
+          return obj.toXml(); 
           ]]>
       </Source>
     </Script>

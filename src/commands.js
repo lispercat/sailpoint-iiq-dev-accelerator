@@ -18,7 +18,8 @@ module.exports = {
   runRule,
   evalBS,
   getLog,
-  reloadLog
+  reloadLog,
+  getObject
 }
 
 function canUseCachedProp(){
@@ -96,8 +97,22 @@ function processFileContent(fileContent, props){
   return fileContent;
 }
 
+function validateConfigInput(text){
+  if (!text) {
+    return 'You must enter some input';
+  }
+  let [url, username, password] = text.split(";");
+  if(!url || !username || !password){
+    return "Please enter: url;username;password"
+  }
+  let m = url.match(/https?:\/\/.*/g);
+  if(!m || m[0] !== url){
+    return "please enter correct url";
+  }
+  return undefined;
+}
+
 async function getSiteConfig(){
-  
   var environment = await getEnvironment();
   var url = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('iiq_url');
   var username = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('username');
@@ -113,15 +128,10 @@ async function getSiteConfig(){
     password = props.get("%%ECLIPSE_PASS%%");
     if(!url || !username || !password){
       let configParams = await vscode.window.showInputBox({
+        ignoreFocusOut: true,
         value: "http://localhost:8080/identityiq;spadmin;admin",
         prompt: `Couldn't detect your configuration from ${environment}.target.properties). Please enter here `, 
-        validateInput: (text) => {
-          if (!text) {
-              return 'You must enter some input';
-          } else {
-              return undefined;
-          }
-      }
+        validateInput: validateConfigInput
       });
       if(configParams === undefined){
         return;
@@ -231,7 +241,8 @@ async function getTasksNames(){
 
 
 async function runTask(){
-  let taskName = await vscode.window.showQuickPick(getTasksNames(), { placeHolder: 'Pick a task...' });
+  let taskName = await vscode.window.showQuickPick(getTasksNames(), 
+  { placeHolder: 'Pick a task...', ignoreFocusOut: true });
 
   var post_body = 
   {
@@ -329,7 +340,8 @@ async function getArgumentsFromInput(prompt, initialValues){
 
 
 async function runTaskWithAttr(){
-  let taskName = await vscode.window.showQuickPick(getTasksNames(), { placeHolder: 'Pick a task...' });
+  let taskName = await vscode.window.showQuickPick(getTasksNames(), 
+  { placeHolder: 'Pick a task...', ignoreFocusOut: true});
   let inputArgs = await getArgumentsFromInput("Please enter arguments (filter->name==\"Identity-XYZ\" etc.): ",  "");
 
   var post_body = 
@@ -411,16 +423,11 @@ async function retrieveCurrentRuleName(){
 
 async function runRule(){
   let rulesMap = await getRuleNames();
-  let ruleName = await vscode.window.showQuickPick(Object.keys(rulesMap), { placeHolder: 'Pick a rule or press Esc to run the currently open rule' });
+  let ruleName = await vscode.window.showQuickPick(Object.keys(rulesMap), 
+  { placeHolder: 'Pick a rule or press Esc to run the currently open rule', ignoreFocusOut: true });
   if(!ruleName){
-    ruleName = await retrieveCurrentRuleName();
-    if(!ruleName){
-      let ruleName = await vscode.window.showQuickPick(Object.keys(rulesMap), { placeHolder: 'Please pick a rule (could not retrive one from the current file)'});
-      if(!ruleName){
-        vscode.window.showInformationMessage(`No rule name was specified, exiting`);
-        return;
-      }
-    }
+    vscode.window.showInformationMessage(`No rule name was specified, exiting`);
+    return;
   }
   let ruleArgs = rulesMap[ruleName];
   let inputArgs = {};
@@ -586,5 +593,100 @@ async function reloadLog(){
   else{
     vscode.window.showInformationMessage(`Operation failed`);
   }
+}
 
+async function getClasses(){
+  var post_body = 
+  {
+    "workflowArgs":
+    {
+      "operation": "getClasses"
+    }
+  };
+  
+  var result = await vscode.window.withProgress({
+    location: vscode.ProgressLocation.Notification,
+    title: "Getting classes ...",
+    cancellable: true
+    }, 
+      progress => {return postRequest(JSON.stringify(post_body));
+    });
+
+  return result["payload"];
+}
+
+async function getClassObjects(cls){
+  var post_body = 
+  {
+    "workflowArgs":
+    {
+      "operation": "getClassObjects",
+      "theClass": cls
+    }
+  };
+  
+  var result = await vscode.window.withProgress({
+    location: vscode.ProgressLocation.Notification,
+    title: "Getting class objects ...",
+    cancellable: true
+    }, 
+      progress => {return postRequest(JSON.stringify(post_body));
+    });
+
+  return result["payload"];
+ 
+}
+
+async function searchObject(cls, objName){
+  var post_body = 
+  {
+    "workflowArgs":
+    {
+      "operation": "getObject",
+      "theClass": cls,
+      "objName": objName
+    }
+  };
+  
+  var result = await vscode.window.withProgress({
+    location: vscode.ProgressLocation.Notification,
+    title: `Getting the object for ${objName} ...`,
+    cancellable: true
+    }, 
+      progress => {return postRequest(JSON.stringify(post_body));
+    });
+
+  return result["payload"];
+ }
+
+async function getObject(){
+  var classes = await getClasses();
+  if(!classes){
+    vscode.window.showInformationMessage("No classes were found, exiting");
+    return;
+  }
+  let theClass = await vscode.window.showQuickPick(classes, 
+  { placeHolder: 'Pick a class...', ignoreFocusOut: true });
+  if(!theClass){
+    vscode.window.showInformationMessage("No class was selected, exiting");
+    return;
+  }
+
+  var classObjects = await getClassObjects(theClass);
+  let objName = await vscode.window.showQuickPick(classObjects, 
+    { placeHolder: `Pick an object for ${theClass} ...`, ignoreFocusOut: true });
+  if(!objName){
+    vscode.window.showInformationMessage("No object was selected, exiting");
+    return;
+  }
+ 
+  var xml = await searchObject(theClass, objName);
+  if(!xml){
+    vscode.window.showInformationMessage("Empty object, exiting");
+    return;
+  }
+  const tempFile = tmp.fileSync({ prefix: `${theClass}-${objName}`, postfix: '.xml' });
+  fs.writeFileSync(tempFile.name, xml);
+  let doc = await vscode.workspace.openTextDocument(tempFile.name); 
+  await vscode.window.showTextDocument(doc);
 }

@@ -33,7 +33,10 @@ function activate(context) {
   context.subscriptions.push(disposableGetLog);
 
 	let disposableReloadLog = vscode.commands.registerCommand('iiq-dev-accelerator.reloadLog', impFile.reloadLog);
-  context.subscriptions.push(disposableReloadLog);
+	context.subscriptions.push(disposableReloadLog);
+	
+	let disposableGetObject = vscode.commands.registerCommand('iiq-dev-accelerator.getObject', impFile.getObject);
+  context.subscriptions.push(disposableGetObject);
 }
 
 function deactivate() {}
