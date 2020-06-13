@@ -15,6 +15,9 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
 * **Get Object**
   * Will retrive an object of selected class
   * You can make modifications and import it with **Import File** command
+  * Go **Get Object** + **Import File** gives you the ability to modify objects
+* **Delete Object**
+  * Will delete the selected object from the target system
 * **Run Task**
   * Given a list of taks you select one to execute
 * **Run Task With Parameters**
@@ -34,7 +37,7 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
 * **Reload Logging Config**. 
   * It allows a few options (sorted by priority):
     * Currently selected text
-    * Currently open log4j document
+    * Currently open log4j document (including the one obtained with **Get Logging Config** command)
     * Detected **your-target-environment**.log4j(2).properties document, where **your-target-environment** is your target environment configuration. It should work equally with old log4j and new log4j2 files.
 * **Code snippets**
   * `rule + Tab` - inserts rule code snippet
@@ -43,7 +46,7 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
 
 * You need to have a running Sailpoint IIQ instance to where you can connect as admin
 * I used IIQ 8.0p1 as a testing environment for the extension, but it should work with 7.3 and lower
-* For the extension I used latest VSCode (version 1.45.1 at the moment)
+* For the extension I used latest VSCode (version 1.45.1 at the moment) on Windows 10.
 * For better results you may want to use SSD which provides a building framework for multiple IIQ environments/targets
 
 

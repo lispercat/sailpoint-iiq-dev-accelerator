@@ -33,7 +33,8 @@
 		"onCommand:iiq-dev-accelerator.runTaskWithAttr",
 		"onCommand:iiq-dev-accelerator.getLog",
 		"onCommand:iiq-dev-accelerator.reloadLog",
-		"onCommand:iiq-dev-accelerator.getObject"
+		"onCommand:iiq-dev-accelerator.getObject",
+		"onCommand:iiq-dev-accelerator.deleteObject"
 	],
 	"main": "./src/extension.js",
 	"contributes": {
@@ -98,6 +99,10 @@
 			{
 				"command": "iiq-dev-accelerator.getObject",
 				"title": "iiq: Get Object"
+			},
+			{
+				"command": "iiq-dev-accelerator.deleteObject",
+				"title": "iiq: Delete Object"
 			}
 		],
 		"keybindings":[

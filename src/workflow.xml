@@ -15,6 +15,7 @@
     <Transition to="Get Classes" when='"getClasses".equals(operation);'/>
     <Transition to="Get Class Objects" when='"getClassObjects".equals(operation);'/>
     <Transition to="Get Object" when='"getObject".equals(operation);'/>
+    <Transition to="Delete Object" when='"deleteObject".equals(operation);'/>
     <Transition to="Get Task List" when='"getTaskList".equals(operation);'/>
     <Transition to="Run Task" when='"runTask".equals(operation);'/>
     <Transition to="Get Rules" when='"getRules".equals(operation);'/>
@@ -139,8 +140,50 @@
             return "fail"; 
           }
           
-          iidDevAccelLogger.debug("Finished getting class objects"); 
+          iidDevAccelLogger.debug("Finished getting an object"); 
           return obj.toXml(); 
+          ]]>
+      </Source>
+    </Script>
+    <Transition to="Stop"/>
+  </Step>
+  <Step icon="Default" name="Delete Object" resultVariable="payload">
+    <Script>
+      <Source>
+        <![CDATA[ 
+          import sailpoint.object.*;
+          import sailpoint.api.*;
+          import org.apache.log4j.Logger;
+          Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
+          iidDevAccelLogger.debug("Started deleting object for " + theClass + " and " + objName); 
+          Class myClass = null;
+          for(Class cls : ClassLists.MajorClasses){
+            if(cls.getSimpleName().equals(theClass)){
+              myClass = cls;
+              break;
+            }
+          }
+          if(null == myClass){
+            iidDevAccelLogger.error("Couldn't find class " + theClass);
+            return "fail"; 
+          }
+
+          String field = "name";
+          if(theClass.equals("Identity")){
+            field = "displayName";
+          }
+
+          SailPointObject obj = context.getUniqueObject(myClass, Filter.eq(field, objName));
+          if(null == obj){
+            iidDevAccelLogger.error("Couldn't find the object");
+            return "fail"; 
+          }
+          Terminator terminator = new Terminator(context);
+          terminator.setTrace(true);
+          terminator.deleteObject(obj);
+
+          iidDevAccelLogger.debug("Finished deleting object"); 
+          return "success"; 
           ]]>
       </Source>
     </Script>

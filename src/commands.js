@@ -19,7 +19,8 @@ module.exports = {
   evalBS,
   getLog,
   reloadLog,
-  getObject
+  getObject,
+  deleteObject
 }
 
 function canUseCachedProp(){
@@ -689,4 +690,53 @@ async function getObject(){
   fs.writeFileSync(tempFile.name, xml);
   let doc = await vscode.workspace.openTextDocument(tempFile.name); 
   await vscode.window.showTextDocument(doc);
+}
+
+async function deleteObjectInternal(cls, objName){
+  var post_body = 
+  {
+    "workflowArgs":
+    {
+      "operation": "deleteObject",
+      "theClass": cls,
+      "objName": objName
+    }
+  };
+  
+  var result = await vscode.window.withProgress({
+    location: vscode.ProgressLocation.Notification,
+    title: `Deleting object ${objName} ...`,
+    cancellable: true
+    }, 
+      progress => {return postRequest(JSON.stringify(post_body));
+    });
+
+  return result["payload"];
+}
+
+async function deleteObject(){
+  var classes = await getClasses();
+  if(!classes){
+    vscode.window.showInformationMessage("No classes were found, exiting");
+    return;
+  }
+  let theClass = await vscode.window.showQuickPick(classes, 
+  { placeHolder: 'Pick a class...', ignoreFocusOut: true });
+  if(!theClass){
+    vscode.window.showInformationMessage("No class was selected, exiting");
+    return;
+  }
+
+  var classObjects = await getClassObjects(theClass);
+  let objName = await vscode.window.showQuickPick(classObjects, 
+    { placeHolder: `Pick an object for ${theClass} ...`, ignoreFocusOut: true });
+  if(!objName){
+    vscode.window.showInformationMessage("No object was selected, exiting");
+    return;
+  }
+ 
+  var status = await deleteObjectInternal(theClass, objName);
+  if(status){
+    vscode.window.showInformationMessage(`Operation status: ${status}`);
+  }
 }
