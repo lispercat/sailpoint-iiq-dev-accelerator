@@ -735,6 +735,13 @@ async function deleteObject(){
     return;
   }
  
+  const answer = await vscode.window.showQuickPick(["Yes", "No"],
+                  {placeHolder: `Are you sure you want to delete ${objName}?`});
+  if(!answer || answer === "No"){
+    vscode.window.showInformationMessage("No object was deleted");
+    return;
+  }
+
   var status = await deleteObjectInternal(theClass, objName);
   if(status){
     vscode.window.showInformationMessage(`Operation status: ${status}`);
