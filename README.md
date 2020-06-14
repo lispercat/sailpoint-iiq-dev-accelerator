@@ -1,4 +1,4 @@
-# iiq-dev-accelerator README
+<h2 align="center"><img src="https://raw.githubusercontent.com/VSCodeVim/Vim/master/images/icon.png" height="128"><br>Sailpoint IIQ Development Accelerator</h2>
 
 This is the README for "Sailpoint IIQ Development Accelerator" VSCode extension.
 The main goal to accelerate and facilitate development by directly interacting with the target IIQ server via VSCode commands.
@@ -6,6 +6,7 @@ To use the extension, you need to:
 * Import in Sailpoint IIQ the ["IIQDevAcceleratorWF" workflow](https://raw.githubusercontent.com/lispercat/sailpoint-iiq-dev-accelerator/master/src/workflow.xml) 
 * update the configuration of the extension with the name of your target IIQ environment (sandbox, dev, uat etc.).
 
+![Example of how to evalue a snippet of BeanShell script, import and run a rule with parameters](https://raw.githubusercontent.com/lispercat/sailpoint-iiq-dev-accelerator/master/images/BSEvalAndRunRule.gif)
 
 ## Features
 
