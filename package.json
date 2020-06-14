@@ -19,6 +19,7 @@
 		"type": "git",
 		"url": "https://github.com/lispercat/sailpoint-iiq-dev-accelerator"
 	},
+	"license": "MIT",
 	"publisher": "AndreiStebakov",
 	"contributors": [
 		"Andrei Stebakov"
