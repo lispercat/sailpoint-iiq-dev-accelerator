@@ -1,4 +1,4 @@
-<h2 align="center"><img src="https://raw.githubusercontent.com/VSCodeVim/Vim/master/images/icon.png" height="128"><br>Sailpoint IIQ Development Accelerator</h2>
+<h2 align="center"><img src="https://raw.githubusercontent.com/lispercat/sailpoint-iiq-dev-accelerator/master/images/icon.png" height="128"><br>Sailpoint IIQ Development Accelerator</h2>
 
 This is the README for "Sailpoint IIQ Development Accelerator" VSCode extension.
 The main goal to accelerate and facilitate development by directly interacting with the target IIQ server via VSCode commands.
