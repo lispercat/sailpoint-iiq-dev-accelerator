@@ -301,7 +301,7 @@
           import java.io.*;
           import bsh.Interpreter;
           import org.apache.log4j.Logger;
-          String injectContext = "import sailpoint.api.*;SailPointContext context = SailPointFactory.createPrivateContext();";
+          String injectContext = "import sailpoint.api.*;\nSailPointContext context = SailPointFactory.createPrivateContext();\n";
 
           Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
           iidDevAccelLogger.debug("Evaluating beanshell script" + script); 

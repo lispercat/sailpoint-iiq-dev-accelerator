@@ -481,7 +481,6 @@ async function evalBS(){
     return;
   }
 
-  script = script.replace(/"/g, '\\"');
   var post_body = 
   {
     "workflowArgs":

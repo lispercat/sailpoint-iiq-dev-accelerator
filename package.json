@@ -1,7 +1,8 @@
 {
-	"name": "iiq-dev-accelerator",
+	"name": "sailpoint-iiq-dev-accelerator",
 	"displayName": "Sailpoint IIQ Development Accelerator",
 	"description": "Provides commands to facilitate/accelerate coding/interacting with remote Sailpoint IIQ server",
+	"icon": "images/icon.png",
 	"version": "1.0.0",
 	"engines": {
 		"vscode": "^1.45.0"
