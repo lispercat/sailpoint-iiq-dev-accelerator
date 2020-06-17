@@ -1,150 +1,178 @@
 {
-	"name": "sailpoint-iiq-dev-accelerator",
-	"displayName": "Sailpoint IIQ Development Accelerator",
-	"description": "Provides commands to facilitate/accelerate coding/interacting with remote Sailpoint IIQ server",
-	"icon": "images/icon.png",
-	"version": "1.0.0",
-	"engines": {
-		"vscode": "^1.45.0"
-	},
-	"keywords": [
-		"sailpoint",
-		"iiq",
-		"remote",
-		"development",
-		"deployment",
-		"automation"
-	],
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/lispercat/sailpoint-iiq-dev-accelerator"
-	},
-	"license": "MIT",
-	"publisher": "AndreiStebakov",
-	"contributors": [
-		"Andrei Stebakov"
-	],
-	"categories": [
-		"Other"
-	],
-	"activationEvents": [
-		"onCommand:iiq-dev-accelerator.importFile",
-		"onCommand:iiq-dev-accelerator.runTask",
-		"onCommand:iiq-dev-accelerator.runRule",
-		"onCommand:iiq-dev-accelerator.evalBS",
-		"onCommand:iiq-dev-accelerator.runTaskWithAttr",
-		"onCommand:iiq-dev-accelerator.getLog",
-		"onCommand:iiq-dev-accelerator.reloadLog",
-		"onCommand:iiq-dev-accelerator.getObject",
-		"onCommand:iiq-dev-accelerator.deleteObject"
-	],
-	"main": "./src/extension.js",
-	"contributes": {
-		"configuration": {
-			"title": "Sailpoint IIQ Development Accelerator",
-			"properties": {
-				"iiq-dev-accelerator.environment": {
-					"type": "string",
-					"description": "iiq environment (dev, uat, prod, etc)",
-					"default": "",
-					"scope": "application"
-				},
-				"iiq-dev-accelerator.iiq_url": {
-					"type": "string",
-					"description": "url for your iiq site",
-					"default": "",
-					"scope": "application"
-				},
-				"iiq-dev-accelerator.username": {
-					"type": "string",
-					"description": "username",
-					"default": "",
-					"scope": "application"
-				},
-				"iiq-dev-accelerator.password": {
-					"type": "string",
-					"description": "password",
-					"default": "",
-					"scope": "application"
-				}
-			}
-		},
-		"commands": [
-			{
-				"command": "iiq-dev-accelerator.importFile",
-				"title": "iiq: Import Current File"
-			},
-			{
-				"command": "iiq-dev-accelerator.runTask",
-				"title": "iiq: Run Task"
-			},
-			{
-				"command": "iiq-dev-accelerator.runTaskWithAttr",
-				"title": "iiq: Run Task With Parameters"
-			},
-			{
-				"command": "iiq-dev-accelerator.runRule",
-				"title": "iiq: Run Rule"
-			},
-			{
-				"command": "iiq-dev-accelerator.evalBS",
-				"title": "iiq: Evaluate BeanShell Script"
-			},
-			{
-				"command": "iiq-dev-accelerator.getLog",
-				"title": "iiq: Get Logging Config"
-			},
-			{
-				"command": "iiq-dev-accelerator.reloadLog",
-				"title": "iiq: Reload Logging Config"
-			},
-			{
-				"command": "iiq-dev-accelerator.getObject",
-				"title": "iiq: Get Object"
-			},
-			{
-				"command": "iiq-dev-accelerator.deleteObject",
-				"title": "iiq: Delete Object"
-			}
-		],
-		"keybindings":[
-			{
-				"key": "ctrl+alt+x",
-				"command": "iiq-dev-accelerator.evalBS",
-				"when": "editorTextFocus"
-			},{
-				"key": "ctrl+alt+s",
-				"command": "iiq-dev-accelerator.importFile",
-				"when": "editorTextFocus"
-			}			
-		],
-		"snippets": [
-			{
-				"language": "xml",
-				"path": "./snippets/xml.json"
-			}
-		]
-	},
-	"scripts": {
-		"lint": "eslint .",
-		"pretest": "npm run lint",
-		"test": "node ./test/runTest.js"
-	},
-	"devDependencies": {
-		"@types/glob": "^7.1.1",
-		"@types/mocha": "^7.0.2",
-		"@types/node": "^13.11.0",
-		"@types/vscode": "^1.45.0",
-		"eslint": "^6.8.0",
-		"glob": "^7.1.6",
-		"mocha": "^7.1.2",
-		"typescript": "^3.8.3"
-	},
-	"dependencies": {
-		"base-64": "^0.1.0",
-		"node-fetch": "^2.6.0",
-		"properties-reader": "^2.0.0",
-		"tmp": "^0.2.1",
-		"xml2js": "^0.4.23"
-	}
+  "name": "sailpoint-iiq-dev-accelerator",
+  "displayName": "Sailpoint IIQ Development Accelerator",
+  "description": "Provides commands to facilitate/accelerate coding/interacting with remote Sailpoint IIQ server",
+  "icon": "images/icon.png",
+  "version": "1.0.1",
+  "engines": {
+    "vscode": "^1.45.0"
+  },
+  "keywords": [
+    "sailpoint",
+    "iiq",
+    "beanshell",
+    "remote",
+    "development",
+    "deployment",
+    "automation"
+  ],
+  "author": {
+    "name": "Andrei Stebakov",
+    "email": "lispercat@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lispercat/sailpoint-iiq-dev-accelerator"
+  },
+  "license": "MIT",
+  "publisher": "AndreiStebakov",
+  "contributors": [
+    "Andrei Stebakov"
+  ],
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:iiq-dev-accelerator.importFile",
+    "onCommand:iiq-dev-accelerator.runTask",
+    "onCommand:iiq-dev-accelerator.runRule",
+    "onCommand:iiq-dev-accelerator.evalBS",
+    "onCommand:iiq-dev-accelerator.runTaskWithAttr",
+    "onCommand:iiq-dev-accelerator.getLog",
+    "onCommand:iiq-dev-accelerator.reloadLog",
+    "onCommand:iiq-dev-accelerator.getObject",
+    "onCommand:iiq-dev-accelerator.deleteObject"
+  ],
+  "main": "./src/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Sailpoint IIQ Development Accelerator",
+      "properties": {
+        "iiq-dev-accelerator.environment": {
+          "type": "string",
+          "description": "iiq environment (dev, uat, prod, etc)",
+          "default": "",
+          "scope": "application"
+        },
+        "iiq-dev-accelerator.iiq_url": {
+          "type": "string",
+          "description": "url for your iiq site",
+          "default": "",
+          "scope": "application"
+        },
+        "iiq-dev-accelerator.username": {
+          "type": "string",
+          "description": "username",
+          "default": "",
+          "scope": "application"
+        },
+        "iiq-dev-accelerator.password": {
+          "type": "string",
+          "description": "password",
+          "default": "",
+          "scope": "application"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "iiq-dev-accelerator.importFile",
+        "title": "iiq: Import Current File"
+      },
+      {
+        "command": "iiq-dev-accelerator.runTask",
+        "title": "iiq: Run Task"
+      },
+      {
+        "command": "iiq-dev-accelerator.runTaskWithAttr",
+        "title": "iiq: Run Task With Parameters"
+      },
+      {
+        "command": "iiq-dev-accelerator.runRule",
+        "title": "iiq: Run Rule"
+      },
+      {
+        "command": "iiq-dev-accelerator.evalBS",
+        "title": "iiq: Evaluate BeanShell Script"
+      },
+      {
+        "command": "iiq-dev-accelerator.getLog",
+        "title": "iiq: Get Logging Config"
+      },
+      {
+        "command": "iiq-dev-accelerator.reloadLog",
+        "title": "iiq: Reload Logging Config"
+      },
+      {
+        "command": "iiq-dev-accelerator.getObject",
+        "title": "iiq: Get Object"
+      },
+      {
+        "command": "iiq-dev-accelerator.deleteObject",
+        "title": "iiq: Delete Object"
+      }
+    ],
+    "keybindings":[
+      {
+        "key": "ctrl+alt+x",
+        "command": "iiq-dev-accelerator.evalBS",
+        "when": "editorTextFocus"
+      },{
+        "key": "ctrl+alt+s",
+        "command": "iiq-dev-accelerator.importFile",
+        "when": "editorTextFocus"
+      }			
+    ],
+    "snippets": [
+      {
+        "language": "xml",
+        "path": "./snippets/xml.json"
+      }
+    ],
+    "grammars": [
+      {
+        "injectTo": ["text.xml"],
+        "path": "./syntaxes/beanshell-injection.json",
+        "scopeName": "text.xml.beanshell"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "iiq-dev-accelerator.importFile",
+          "when": "resourceExtname == .xml",
+          "group": "iiq"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "iiq-dev-accelerator.importFile",
+          "when": "resourceExtname == .xml",
+          "group": "iiq"
+        }
+      ]
+    }		
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "node ./test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/glob": "^7.1.1",
+    "@types/mocha": "^7.0.2",
+    "@types/node": "^13.11.0",
+    "@types/vscode": "^1.45.0",
+    "eslint": "^6.8.0",
+    "glob": "^7.1.6",
+    "mocha": "^7.1.2",
+    "typescript": "^3.8.3"
+  },
+  "dependencies": {
+    "base-64": "^0.1.0",
+    "node-fetch": "^2.6.0",
+    "properties-reader": "^2.0.0",
+    "tmp": "^0.2.1",
+    "xml2js": "^0.4.23"
+  }
 }

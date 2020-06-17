@@ -42,6 +42,8 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
     * Detected **your-target-environment**.log4j(2).properties document, where **your-target-environment** is your target environment configuration. It should work equally with old log4j and new log4j2 files.
 * **Code snippets**
   * `rule + Tab` - inserts rule code snippet
+* **Syntax highlighting**
+  * By default the BeanShell code will be highlighed like regular Java code
 
 ## Requirements
 
@@ -83,14 +85,10 @@ To specify the environment you may also add this to your settings.json:
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+Refer to [CHANGELOG](https://github.com/lispercat/sailpoint-iiq-dev-accelerator/blob/master/CHANGELOG.md)
 
-### 1.0.0
+## Feedback
 
-Initial release of "Sailpoint IIQ Development Accelerator"
-
-
-##Note
-
-Please report issues or feature requests at the github repo or email me: lispercat@gmail.com
+* File a bug in [GitHub Issues](https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues)
+* Or drop me a line: lispercat@gmail.com
 

@@ -1,4 +1,14 @@
 # Change Log
 
-Release notes are available [here](https://github.com/lispercat/iiq-dev-accelerator/releases).
+## [1.0.1]
+### Added
+ - Support for synax highlighting
+ - Added context menu for file import
+
+### Changed
+ - Tutorial Image
+
+## [1.0.0]
+### Added
+ - Initial release 
 

@@ -1,0 +1,25 @@
+{
+  "fileTypes": [],
+  "injectionSelector": "L:text.xml",
+  "scopeName": "text.xml.beanshell",
+  "patterns": [
+    {
+      "include": "#beanshell-code-block"
+    }
+  ],
+  "repository": {
+    "beanshell-code-block": {
+      "patterns": [
+        {
+          "begin": "(?<=<Source\\s*>)",
+          "end":   "(?=</Source\\s*>)",
+          "patterns": [
+            {
+              "include": "source.java"
+            }
+          ] 
+        }
+      ]
+    }
+  }
+}
