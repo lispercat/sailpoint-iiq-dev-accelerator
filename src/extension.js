@@ -41,6 +41,9 @@ function activate(context) {
 	let disposableDeleteObject = vscode.commands.registerCommand('iiq-dev-accelerator.deleteObject', impFile.deleteObject);
   context.subscriptions.push(disposableDeleteObject);
 
+	let disposableSwitchEnv = vscode.commands.registerCommand('iiq-dev-accelerator.switchEnv', impFile.switchEnv);
+  context.subscriptions.push(disposableSwitchEnv);
+
 }
 
 function deactivate() {}

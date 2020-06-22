@@ -1,4 +1,6 @@
 node_modules
 .vscode-test/
-*.vsix
 src/scratch.js
+*.vsix
+*.cmd
+*.bat

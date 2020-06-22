@@ -12,7 +12,7 @@ To use the extension, you need to:
 
 To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open command palette and type: **iiq** to see all available commands. Then select one of the following:
 * **Import File**
-  * Will import your currently active document
+  * Will import your currently active document. If you use SSB, tokens will be substituted according to selected environment.
 * **Get Object**
   * Will retrive an object of selected class
   * You can make modifications and import it with **Import File** command
@@ -40,6 +40,8 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
     * Currently selected text
     * Currently open log4j document (including the one obtained with **Get Logging Config** command)
     * Detected **your-target-environment**.log4j(2).properties document, where **your-target-environment** is your target environment configuration. It should work equally with old log4j and new log4j2 files.
+* **Switch Environment**
+  * Allows to switch to a different SSB environment. For better results make sure that you have specified %%ECLIPSE_URL%%, %%ECLIPSE_USER%%, %%ECLIPSE_PASSWORD%% tokens in your **your-target-environment**.target.properties file 
 * **Code snippets**
   * `rule + Tab` - inserts rule code snippet
 * **Syntax highlighting**

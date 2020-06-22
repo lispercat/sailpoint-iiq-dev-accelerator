@@ -20,7 +20,8 @@ module.exports = {
   getLog,
   reloadLog,
   getObject,
-  deleteObject
+  deleteObject,
+  switchEnv
 }
 
 function canUseCachedProp(){
@@ -37,19 +38,27 @@ function canUseCachedProp(){
   return true;
 }
 
+async function listEnvironments(){
+  var result = [];
+
+  var folders  = vscode.workspace.workspaceFolders;
+  var searchFileName = '*.target.properties';
+  for(var i = 0; i < folders.length; i++){
+    const uris = await vscode.workspace.findFiles(`**/${searchFileName}`, `${folders[i].uri.fsPath}/**`);
+    uris.forEach((uri) => {
+      let [env, rest] = require('path').basename(uri.fsPath).split(".");
+      result.push(env);
+    });
+  }
+  return result;
+}
+
 async function getEnvironment(){
   var environment = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('environment');
   if(!environment){
-    environment = await vscode.window.showInputBox({
-      prompt: "Your environment configuration appears to be empty, please specify it here", 
-      validateInput: (text) => {
-        if (!text) {
-            return 'You must enter some input';
-        } else {
-            return undefined;
-        }
-    }
-    });
+
+    environment = await vscode.window.showQuickPick(listEnvironments(), 
+    { placeHolder: 'Select an environment', ignoreFocusOut: false });
     if(environment === undefined){
       return null;
     }
@@ -128,10 +137,13 @@ async function getSiteConfig(){
     username = props.get("%%ECLIPSE_USER%%");
     password = props.get("%%ECLIPSE_PASS%%");
     if(!url || !username || !password){
+      url = url ? url:"http://localhost:8080/identityiq"; 
+      username = username ? username:"spadmin";
+      password = password ? password:"admin";
       let configParams = await vscode.window.showInputBox({
         ignoreFocusOut: true,
-        value: "http://localhost:8080/identityiq;spadmin;admin",
-        prompt: `Couldn't detect your configuration from ${environment}.target.properties). Please enter here `, 
+        value: `${url};${username};${password}`,
+        prompt: `Couldn't detect your full configuration from ${environment}.target.properties). Please enter here `, 
         validateInput: validateConfigInput
       });
       if(configParams === undefined){
@@ -745,4 +757,33 @@ async function deleteObject(){
   if(status){
     vscode.window.showInformationMessage(`Operation status: ${status}`);
   }
+}
+
+async function switchEnv(){
+
+  var old_environment = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('environment');
+  var environment = await vscode.window.showQuickPick(listEnvironments(), 
+  { placeHolder: 'Select an environment', ignoreFocusOut: false });
+  if(environment === undefined){
+    return null;
+  }
+
+  if(old_environment === environment){
+    return environment;
+  }
+
+  vscode.workspace.getConfiguration('iiq-dev-accelerator').update('environment', environment, true);
+  environment = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('environment');
+
+  //reset old environment's settings
+  g_props["props"] = null;
+  var url = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('iiq_url');
+  var username = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('username');
+  var password = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('password');
+  if(url || username || password){
+    vscode.workspace.getConfiguration('iiq-dev-accelerator').update('iiq_url', "", true);
+    vscode.workspace.getConfiguration('iiq-dev-accelerator').update('username', "", true);
+    vscode.workspace.getConfiguration('iiq-dev-accelerator').update('password', "", true);
+  }
+  return environment;
 }

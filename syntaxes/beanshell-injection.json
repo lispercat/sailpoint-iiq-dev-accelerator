@@ -18,6 +18,15 @@
               "include": "source.java"
             }
           ] 
+        },
+        {
+          "begin": "<!\\[CDATA\\[",
+          "end": "\\]\\]>",
+          "patterns": [
+            {
+              "include": "source.java"
+            }
+          ] 
         }
       ]
     }
