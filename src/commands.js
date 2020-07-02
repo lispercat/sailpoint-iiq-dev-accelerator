@@ -56,8 +56,11 @@ async function listEnvironments(){
 async function getEnvironment(){
   var environment = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('environment');
   if(!environment){
-
-    environment = await vscode.window.showQuickPick(listEnvironments(), 
+    var environments = await listEnvironments();
+    if(!environments || environments.length < 1){
+      return null;
+    }
+    environment = await vscode.window.showQuickPick(environments, 
     { placeHolder: 'Select an environment', ignoreFocusOut: false });
     if(environment === undefined){
       return null;
@@ -76,7 +79,6 @@ async function loadTargetProps(){
   }
   var environment = await getEnvironment();
   if(!environment){
-    vscode.window.showInformationMessage(`Couldn't find/update the environment, exiting`);
     return null;
   }
 
@@ -98,11 +100,13 @@ async function loadTargetProps(){
 }
 
 function processFileContent(fileContent, props){
-  var found = fileContent.match(/%%\w+%%/g);
-  if(found){
-    found.forEach((m) => {
-      fileContent = fileContent.replace(m, props.get(m));
-    });
+  if(props){
+    var found = fileContent.match(/%%\w+%%/g);
+    if(found){
+      found.forEach((m) => {
+        fileContent = fileContent.replace(m, props.get(m));
+      });
+    }
   }
   return fileContent;
 }
@@ -130,12 +134,11 @@ async function getSiteConfig(){
 
   if(!url || !username || !password){
     const props = await loadTargetProps();
-    if(!props){
-      return null;
+    if(props){
+      url = props.get("%%ECLIPSE_URL%%");
+      username = props.get("%%ECLIPSE_USER%%");
+      password = props.get("%%ECLIPSE_PASS%%");
     }
-    url = props.get("%%ECLIPSE_URL%%");
-    username = props.get("%%ECLIPSE_USER%%");
-    password = props.get("%%ECLIPSE_PASS%%");
     if(!url || !username || !password){
       url = url ? url:"http://localhost:8080/identityiq"; 
       username = username ? username:"spadmin";
@@ -203,10 +206,6 @@ async function importFile(){
   }
   var document = vscode.window.activeTextEditor.document;
   var props = await loadTargetProps();
-  if(!props){
-    vscode.window.showInformationMessage(`Couldn't load properties, exiting`);
-    return;
-  }
   var fileContent = processFileContent(document.getText(), props);
   
   var post_body = {
@@ -256,6 +255,11 @@ async function getTasksNames(){
 async function runTask(){
   let taskName = await vscode.window.showQuickPick(getTasksNames(), 
   { placeHolder: 'Pick a task...', ignoreFocusOut: true });
+
+  if(!taskName){
+    vscode.window.showInformationMessage(`No task name was specified, cancelled`);
+    return;
+  }
 
   var post_body = 
   {
@@ -355,6 +359,12 @@ async function getArgumentsFromInput(prompt, initialValues){
 async function runTaskWithAttr(){
   let taskName = await vscode.window.showQuickPick(getTasksNames(), 
   { placeHolder: 'Pick a task...', ignoreFocusOut: true});
+
+  if(!taskName){
+    vscode.window.showInformationMessage(`No task name was specified, cancelled`);
+    return;
+  }
+
   let inputArgs = await getArgumentsFromInput("Please enter arguments (filter->name==\"Identity-XYZ\" etc.): ",  "");
 
   var post_body = 
