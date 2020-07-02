@@ -249,7 +249,12 @@
           import sailpoint.object.*; 
           import org.apache.log4j.Logger;
           Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
-          List rules=context.getObjects(Rule.class); 
+          QueryOptions qo = new QueryOptions();
+          if(void != ruleName && null != ruleName){
+            Filter f = Filter.eq("name", ruleName);
+            qo.addFilter(f);
+          }
+          List rules=context.getObjects(Rule.class, qo); 
           iidDevAccelLogger.debug("got " + rules.size()); 
           Map objMap = new HashMap();
 

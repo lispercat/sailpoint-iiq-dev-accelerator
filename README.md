@@ -42,6 +42,12 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
     * Detected **your-target-environment**.log4j(2).properties document, where **your-target-environment** is your target environment configuration. It should work equally with old log4j and new log4j2 files.
 * **Switch Environment**
   * Allows to switch to a different SSB environment. For better results make sure that you have specified %%ECLIPSE_URL%%, %%ECLIPSE_USER%%, %%ECLIPSE_PASSWORD%% tokens in your **your-target-environment**.target.properties file 
+* **Context-based Execution**
+  * Allows to execute a "smart" command based on a currently active file.
+    * If the file is a **Rule**, the rule will be executed
+    * If the file as a **TaskDefinition**, the task will be executed
+    * If you have selected a snippet of BeanShell code, it'll be evaluated
+    * If it's log4j config file, it will be reloaded
 * **Code snippets**
   * `rule + Tab` - inserts rule code snippet
 * **Syntax highlighting**

@@ -1,5 +1,9 @@
 # Change Log
 
+## [1.0.3]
+### Added
+ - Context-based Execution
+
 ## [1.0.2]
 ### Added
  - Switch environment commmand

@@ -1,5 +1,5 @@
 const vscode = require('vscode');
-const impFile = require("./commands.js");
+const cmds = require("./commands.js");
 
 
 exports.activate = activate;
@@ -9,41 +9,22 @@ module.exports = {
 }
 
 /**
- * @param {vscode.ExtensionContext} context
+ * @param {vscode.Extensionctx} ctx
  */
-function activate(context) {
+function activate(ctx) {
   console.log('Extension "iiq-dev-accelerator" is now active');
   
-	let disposableImportFile = vscode.commands.registerCommand('iiq-dev-accelerator.importFile', impFile.importFile);
-  context.subscriptions.push(disposableImportFile);
-
-	let disposableRunTask = vscode.commands.registerCommand('iiq-dev-accelerator.runTask', impFile.runTask);
-  context.subscriptions.push(disposableRunTask);
-
-	let disposableRunTaskWithAttr = vscode.commands.registerCommand('iiq-dev-accelerator.runTaskWithAttr', impFile.runTaskWithAttr);
-  context.subscriptions.push(disposableRunTaskWithAttr);
-
-	let disposableRunRule = vscode.commands.registerCommand('iiq-dev-accelerator.runRule', impFile.runRule);
-  context.subscriptions.push(disposableRunRule);
-
-	let disposableEvalBS = vscode.commands.registerCommand('iiq-dev-accelerator.evalBS', impFile.evalBS);
-  context.subscriptions.push(disposableEvalBS);
-
-	let disposableGetLog = vscode.commands.registerCommand('iiq-dev-accelerator.getLog', impFile.getLog);
-  context.subscriptions.push(disposableGetLog);
-
-	let disposableReloadLog = vscode.commands.registerCommand('iiq-dev-accelerator.reloadLog', impFile.reloadLog);
-	context.subscriptions.push(disposableReloadLog);
-	
-	let disposableGetObject = vscode.commands.registerCommand('iiq-dev-accelerator.getObject', impFile.getObject);
-	context.subscriptions.push(disposableGetObject);
-	
-	let disposableDeleteObject = vscode.commands.registerCommand('iiq-dev-accelerator.deleteObject', impFile.deleteObject);
-  context.subscriptions.push(disposableDeleteObject);
-
-	let disposableSwitchEnv = vscode.commands.registerCommand('iiq-dev-accelerator.switchEnv', impFile.switchEnv);
-  context.subscriptions.push(disposableSwitchEnv);
-
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.importFile', cmds.importFile));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.runTask', cmds.runTask));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.runTaskWithAttr', cmds.runTaskWithAttr));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.runRule', cmds.runRule));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.evalBS', cmds.evalBS));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.getLog', cmds.getLog));
+	ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.reloadLog', cmds.reloadLog));
+	ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.getObject', cmds.getObject));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.deleteObject', cmds.deleteObject));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.switchEnv', cmds.switchEnv));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.runContext', cmds.runContext));
 }
 
 function deactivate() {}

@@ -6,9 +6,6 @@ const propertiesReader = require('properties-reader');
 const xml2js = require('xml2js');
 const tmp = require('tmp');
 
-const xmlParser = new xml2js.Parser({ attrkey: "ATTR" });
-
-
 var g_props = {"filePath": null, "props": null, "mtime": null};
 
 module.exports = {
@@ -21,8 +18,26 @@ module.exports = {
   reloadLog,
   getObject,
   deleteObject,
-  switchEnv
+  switchEnv,
+  runContext
 }
+
+function parseCurrentXmlFile(){
+  const xmlParser = new xml2js.Parser({ attrkey: "ATTR" });
+
+  var text = vscode.window.activeTextEditor.document.getText();
+  var parsedXml = null;
+  xmlParser.parseString(text, function(error, result) {
+    if(error === null) {
+      parsedXml = result;
+    }
+    else {
+        console.log(error);
+    }
+  });
+  return parsedXml;
+}
+
 
 function canUseCachedProp(){
   if(!g_props["filePath"]){
@@ -252,10 +267,11 @@ async function getTasksNames(){
 }
 
 
-async function runTask(){
-  let taskName = await vscode.window.showQuickPick(getTasksNames(), 
-  { placeHolder: 'Pick a task...', ignoreFocusOut: true });
-
+async function runTask(taskName = null){
+  if(!taskName){
+    taskName = await vscode.window.showQuickPick(getTasksNames(), 
+    { placeHolder: 'Pick a task...', ignoreFocusOut: true });
+  }
   if(!taskName){
     vscode.window.showInformationMessage(`No task name was specified, cancelled`);
     return;
@@ -290,22 +306,13 @@ async function runTask(){
 
 async function getArgumentsFromBuffer(){
   var retArgs = null;
-  if(!vscode.window.activeTextEditor || 
-    require('path').extname(vscode.window.activeTextEditor.document.fileName) != '.xml'){
-    vscode.window.showInformationMessage(`Please open an xml document to import`); 
+  var editor = vscode.window.activeTextEditor;
+  if(!editor || require('path').extname(editor.document.fileName) != '.xml'){
+    vscode.window.showInformationMessage(`Please open rule or rule argument file`); 
     return null;
   }
-  var argText = vscode.window.activeTextEditor.document.getText();
-  var parsedXml = null;
-  xmlParser.parseString(argText, function(error, result) {
-    if(error === null) {
-      parsedXml = result;
-    }
-    else {
-        console.log(error);
-    }
-  });
-  
+
+  var parsedXml = parseCurrentXmlFile();
   if(parsedXml){
     try{
       retArgs =
@@ -314,7 +321,7 @@ async function getArgumentsFromBuffer(){
           return map;}, {});
     }
     catch(error){
-
+      //it's ok, we expect to fail if our current file is a rule file
     }
   }
 
@@ -396,18 +403,20 @@ async function runTaskWithAttr(){
 }
 
 
-async function getRuleNames(){
+async function getRuleNames(ruleName = null){
   var post_body = 
   {
     "workflowArgs":
     {
-      "operation": "getRules"
+      "operation": "getRules",
+      "ruleName": ruleName
     }
   };
   
+  ruleName = ruleName ? ruleName:"all rules";
   var result = await vscode.window.withProgress({
     location: vscode.ProgressLocation.Notification,
-    title: "Getting rule names ...",
+    title: `Retrieving information for ${ruleName}`,
     cancellable: true
     }, 
       progress => {return postRequest(JSON.stringify(post_body));
@@ -444,10 +453,12 @@ async function retrieveCurrentRuleName(){
   return ruleName;
 }
 
-async function runRule(){
-  let rulesMap = await getRuleNames();
-  let ruleName = await vscode.window.showQuickPick(Object.keys(rulesMap), 
-  { placeHolder: 'Pick a rule or press Esc to run the currently open rule', ignoreFocusOut: true });
+async function runRule(ruleName = null){
+  let rulesMap = await getRuleNames(ruleName);
+  if(!ruleName){
+    ruleName = await vscode.window.showQuickPick(Object.keys(rulesMap), 
+    { placeHolder: 'Pick a rule or press Esc to run the currently open rule', ignoreFocusOut: true });
+  }
   if(!ruleName){
     vscode.window.showInformationMessage(`No rule name was specified, exiting`);
     return;
@@ -796,4 +807,40 @@ async function switchEnv(){
     vscode.workspace.getConfiguration('iiq-dev-accelerator').update('password', "", true);
   }
   return environment;
+}
+
+
+async function runContext(){
+  var editor = vscode.window.activeTextEditor;
+  if(!editor || !editor.document)  {
+    vscode.window.showInformationMessage(`To execute based on context, please open file with some IIQ object or a logging config`); 
+    return;
+  }
+
+  var ext = require('path').extname(vscode.window.activeTextEditor.document.fileName);
+  var baseName = require('path').basename(vscode.window.activeTextEditor.document.fileName);
+  var selection = editor.selection;
+  var script = editor.document.getText(selection);
+  if(script && ext === '.xml'){
+    evalBS();
+  }
+  else if(ext === ".properties" && baseName.startsWith("log4j")){
+    reloadLog();
+  }
+  else if(ext === '.xml'){
+    var parsedXml = parseCurrentXmlFile();
+    if(parsedXml){
+      try{
+        if(parsedXml["Rule"] && parsedXml["Rule"]["ATTR"]["name"]){
+          runRule(parsedXml["Rule"]["ATTR"]["name"]);
+        }
+        else if(parsedXml["TaskDefinition"] && parsedXml["TaskDefinition"]["ATTR"]["name"]){
+          runTask(parsedXml["TaskDefinition"]["ATTR"]["name"]);
+        }
+      }
+      catch(error){
+        vscode.window.showInformationMessage(`Error parsing ${editor.document.fileName}`);
+      }
+    }
+  }
 }
