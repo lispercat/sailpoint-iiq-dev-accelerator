@@ -1,5 +1,9 @@
 # Change Log
 
+## [1.0.4]
+### Added
+ - Deploy Uncommited Change
+
 ## [1.0.3]
 ### Added
  - Context-based Execution

@@ -25,6 +25,7 @@ function activate(ctx) {
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.deleteObject', cmds.deleteObject));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.switchEnv', cmds.switchEnv));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.runContext', cmds.runContext));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.deployChange', cmds.deployChange));
 }
 
 function deactivate() {}

@@ -3,7 +3,7 @@
   "displayName": "Sailpoint IIQ Development Accelerator",
   "description": "Provides commands to facilitate/accelerate coding/interacting with remote Sailpoint IIQ server",
   "icon": "images/icon.png",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "engines": {
     "vscode": "^1.45.0"
   },
@@ -43,7 +43,8 @@
     "onCommand:iiq-dev-accelerator.getObject",
     "onCommand:iiq-dev-accelerator.deleteObjec",
     "onCommand:iiq-dev-accelerator.switchEnv",
-    "onCommand:iiq-dev-accelerator.runContext"
+    "onCommand:iiq-dev-accelerator.runContext",
+    "onCommand:iiq-dev-accelerator.deployChange"
   ],
   "main": "./src/extension.js",
   "contributes": {
@@ -120,18 +121,23 @@
       {
         "command": "iiq-dev-accelerator.runContext",
         "title": "iiq: Context-based Execution"
+      },
+      {
+        "command": "iiq-dev-accelerator.deployChange",
+        "title": "iiq: Deploy Uncommitted Change"
       }
     ],
-    "keybindings":[
+    "keybindings": [
       {
         "key": "ctrl+alt+x",
         "command": "iiq-dev-accelerator.runContext",
         "when": "editorTextFocus"
-      },{
+      },
+      {
         "key": "ctrl+alt+s",
         "command": "iiq-dev-accelerator.importFile",
         "when": "editorTextFocus"
-      }			
+      }
     ],
     "snippets": [
       {
@@ -141,7 +147,9 @@
     ],
     "grammars": [
       {
-        "injectTo": ["text.xml"],
+        "injectTo": [
+          "text.xml"
+        ],
         "path": "./syntaxes/beanshell-injection.json",
         "scopeName": "text.xml.beanshell"
       }
@@ -161,13 +169,16 @@
           "group": "iiq"
         }
       ]
-    }		
+    }
   },
   "scripts": {
     "lint": "eslint .",
     "pretest": "npm run lint",
     "test": "node ./test/runTest.js"
   },
+  "extensionDependencies": [
+    "vscode.git"
+  ],
   "devDependencies": {
     "@types/glob": "^7.1.1",
     "@types/mocha": "^7.0.2",

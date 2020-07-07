@@ -48,6 +48,10 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
     * If the file as a **TaskDefinition**, the task will be executed
     * If you have selected a snippet of BeanShell code, it'll be evaluated
     * If it's log4j config file, it will be reloaded
+* **Deploy Uncommitted Change**
+  * Allows to import your current uncommited (in git) change. 
+  It includes all modifed and new (staged or unstaged) *.xml files.
+  Deleted files (as expected) will not be deployed.
 * **Code snippets**
   * `rule + Tab` - inserts rule code snippet
 * **Syntax highlighting**

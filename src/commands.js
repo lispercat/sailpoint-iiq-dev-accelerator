@@ -8,6 +8,7 @@ const tmp = require('tmp');
 
 var g_props = {"filePath": null, "props": null, "mtime": null};
 
+
 module.exports = {
   importFile,
   runTask,
@@ -19,7 +20,8 @@ module.exports = {
   getObject,
   deleteObject,
   switchEnv,
-  runContext
+  runContext,
+  deployChange
 }
 
 function parseCurrentXmlFile(){
@@ -161,7 +163,7 @@ async function getSiteConfig(){
       let configParams = await vscode.window.showInputBox({
         ignoreFocusOut: true,
         value: `${url};${username};${password}`,
-        prompt: `Couldn't detect your full configuration from ${environment}.target.properties). Please enter here `, 
+        prompt: `Couldn't detect your full configuration from ${environment}.target.properties. Please enter here `, 
         validateInput: validateConfigInput
       });
       if(configParams === undefined){
@@ -206,27 +208,30 @@ async function postRequest(post_body){
       }
     }
     catch(error){
-      vscode.window.showInformationMessage(`Post request failed with ${error}`);
+      vscode.window.showErrorMessage(`Post request failed with ${error}`);
     }
   })();
   
   return result;
 }
 
-async function importFile(){
-  if(!vscode.window.activeTextEditor || 
-    require('path').extname(vscode.window.activeTextEditor.document.fileName) != '.xml'){
-    vscode.window.showInformationMessage(`Please open an xml document to import`); 
-    return;
+async function importFile(fileContent = null){
+  if(!fileContent){
+    if(!vscode.window.activeTextEditor || 
+      require('path').extname(vscode.window.activeTextEditor.document.fileName) != '.xml'){
+      vscode.window.showInformationMessage(`Please open an xml document to import`); 
+      return;
+    }  
+    var document = vscode.window.activeTextEditor.document;
+    fileContent = document.getText();
   }
-  var document = vscode.window.activeTextEditor.document;
   var props = await loadTargetProps();
-  var fileContent = processFileContent(document.getText(), props);
+  var processedContent = processFileContent(fileContent, props);
   
   var post_body = {
     "workflowArgs": {
       "operation": "Import",
-      "resource": fileContent
+      "resource": processedContent
     }
   };
 
@@ -242,7 +247,7 @@ async function importFile(){
     vscode.window.showInformationMessage(`File import result: ${result["payload"]}`);
   }
   else{
-    vscode.window.showInformationMessage(`Operation failed`);
+    vscode.window.showErrorMessage(`Operation failed`);
   }
 }
 
@@ -300,7 +305,7 @@ async function runTask(taskName = null){
     vscode.window.showInformationMessage(`Launched "${taskName} with result: ${result["payload"]}"`);
   }
   else{
-    vscode.window.showInformationMessage(`Operation failed`);
+    vscode.window.showErrorMessage(`Operation failed`);
   }
 }
 
@@ -397,7 +402,7 @@ async function runTaskWithAttr(){
     vscode.window.showInformationMessage(`Launched "${taskName} with result: ${result["payload"]}"`);
   }
   else{
-    vscode.window.showInformationMessage(`Operation failed`);
+    vscode.window.showErrorMessage(`Operation failed`);
   }
 
 }
@@ -496,7 +501,7 @@ async function runRule(ruleName = null){
     vscode.window.showInformationMessage(`Reslut: ${result["payload"]}`);
   }
   else{
-    vscode.window.showInformationMessage(`Operation failed`);
+    vscode.window.showErrorMessage(`Operation failed`);
   }
 }
 
@@ -535,7 +540,7 @@ async function evalBS(){
     vscode.window.showInformationMessage(`Reslut: ${result["payload"]}`);
   }
   else{
-    vscode.window.showInformationMessage(`Operation failed`);
+    vscode.window.showErrorMessage(`Operation failed`);
   }
 }
 
@@ -564,7 +569,7 @@ async function getLog(){
     await vscode.window.showTextDocument(doc);
   }
   else{
-    vscode.window.showInformationMessage(`Operation failed`);
+    vscode.window.showErrorMessage(`Operation failed`);
   }
 }
 
@@ -624,7 +629,7 @@ async function reloadLog(){
     vscode.window.showInformationMessage(`Refreshing from ${foundLogFileName ? foundLogFileName:'server log file'}: ${result["payload"]}"`);
   }
   else{
-    vscode.window.showInformationMessage(`Operation failed`);
+    vscode.window.showErrorMessage(`Operation failed`);
   }
 }
 
@@ -839,8 +844,57 @@ async function runContext(){
         }
       }
       catch(error){
-        vscode.window.showInformationMessage(`Error parsing ${editor.document.fileName}`);
+        vscode.window.showErrorMessage(`Error parsing ${editor.document.fileName}`);
       }
     }
   }
+}
+
+async function deployChange(){
+  var gitExtension = vscode.extensions.getExtension('vscode.git');
+  if(!gitExtension){
+    vscode.window.showInformationMessage(`Can't get git extension`);
+    return;
+  }
+  const gitExports = await gitExtension.activate();
+  const gitAPI = gitExports.getAPI(1);
+  while(gitAPI.repositories.length === 0){
+    vscode.window.showInformationMessage(`Couldn't find any git repositories`);
+    //await gitAPI.onDidOpenRepository();
+    return;
+  }
+  
+  const rootPath = vscode.workspace.rootPath;
+  const repository = gitAPI.repositories.filter(r => r.rootUri.fsPath.startsWith(rootPath))[0];
+  const unstaged = repository._repository.workingTreeGroup.resourceStates;
+  const staged = repository._repository.indexGroup.resourceStates;
+  const all = unstaged.concat(staged);
+  const filesToDeploy = all.filter(res => res.letter !== "D").
+                          filter(res => require('path').extname(res.resourceUri.fsPath) === '.xml').
+                          map(res => res.resourceUri.fsPath);
+  if(filesToDeploy.length === 0){
+    vscode.window.showInformationMessage(`Currently you don't have any modified or new files to import`);
+    return;
+  }
+ 
+  const msg_files = filesToDeploy.map(f => require("path").basename(f)).join("\n");
+  
+  var environment = await getEnvironment();
+  environment = environment ? `to ${environment}`:"";
+  const isPlural = filesToDeploy.length > 1 ? "s":"";
+  const pick = await vscode.window.showInformationMessage(
+    `You are about to import the following file${isPlural} ${environment}:\n\n${msg_files}`, 
+    { modal: true }, "Yes");
+  if(pick !== "Yes"){
+    return;
+  }
+
+  filesToDeploy.forEach(f => {
+    try {
+      const fileContent = fs.readFileSync(f, {encoding:'utf8', flag:'r'});
+      importFile(fileContent);
+    } catch (error) {
+      vscode.window.showErrorMessage(`File import failed with ${error}`);
+    }
+  });
 }
