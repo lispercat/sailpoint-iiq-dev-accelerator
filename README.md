@@ -48,6 +48,8 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
     * If the file as a **TaskDefinition**, the task will be executed
     * If you have selected a snippet of BeanShell code, it'll be evaluated
     * If it's log4j config file, it will be reloaded
+* **Do Full Deployment**
+  * Does the full deployment for your SSB configuration taking the ignorefiles.properties into account. 
 * **Deploy Uncommitted Change**
   * Allows to import your current uncommited (in git) change. 
   It includes all modifed and new (staged or unstaged) *.xml files.
@@ -62,12 +64,12 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
 * You need to have a running Sailpoint IIQ instance to where you can connect as admin
 * I used IIQ 8.0p1 as a testing environment for the extension, but it should work with 7.3 and lower
 * For the extension I used latest VSCode (version 1.45.1 at the moment) on Windows 10.
-* For better results you may want to use SSD which provides a building framework for multiple IIQ environments/targets
+* For better results you may want to use SSB which provides a building framework for multiple IIQ environments/targets
 
 
 ## Extension Settings
 
-* `iiq.dev-accelerator.environment`: your target environment for SSD build (that you specify for SPTARGET) like sandbox, dev, uat, prod etc
+* `iiq.dev-accelerator.environment`: your target environment for SSB build (that you specify for SPTARGET) like sandbox, dev, uat, prod etc
   * When you run the extension for the **first time** and the environment is not set, you'll be presented an input dialog where you can put it.
 
 To specify the environment you may also add this to your settings.json:

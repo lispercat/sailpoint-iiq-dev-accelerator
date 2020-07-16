@@ -1,4 +1,10 @@
 # Change Log
+## [1.0.5]
+### Added
+ - Do Full Deployment
+
+### Changed
+ - Fixed context menu commands
 
 ## [1.0.4]
 ### Added

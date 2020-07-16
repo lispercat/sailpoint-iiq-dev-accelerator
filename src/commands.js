@@ -21,7 +21,8 @@ module.exports = {
   deleteObject,
   switchEnv,
   runContext,
-  deployChange
+  deployChange,
+  deployAll
 }
 
 function parseCurrentXmlFile(){
@@ -58,15 +59,12 @@ function canUseCachedProp(){
 async function listEnvironments(){
   var result = [];
 
-  var folders  = vscode.workspace.workspaceFolders;
   var searchFileName = '*.target.properties';
-  for(var i = 0; i < folders.length; i++){
-    const uris = await vscode.workspace.findFiles(`**/${searchFileName}`, `${folders[i].uri.fsPath}/**`);
-    uris.forEach((uri) => {
-      let [env, rest] = require('path').basename(uri.fsPath).split(".");
-      result.push(env);
-    });
-  }
+  const uris = await vscode.workspace.findFiles(`**/${searchFileName}`);
+  uris.forEach((uri) => {
+    let [env, rest] = require('path').basename(uri.fsPath).split(".");
+    result.push(env);
+  });
   return result;
 }
 
@@ -100,19 +98,13 @@ async function loadTargetProps(){
   }
 
   var fileName = `${environment}.target.properties`;
-  console.log(`Looking for and loading ${fileName}`);
-
-  var folders  = vscode.workspace.workspaceFolders;
-  for(var i = 0; i < folders.length; i++){
-    const uris = await vscode.workspace.findFiles(`**/${fileName}`, `${folders[i].uri.fsPath}/**`);
-    console.log("now trying to go over files...");
-    uris.forEach((uri) => {
-      console.log(`Trying to read ${uri.fsPath} file`);
-      g_props["filePath"] = uri.fsPath.toString();
-      g_props["mtime"] = fs.statSync(g_props["filePath"]).mtime;
-      g_props["props"] = propertiesReader(g_props["filePath"]);
-    });
-  }
+  const uris = await vscode.workspace.findFiles(`**/${fileName}`);
+  uris.forEach((uri) => {
+    console.log(`Trying to read ${uri.fsPath} file`);
+    g_props["filePath"] = uri.fsPath.toString();
+    g_props["mtime"] = fs.statSync(g_props["filePath"]).mtime;
+    g_props["props"] = propertiesReader(g_props["filePath"]);
+  });
   return g_props["props"];
 }
 
@@ -215,8 +207,56 @@ async function postRequest(post_body){
   return result;
 }
 
+async function importFileList(filesToDeploy){
+  if(!filesToDeploy || filesToDeploy.length < 0){
+    vscode.window.showInformationMessage(`Nothing to deploy, exiting`); 
+    return;
+  }
+  var result = await vscode.window.withProgress({
+    location: vscode.ProgressLocation.Notification,
+    title: "Importing ",
+    cancellable: true
+    }, 
+    async (progress, token) => {
+      token.onCancellationRequested(() => {
+        vscode.window.showInformationMessage(`Operation was cancelled`); 
+      });
+      var incr = 100/filesToDeploy.length;
+      progress.report({ increment: 0 });
+      var result = {"deployed": 0, "failed": 0, "failedFiles": []};
+
+      for(var i = 0; i < filesToDeploy.length; i++){
+        try {
+          var f = filesToDeploy[i];
+          progress.report({ increment: incr, message: `${require("path").basename(f)}` });
+          const fileContent = fs.readFileSync(f, {encoding:'utf8', flag:'r'});
+          var success = await importFile(fileContent);
+          if(success){
+            result["deployed"] += 1;
+          }
+          else{
+            result["failed"] += 1;
+            result["failedFiles"].push(require("path").basename(f));
+          }
+        } catch (error) {
+          result["failed"] += 1;
+          result["failedFiles"].push(require("path").basename(f));
+        }
+      }
+      return result;
+    });
+    if(result["deployed"] == filesToDeploy.length){
+      vscode.window.showInformationMessage(`All files were successfully deployed!`);   
+    }
+    else{
+      var failedFiles = result["failedFiles"].join(",");
+      vscode.window.showWarningMessage(`${result["failed"]} files out of ${filesToDeploy.length} failed to deploy: ${failedFiles}`);
+    }
+}
+
 async function importFile(fileContent = null){
-  if(!fileContent){
+  var withProgress = false;
+  if(!fileContent || typeof fileContent === 'object'){
     if(!vscode.window.activeTextEditor || 
       require('path').extname(vscode.window.activeTextEditor.document.fileName) != '.xml'){
       vscode.window.showInformationMessage(`Please open an xml document to import`); 
@@ -224,6 +264,7 @@ async function importFile(fileContent = null){
     }  
     var document = vscode.window.activeTextEditor.document;
     fileContent = document.getText();
+    withProgress = true;
   }
   var props = await loadTargetProps();
   var processedContent = processFileContent(fileContent, props);
@@ -235,20 +276,31 @@ async function importFile(fileContent = null){
     }
   };
 
-  var result = await vscode.window.withProgress({
-    location: vscode.ProgressLocation.Notification,
-    title: "Importing file...",
-    cancellable: true
-    }, 
-      progress => {return postRequest(JSON.stringify(post_body));
-    });
+  var isSuccess = true;
+  if(withProgress){
+    var result = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: "Importing file...",
+      cancellable: true
+      }, 
+        progress => {return postRequest(JSON.stringify(post_body));
+      });
 
-  if(result["payload"] !== undefined){
-    vscode.window.showInformationMessage(`File import result: ${result["payload"]}`);
+    if(result["payload"] !== undefined){
+      vscode.window.showInformationMessage(`File import result: ${result["payload"]}`);
+    }
+    else{
+      vscode.window.showErrorMessage(`Operation failed`);
+      isSuccess = false;
+    }
   }
   else{
-    vscode.window.showErrorMessage(`Operation failed`);
+    var result = await postRequest(JSON.stringify(post_body));
+    if(!result["payload"]){
+      isSuccess = false;
+    }
   }
+  return isSuccess;
 }
 
 async function getTasksNames(){
@@ -626,7 +678,7 @@ async function reloadLog(){
 
 
   if(result["payload"] !== undefined){
-    vscode.window.showInformationMessage(`Refreshing from ${foundLogFileName ? foundLogFileName:'server log file'}: ${result["payload"]}"`);
+    vscode.window.showInformationMessage(`Refreshing from ${foundLogFileName ? foundLogFileName:'server log file'}: ${result["payload"]}`);
   }
   else{
     vscode.window.showErrorMessage(`Operation failed`);
@@ -869,9 +921,11 @@ async function deployChange(){
   const unstaged = repository._repository.workingTreeGroup.resourceStates;
   const staged = repository._repository.indexGroup.resourceStates;
   const all = unstaged.concat(staged);
-  const filesToDeploy = all.filter(res => res.letter !== "D").
+  //const all = Array.from(new Set([...unstaged, ...staged]));
+  var filesToDeploy = all.filter(res => res.letter !== "D").
                           filter(res => require('path').extname(res.resourceUri.fsPath) === '.xml').
                           map(res => res.resourceUri.fsPath);
+  filesToDeploy = Array.from(new Set(filesToDeploy));
   if(filesToDeploy.length === 0){
     vscode.window.showInformationMessage(`Currently you don't have any modified or new files to import`);
     return;
@@ -889,12 +943,69 @@ async function deployChange(){
     return;
   }
 
-  filesToDeploy.forEach(f => {
-    try {
-      const fileContent = fs.readFileSync(f, {encoding:'utf8', flag:'r'});
-      importFile(fileContent);
-    } catch (error) {
-      vscode.window.showErrorMessage(`File import failed with ${error}`);
+  await importFileList(filesToDeploy);
+}
+async function getWorkflowVersion(){
+  var post_body = 
+  {
+    "workflowArgs":
+    {
+      "operation": "getVersion"
     }
-  });
+  };
+
+  var result = await vscode.window.withProgress({
+    location: vscode.ProgressLocation.Notification,
+    title: "Getting current version...",
+    cancellable: true
+    }, 
+    progress => {return postRequest(JSON.stringify(post_body));
+    });
+
+  if(result["payload"] === undefined){
+    vscode.window.showInformationMessage(`Couldn't connect to the server, exiting`);
+    return "undefined";
+  }
+  return result["payload"];
+}
+
+async function deployAll(){
+  await getSiteConfig();
+
+  if(!g_props['filePath']){
+    vscode.window.showInformationMessage(`Couldn't find ssd environment, exiting`);
+    return;    
+  }
+  var environment = await getEnvironment();
+  var ignoreFiles = null;
+  var ssdBase = require("path").dirname(g_props['filePath']).replace(/\\/g, '/');
+  var ignoreFilesProps = ssdBase + `/${environment}.ignorefiles.properties`;
+  if(!fs.existsSync(ignoreFilesProps)){
+    vscode.window.showInformationMessage(`Couldn't find ${environment}.ignorefiles.properties`);
+  }
+  else{
+    try{
+      ignoreFiles = Object.keys(propertiesReader(ignoreFilesProps).getAllProperties())
+                          .map(p => p.replace(/^custom\//g, `${ssdBase}\/config\/`));
+    }catch(error){}
+  }
+
+  var filesToDeploy = await vscode.workspace.findFiles("**/config/**/*.xml");
+  const origDeployCnt = filesToDeploy.length;
+  filesToDeploy = filesToDeploy.map(f=>f.fsPath.replace(/\\/g, '/')).
+                        filter(f => !ignoreFiles || !ignoreFiles.includes(f));
+  const filtereDeployCnt = filesToDeploy.length;
+  const filteredCnt = origDeployCnt - filtereDeployCnt;
+  const noteAboutFiltered = filteredCnt > 0 ? `\n(${filteredCnt} files were ignored based on ${environment}.ignorefiles.properties):\n`:":\n";
+  const msg_files = filesToDeploy.map(f => require("path").basename(f)).join("\n");
+
+  const pick = await vscode.window.showInformationMessage(
+    `You are about to import the following ${filesToDeploy.length} files to ${environment} ${noteAboutFiltered}\n${msg_files}`, 
+    { modal: true }, "Yes");
+  if(pick !== "Yes"){
+    return;
+  }
+
+  await importFileList(filesToDeploy);
+
 }
