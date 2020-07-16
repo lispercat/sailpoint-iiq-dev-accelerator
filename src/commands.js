@@ -990,7 +990,7 @@ async function deployAll(){
     }catch(error){}
   }
 
-  var filesToDeploy = await vscode.workspace.findFiles("**/config/**/*.xml");
+  var filesToDeploy = await vscode.workspace.findFiles("**/config/**/*.xml", "**/build/extract/**/*.xml");
   const origDeployCnt = filesToDeploy.length;
   filesToDeploy = filesToDeploy.map(f=>f.fsPath.replace(/\\/g, '/')).
                         filter(f => !ignoreFiles || !ignoreFiles.includes(f));
