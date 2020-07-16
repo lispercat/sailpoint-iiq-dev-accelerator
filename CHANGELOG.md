@@ -1,4 +1,8 @@
 # Change Log
+## [1.0.7]
+### Changed
+ - Fixed full deployment again. Now it's just deploying files from under build/extract/WEB-INF/config/custom. Let SSB take care of selecting the right files, we don't need to duplicate the SSB job
+
 ## [1.0.6]
 ### Changed
  - Fixed full deployment. Now it will filter out /build/extract/ xml files

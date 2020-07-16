@@ -3,7 +3,7 @@
   "displayName": "Sailpoint IIQ Development Accelerator",
   "description": "Provides commands to facilitate/accelerate coding/interacting with remote Sailpoint IIQ server",
   "icon": "images/icon.png",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "engines": {
     "vscode": "^1.45.0"
   },
@@ -45,7 +45,7 @@
     "onCommand:iiq-dev-accelerator.switchEnv",
     "onCommand:iiq-dev-accelerator.runContext",
     "onCommand:iiq-dev-accelerator.deployChange",
-    "onCommand:iiq-dev-accelerator.deployAll"
+    "onCommand:iiq-dev-accelerator.deployCustomBuild"
   ],
   "main": "./src/extension.js",
   "contributes": {
@@ -128,8 +128,8 @@
         "title": "iiq: Deploy Uncommitted Change"
       },
       {
-        "command": "iiq-dev-accelerator.deployAll",
-        "title": "iiq: Do Full Deployment"
+        "command": "iiq-dev-accelerator.deployCustomBuild",
+        "title": "iiq: Deploy Custom Build"
       }
     ],
     "keybindings": [

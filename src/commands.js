@@ -22,13 +22,15 @@ module.exports = {
   switchEnv,
   runContext,
   deployChange,
-  deployAll
+  deployCustomBuild
 }
 
-function parseCurrentXmlFile(){
+function parseCurrentXmlFile(text = null){
   const xmlParser = new xml2js.Parser({ attrkey: "ATTR" });
 
-  var text = vscode.window.activeTextEditor.document.getText();
+  if(!text){
+    text = vscode.window.activeTextEditor.document.getText();
+  }
   var parsedXml = null;
   xmlParser.parseString(text, function(error, result) {
     if(error === null) {
@@ -212,6 +214,7 @@ async function importFileList(filesToDeploy){
     vscode.window.showInformationMessage(`Nothing to deploy, exiting`); 
     return;
   }
+  var wasCancelled = false;
   var result = await vscode.window.withProgress({
     location: vscode.ProgressLocation.Notification,
     title: "Importing ",
@@ -219,7 +222,7 @@ async function importFileList(filesToDeploy){
     }, 
     async (progress, token) => {
       token.onCancellationRequested(() => {
-        vscode.window.showInformationMessage(`Operation was cancelled`); 
+        //vscode.window.showInformationMessage(`Operation was cancelled`); 
       });
       var incr = 100/filesToDeploy.length;
       progress.report({ increment: 0 });
@@ -231,6 +234,10 @@ async function importFileList(filesToDeploy){
           progress.report({ increment: incr, message: `${require("path").basename(f)}` });
           const fileContent = fs.readFileSync(f, {encoding:'utf8', flag:'r'});
           var success = await importFile(fileContent);
+          if(token.isCancellationRequested){
+            wasCancelled = true;
+            break;
+          }
           if(success){
             result["deployed"] += 1;
           }
@@ -240,18 +247,25 @@ async function importFileList(filesToDeploy){
           }
         } catch (error) {
           result["failed"] += 1;
-          result["failedFiles"].push(require("path").basename(f));
+          result["failedFiles"].push(require("path").basename(filesToDeploy[i]));
         }
       }
       return result;
     });
-    if(result["deployed"] == filesToDeploy.length){
-      vscode.window.showInformationMessage(`All files were successfully deployed!`);   
+
+  if(result["deployed"] == filesToDeploy.length){
+    vscode.window.showInformationMessage(`All files were successfully deployed!`);   
+  }
+  else{
+    if(wasCancelled){
+      vscode.window.showWarningMessage(`Operation was cancelled. ${result["deployed"]} out of ${filesToDeploy.length} files were deployed`);
+    }else{
+      var failedFiles = result["failedFiles"].join("\n");
+      await vscode.window.showInformationMessage(
+        `${result["failed"]} files failed to deploy: \n\n${failedFiles}`, 
+        { modal: true });
     }
-    else{
-      var failedFiles = result["failedFiles"].join(",");
-      vscode.window.showWarningMessage(`${result["failed"]} files out of ${filesToDeploy.length} failed to deploy: ${failedFiles}`);
-    }
+  }
 }
 
 async function importFile(fileContent = null){
@@ -969,43 +983,46 @@ async function getWorkflowVersion(){
   return result["payload"];
 }
 
-async function deployAll(){
-  await getSiteConfig();
-
-  if(!g_props['filePath']){
-    vscode.window.showInformationMessage(`Couldn't find ssd environment, exiting`);
-    return;    
-  }
-  var environment = await getEnvironment();
-  var ignoreFiles = null;
-  var ssdBase = require("path").dirname(g_props['filePath']).replace(/\\/g, '/');
-  var ignoreFilesProps = ssdBase + `/${environment}.ignorefiles.properties`;
-  if(!fs.existsSync(ignoreFilesProps)){
-    vscode.window.showInformationMessage(`Couldn't find ${environment}.ignorefiles.properties`);
-  }
-  else{
-    try{
-      ignoreFiles = Object.keys(propertiesReader(ignoreFilesProps).getAllProperties())
-                          .map(p => p.replace(/^custom\//g, `${ssdBase}\/config\/`));
-    }catch(error){}
+async function deployCustomBuild(){
+  const env = await getEnvironment();
+  if(!env){
+    vscode.window.showInformationMessage(`Can't deploy without knowing the SSB environment`);
+    return;
   }
 
-  var filesToDeploy = await vscode.workspace.findFiles("**/config/**/*.xml", "**/build/extract/**/*.xml");
-  const origDeployCnt = filesToDeploy.length;
-  filesToDeploy = filesToDeploy.map(f=>f.fsPath.replace(/\\/g, '/')).
-                        filter(f => !ignoreFiles || !ignoreFiles.includes(f));
-  const filtereDeployCnt = filesToDeploy.length;
-  const filteredCnt = origDeployCnt - filtereDeployCnt;
-  const noteAboutFiltered = filteredCnt > 0 ? `\n(${filteredCnt} files were ignored based on ${environment}.ignorefiles.properties):\n`:":\n";
+  const spInitCustom = await vscode.workspace.findFiles("**/build/extract/WEB-INF/config/sp.init-custom.xml");
+  if(1 != spInitCustom.length){
+    vscode.window.showInformationMessage(`Couldn't find /build/extract/WEB-INF/config/sp.init-custom.xml. Please run SSB build`);
+    return;
+  }
+  const spInitCustomPath = spInitCustom[0].fsPath.replace(/\\/g, "/");
+  const deployBaseDir = require("path").dirname(spInitCustomPath);
+  const spInitCustomContent = fs.readFileSync(spInitCustomPath, {encoding:'utf8', flag:'r'});
+  const parsedXml = parseCurrentXmlFile(spInitCustomContent);
+  const filesToDeploy = parsedXml.sailpoint.ImportAction
+                            .reduce(function(arr, obj){
+                              if("include" === obj.ATTR.name){
+                                arr.push(obj.ATTR.value);
+                              }
+                              return arr;
+                            }, [])
+                            .map(f=>deployBaseDir + "/" + f);
+  if(!filesToDeploy){
+    vscode.window.showInformationMessage(`Couldn't find files in sp.init-custom.xml`);
+    return;
+  }
+  if(0 == filesToDeploy.length){
+    vscode.window.showInformationMessage(`Couldn't find files under build/extract folder. Please run SSB build`);
+    return;
+  }
   const msg_files = filesToDeploy.map(f => require("path").basename(f)).join("\n");
 
   const pick = await vscode.window.showInformationMessage(
-    `You are about to import the following ${filesToDeploy.length} files to ${environment} ${noteAboutFiltered}\n${msg_files}`, 
+    `You are about to import the following ${filesToDeploy.length} files to ${env} \n\n${msg_files}`, 
     { modal: true }, "Yes");
   if(pick !== "Yes"){
     return;
   }
 
   await importFileList(filesToDeploy);
-
 }
