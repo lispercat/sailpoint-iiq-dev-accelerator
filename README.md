@@ -49,8 +49,8 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
     * If you have selected a snippet of BeanShell code, it'll be evaluated
     * If it's log4j config file, it will be reloaded
 * **Deploy Custom Build**
-  * Does the full deployment for your SSB build. Make sure you created the build by executing the build command and your build is located under build/extract.
-  The command takes all xml files specifed by sp.init-custom.xml under build/extract/WEB-INF/config and deploys them to your target environment
+  * Does the full deployment for your SSB build. You'll be prompted with an option to build/rebuild your deployment.
+  The deployment consists of files specifed by sp.init-custom.xml under build/extract/WEB-INF/config.
 * **Deploy Uncommitted Change**
   * Allows to import your current uncommited (in git) change. 
   It includes all modifed and new (staged or unstaged) *.xml files.

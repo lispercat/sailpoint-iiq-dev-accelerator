@@ -5,6 +5,8 @@ const fs = require('fs');
 const propertiesReader = require('properties-reader');
 const xml2js = require('xml2js');
 const tmp = require('tmp');
+const { isInterfaceDeclaration } = require('typescript');
+const { URL } = require('url');
 
 var g_props = {"filePath": null, "props": null, "mtime": null};
 
@@ -181,16 +183,24 @@ async function postRequest(post_body){
   }
 
   let headers = new fetch.Headers();
+  //process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0;
+  
   headers.append('Content-Type', 'application/json');
   headers.append('Authorization', 'Basic ' + base64.encode(username + ":" + password));
-  
+  const parsedUrl = new URL(url);
+  const https = require("https");
+  const http = require("http");
+  const agent = parsedUrl.protocol === 'https' ? 
+                new https.Agent({rejectUnauthorized: false}):new http.Agent();
+
   await (async () => {
     try {
       let full_url = `${url.replace(/\/$/g, "")}/rest/workflows/IIQDevAcceleratorWF/launch`;
       const response = await fetch(full_url, {
         method: 'POST', 
         body: post_body,
-        headers}
+        headers, 
+        agent: agent}
       );
       const json = await response.json();
       const payload = await json.attributes.payload;
@@ -297,7 +307,8 @@ async function importFile(fileContent = null){
       title: "Importing file...",
       cancellable: true
       }, 
-        progress => {return postRequest(JSON.stringify(post_body));
+      progress => {
+        return postRequest(JSON.stringify(post_body));
       });
 
     if(result["payload"] !== undefined){
@@ -331,7 +342,8 @@ async function getTasksNames(){
     title: "Getting task names...",
     cancellable: true
     }, 
-      progress => {return postRequest(JSON.stringify(post_body));
+      progress => {
+        return postRequest(JSON.stringify(post_body));
     });
 
   return result["payload"];
@@ -363,7 +375,8 @@ async function runTask(taskName = null){
     title: "Running task...",
     cancellable: true
     }, 
-      progress => {return postRequest(JSON.stringify(post_body));
+    progress => {
+      return postRequest(JSON.stringify(post_body));
     });
 
 
@@ -460,9 +473,9 @@ async function runTaskWithAttr(){
     title: "Running task...",
     cancellable: true
     }, 
-      progress => {return postRequest(JSON.stringify(post_body));
+    progress => {
+      return postRequest(JSON.stringify(post_body));
     });
-
 
   if(result["payload"] !== undefined){
     vscode.window.showInformationMessage(`Launched "${taskName} with result: ${result["payload"]}"`);
@@ -490,7 +503,8 @@ async function getRuleNames(ruleName = null){
     title: `Retrieving information for ${ruleName}`,
     cancellable: true
     }, 
-      progress => {return postRequest(JSON.stringify(post_body));
+    progress => {
+      return postRequest(JSON.stringify(post_body));
     });
 
   return result["payload"];
@@ -560,7 +574,8 @@ async function runRule(ruleName = null){
     title: "Running rule is in progress...",
     cancellable: true
   }, 
-  progress => {return postRequest(JSON.stringify(post_body));
+  progress => {
+    return postRequest(JSON.stringify(post_body));
   });
 
   if(result["payload"] !== undefined){
@@ -599,7 +614,8 @@ async function evalBS(){
     title: "Bean Shell script is being evaluated...",
     cancellable: true
     }, 
-    progress => {return postRequest(JSON.stringify(post_body));
+    progress => {
+      return postRequest(JSON.stringify(post_body));
     });
 
   if(result["payload"] !== undefined){
@@ -624,7 +640,8 @@ async function getLog(){
     title: "Retrieving logging configuration...",
     cancellable: true
     }, 
-    progress => {return postRequest(JSON.stringify(post_body));
+    progress => {
+      return postRequest(JSON.stringify(post_body));
     });
 
   if(result["payload"] !== undefined){
@@ -687,7 +704,8 @@ async function reloadLog(){
     title: `Reloading Logging Config from ${foundLogFileName ? foundLogFileName:'server log file'}`,
     cancellable: true
     }, 
-      progress => {return postRequest(JSON.stringify(post_body));
+    progress => {
+      return postRequest(JSON.stringify(post_body));
     });
 
 
@@ -713,7 +731,8 @@ async function getClasses(){
     title: "Getting classes ...",
     cancellable: true
     }, 
-      progress => {return postRequest(JSON.stringify(post_body));
+    progress => {
+      return postRequest(JSON.stringify(post_body));
     });
 
   return result["payload"];
@@ -734,7 +753,8 @@ async function getClassObjects(cls){
     title: "Getting class objects ...",
     cancellable: true
     }, 
-      progress => {return postRequest(JSON.stringify(post_body));
+    progress => {
+      return postRequest(JSON.stringify(post_body));
     });
 
   return result["payload"];
@@ -757,7 +777,8 @@ async function searchObject(cls, objName){
     title: `Getting the object for ${objName} ...`,
     cancellable: true
     }, 
-      progress => {return postRequest(JSON.stringify(post_body));
+    progress => {
+      return postRequest(JSON.stringify(post_body));
     });
 
   return result["payload"];
@@ -811,7 +832,8 @@ async function deleteObjectInternal(cls, objName){
     title: `Deleting object ${objName} ...`,
     cancellable: true
     }, 
-      progress => {return postRequest(JSON.stringify(post_body));
+    progress => {
+      return postRequest(JSON.stringify(post_body));
     });
 
   return result["payload"];
@@ -973,7 +995,8 @@ async function getWorkflowVersion(){
     title: "Getting current version...",
     cancellable: true
     }, 
-    progress => {return postRequest(JSON.stringify(post_body));
+    progress => {
+      return postRequest(JSON.stringify(post_body));
     });
 
   if(result["payload"] === undefined){
@@ -983,11 +1006,56 @@ async function getWorkflowVersion(){
   return result["payload"];
 }
 
+async function buildDeployment(environment){
+  const buildProps = await vscode.workspace.findFiles("**/build.properties");
+  if(1 != buildProps.length){
+    vscode.window.showWarningMessage(`Couldn't find build.properties.`);
+    return false;
+  }
+  const buildBaseDir = require("path").dirname(buildProps[0].fsPath);
+  const util = require('util');
+  const exec = util.promisify(require('child_process').exec);
+  
+  const buildCmd = "build clean main";
+  const result = await vscode.window.withProgress({
+    location: vscode.ProgressLocation.Notification,
+    title: `Running SSB "${buildCmd}" for ${environment}`,
+    cancellable: false
+    }, 
+    async (progress) => {
+      const {stdout, stderr} = await exec(`${buildCmd}`, 
+                                     {cwd: `${buildBaseDir}`, 
+                                      env: {"SPTARGET": environment}}); 
+      if (stderr) {
+        vscode.window.showWarningMessage(`Build failed. ${stderr}`);
+        return false;
+      }
+      return true;
+    });
+
+  return result;
+}
+
 async function deployCustomBuild(){
   const env = await getEnvironment();
   if(!env){
     vscode.window.showInformationMessage(`Can't deploy without knowing the SSB environment`);
     return;
+  }
+
+  const pick1 = await vscode.window.showInformationMessage(
+    `Would you like to run SSB build for ${env}?\n(In case you already have the build, please say "No")`, 
+    { modal: true }, "Yes", "No");
+  if(!pick1){
+    vscode.window.showInformationMessage(`Deployment was cancelled`);
+    return;
+  }
+  if(pick1 === 'Yes'){
+    const isSuccess = await buildDeployment(env);
+    if(!isSuccess){
+      vscode.window.showInformationMessage(`Something went wrong during the build, please fix it and try again`);
+      return;
+    }
   }
 
   const spInitCustom = await vscode.workspace.findFiles("**/build/extract/WEB-INF/config/sp.init-custom.xml");
@@ -1017,10 +1085,10 @@ async function deployCustomBuild(){
   }
   const msg_files = filesToDeploy.map(f => require("path").basename(f)).join("\n");
 
-  const pick = await vscode.window.showInformationMessage(
+  const pick2 = await vscode.window.showInformationMessage(
     `You are about to import the following ${filesToDeploy.length} files to ${env} \n\n${msg_files}`, 
     { modal: true }, "Yes");
-  if(pick !== "Yes"){
+  if(pick2 !== "Yes"){
     return;
   }
 
