@@ -5,7 +5,6 @@ const fs = require('fs');
 const propertiesReader = require('properties-reader');
 const xml2js = require('xml2js');
 const tmp = require('tmp');
-const { isInterfaceDeclaration } = require('typescript');
 const { URL } = require('url');
 
 var g_props = {"filePath": null, "props": null, "mtime": null};
@@ -190,36 +189,34 @@ async function postRequest(post_body){
   const parsedUrl = new URL(url);
   const https = require("https");
   const http = require("http");
-  const agent = parsedUrl.protocol === 'https' ? 
-                new https.Agent({rejectUnauthorized: false}):new http.Agent();
+  const agent = parsedUrl.protocol === 'https:' ? 
+                new https.Agent({rejectUnauthorized: false, port: parsedUrl.port}):new http.Agent();
 
-  await (async () => {
-    try {
-      let full_url = `${url.replace(/\/$/g, "")}/rest/workflows/IIQDevAcceleratorWF/launch`;
-      const response = await fetch(full_url, {
-        method: 'POST', 
-        body: post_body,
-        headers, 
-        agent: agent}
-      );
-      const json = await response.json();
-      const payload = await json.attributes.payload;
-      if(response.ok){
-        result["payload"] = payload;
-      }
-      else{
-        result["fail"] = response.status;
-      }
+  try {
+    let full_url = `${url.replace(/\/$/g, "")}/rest/workflows/IIQDevAcceleratorWF/launch`;
+    const response = await fetch(full_url, {
+      method: 'POST', 
+      body: post_body,
+      headers, 
+      agent: agent}
+    );
+    const json = await response.json();
+    const payload = await json.attributes.payload;
+    if(response.ok){
+      result["payload"] = payload;
     }
-    catch(error){
-      vscode.window.showErrorMessage(`Post request failed with ${error}`);
+    else{
+      result["fail"] = response.status;
     }
-  })();
+  }
+  catch(error){
+    vscode.window.showErrorMessage(`Post request failed with ${error}`);
+  }
   
   return result;
 }
 
-async function importFileList(filesToDeploy){
+async function importFileList(filesToDeploy, resolveTokens = true){
   if(!filesToDeploy || filesToDeploy.length < 0){
     vscode.window.showInformationMessage(`Nothing to deploy, exiting`); 
     return;
@@ -243,7 +240,7 @@ async function importFileList(filesToDeploy){
           var f = filesToDeploy[i];
           progress.report({ increment: incr, message: `${require("path").basename(f)}` });
           const fileContent = fs.readFileSync(f, {encoding:'utf8', flag:'r'});
-          var success = await importFile(fileContent);
+          var success = await importFile(fileContent, resolveTokens);
           if(token.isCancellationRequested){
             wasCancelled = true;
             break;
@@ -278,7 +275,7 @@ async function importFileList(filesToDeploy){
   }
 }
 
-async function importFile(fileContent = null){
+async function importFile(fileContent = null, resolveTokens = true){
   var withProgress = false;
   if(!fileContent || typeof fileContent === 'object'){
     if(!vscode.window.activeTextEditor || 
@@ -290,13 +287,14 @@ async function importFile(fileContent = null){
     fileContent = document.getText();
     withProgress = true;
   }
-  var props = await loadTargetProps();
-  var processedContent = processFileContent(fileContent, props);
-  
+  if(resolveTokens){
+    var props = await loadTargetProps();
+    fileContent = processFileContent(fileContent, props);
+  }
   var post_body = {
     "workflowArgs": {
       "operation": "Import",
-      "resource": processedContent
+      "resource": fileContent
     }
   };
 
@@ -1052,10 +1050,10 @@ async function deployCustomBuild(){
   }
   if(pick1 === 'Yes'){
     const isSuccess = await buildDeployment(env);
-    if(!isSuccess){
-      vscode.window.showInformationMessage(`Something went wrong during the build, please fix it and try again`);
-      return;
-    }
+    // if(!isSuccess){
+    //   vscode.window.showInformationMessage(`Something went wrong during the build, please fix it and try again`);
+    //   return;
+    // }
   }
 
   const spInitCustom = await vscode.workspace.findFiles("**/build/extract/WEB-INF/config/sp.init-custom.xml");
@@ -1092,5 +1090,5 @@ async function deployCustomBuild(){
     return;
   }
 
-  await importFileList(filesToDeploy);
+  await importFileList(filesToDeploy, false);
 }

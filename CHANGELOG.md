@@ -1,4 +1,16 @@
 # Change Log
+## [1.0.13]
+### Changed
+ - Some minor updates to custom deploy (warnings during SSB build will not stop the deployment)
+
+## [1.0.12]
+### Changed
+ - Fixed https agent
+
+## [1.0.11]
+### Changed
+ - Removed typescript reference
+
 ## [1.0.8]
 ### Changed
  - Added option to run SSB build for custom deployment
