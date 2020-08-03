@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE Workflow PUBLIC "sailpoint.dtd" "sailpoint.dtd">
-<Workflow explicitTransitions="true" name="IIQDevAcceleratorWF">
+<Workflow explicitTransitions="true" name="IIQDevAcceleratorWF2">
   <Variable name="transient" initializer="true"/>
   <Variable name="payload" type="java.lang.Object" output="true"/>
   <Step icon="Start" name="Start">
@@ -11,7 +11,6 @@
         iidDevAccelLogger.debug("Workflow IIQDevAcceleratorWF started for operation: " + operation); 
       </Source>
     </Script>
-    <Transition to="Get Version" when='"getVersion".equals(operation);'/>
     <Transition to="Import" when='"Import".equals(operation);'/>
     <Transition to="Get Classes" when='"getClasses".equals(operation);'/>
     <Transition to="Get Class Objects" when='"getClassObjects".equals(operation);'/>
@@ -25,17 +24,6 @@
     <Transition to="Get Log File" when='"getLog".equals(operation);'/>
     <Transition to="Reload Log File" when='"reloadLog".equals(operation);'/>
     <Transition to="Invalid operation"/>
-  </Step>
-  <Step icon="Default" name="Get Version" resultVariable="payload">
-    <Script>
-      <Source>
-        import org.apache.log4j.Logger;
-        Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
-        iidDevAccelLogger.debug("GetVersion is called");         
-        return "1.0.14";
-      </Source>
-    </Script>
-    <Transition to="Stop"/>
   </Step>
   <Step icon="Provision" name="Import" resultVariable="payload">
     <Script>
@@ -446,7 +434,7 @@
         import org.apache.log4j.Logger;
         Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
         iidDevAccelLogger.debug("Not supported operation: " + operation);         
-        return operation + " not supported";
+        return "fail";
       </Source>
     </Script>
     <Transition to="Stop"/>

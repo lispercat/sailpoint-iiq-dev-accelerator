@@ -8,9 +8,12 @@ const tmp = require('tmp');
 const { URL } = require('url');
 
 var g_props = {"filePath": null, "props": null, "mtime": null};
-
+var g_statusBarEnvItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+var g_IIQClasses = null;
 
 module.exports = {
+  getStatusBar,
+  updateStatusBar,
   importFile,
   runTask,
   runTaskWithAttr,
@@ -23,7 +26,25 @@ module.exports = {
   switchEnv,
   runContext,
   deployChange,
-  deployCustomBuild
+  deployCustomBuild,
+  compareLocalWithDeployed
+}
+
+function getStatusBar(){
+  return g_statusBarEnvItem;
+}
+
+async function updateStatusBar(currEnv = null){
+  if(!currEnv){
+    currEnv = await vscode.workspace.getConfiguration('iiq-dev-accelerator').get('environment');
+  }
+  
+  g_statusBarEnvItem.text = "IIQ: " + currEnv;
+  if(currEnv){
+    g_statusBarEnvItem.show();
+  }else{
+    g_statusBarEnvItem.hide();
+  }
 }
 
 function parseCurrentXmlFile(text = null){
@@ -87,7 +108,7 @@ async function getEnvironment(){
           update('environment', environment, true);
     environment = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('environment');
   }
-  
+  await updateStatusBar(environment);
   return environment;
 }
 
@@ -190,7 +211,7 @@ async function postRequest(post_body){
   const https = require("https");
   const http = require("http");
   const agent = parsedUrl.protocol === 'https:' ? 
-                new https.Agent({rejectUnauthorized: false, port: parsedUrl.port}):new http.Agent();
+                new https.Agent({rejectUnauthorized: false}):new http.Agent();
 
   try {
     let full_url = `${url.replace(/\/$/g, "")}/rest/workflows/IIQDevAcceleratorWF/launch`;
@@ -716,6 +737,10 @@ async function reloadLog(){
 }
 
 async function getClasses(){
+  if(g_IIQClasses){
+    return g_IIQClasses;
+  }
+
   var post_body = 
   {
     "workflowArgs":
@@ -732,8 +757,9 @@ async function getClasses(){
     progress => {
       return postRequest(JSON.stringify(post_body));
     });
-
-  return result["payload"];
+  
+  g_IIQClasses = result["payload"];
+  return g_IIQClasses;
 }
 
 async function getClassObjects(cls){
@@ -884,8 +910,8 @@ async function switchEnv(){
     return environment;
   }
 
-  vscode.workspace.getConfiguration('iiq-dev-accelerator').update('environment', environment, true);
-  environment = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('environment');
+  await vscode.workspace.getConfiguration('iiq-dev-accelerator').update('environment', environment, true);
+  environment = await vscode.workspace.getConfiguration('iiq-dev-accelerator').get('environment');
 
   //reset old environment's settings
   g_props["props"] = null;
@@ -897,6 +923,8 @@ async function switchEnv(){
     vscode.workspace.getConfiguration('iiq-dev-accelerator').update('username', "", true);
     vscode.workspace.getConfiguration('iiq-dev-accelerator').update('password', "", true);
   }
+
+  await updateStatusBar();
   return environment;
 }
 
@@ -1091,4 +1119,47 @@ async function deployCustomBuild(){
   }
 
   await importFileList(filesToDeploy, false);
+}
+
+async function compareLocalWithDeployed(){
+  var editor = vscode.window.activeTextEditor;
+  if(!editor || !editor.document || 
+    require('path').extname(editor.document.fileName) != '.xml')  {
+    vscode.window.showWarningMessage(`Please make sure that your currently open document is a of xml type`); 
+    return;
+  }  
+
+  var classes = await getClasses();
+  if(!classes){
+    vscode.window.showInformationMessage("No supported classes were found, exiting");
+    return;
+  }
+  
+  const parsedXml = parseCurrentXmlFile();
+  const keys = Object.keys(parsedXml);
+  if(!keys || keys.length == 0 || keys.length > 1){
+    vscode.window.showWarningMessage(`An IIQ object should have a well formed xml with one root element`); 
+    return;
+  }
+
+  const objectClass = keys[0];
+  if(!classes.includes(objectClass)){
+    vscode.window.showWarningMessage(`${objectClass} is not a valid IIQ class. Please make sure your xml contains only one object`); 
+    return;
+  }
+
+  const objectName = parsedXml[objectClass].ATTR.name;
+  var xml = await searchObject(objectClass, objectName);
+  if(!xml || xml === 'fail'){
+    vscode.window.showInformationMessage("Couldn't find the deployed object in your target environment");
+    return;
+  }
+  const tempFile = tmp.fileSync({ prefix: `${objectClass}-${objectName}`, postfix: '.xml' });
+  fs.writeFileSync(tempFile.name, xml);
+ 
+  const currObjPath = vscode.Uri.file(editor.document.fileName);
+  const deployedObjPath = vscode.Uri.file(tempFile.name);
+  
+  const title = "Local vs deployed " + objectClass + ":'" + objectName + "'";
+  await vscode.commands.executeCommand("vscode.diff", currObjPath, deployedObjPath, title);
 }

@@ -11,7 +11,7 @@ module.exports = {
 /**
  * @param {vscode.Extensionctx} ctx
  */
-function activate(ctx) {
+async function activate(ctx) {
   console.log('Extension "iiq-dev-accelerator" is now active');
   
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.importFile', cmds.importFile));
@@ -27,6 +27,12 @@ function activate(ctx) {
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.runContext', cmds.runContext));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.deployChange', cmds.deployChange));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.deployCustomBuild', cmds.deployCustomBuild));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.compareLocalWithDeployed', cmds.compareLocalWithDeployed));
+
+  let statusBarEnvItem = cmds.getStatusBar();
+  statusBarEnvItem.command = 'iiq-dev-accelerator.switchEnv';
+  ctx.subscriptions.push(statusBarEnvItem);
+  await cmds.updateStatusBar();
 }
 
 function deactivate() {}

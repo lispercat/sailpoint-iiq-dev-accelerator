@@ -1,4 +1,9 @@
 # Change Log
+## [1.0.14]
+### Added
+ - Compare Local object with Deployed
+ - IIQ environment display/change from the status bar
+
 ## [1.0.13]
 ### Changed
  - Some minor updates to custom deploy (warnings during SSB build will not stop the deployment)
