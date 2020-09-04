@@ -1,4 +1,8 @@
 # Change Log
+## [1.0.15]
+### Changed
+ - Detect if some tokens couldn't be substituted and erroring out on that
+
 ## [1.0.14]
 ### Added
  - Compare Local object with Deployed

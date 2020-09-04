@@ -133,15 +133,29 @@ async function loadTargetProps(){
 }
 
 function processFileContent(fileContent, props){
+  var errors = {"processFileErrors" : []};
   if(props){
     var found = fileContent.match(/%%\w+%%/g);
     if(found){
       found.forEach((m) => {
-        fileContent = fileContent.replace(m, props.get(m));
+        if(props.get(m)){
+          fileContent = fileContent.replace(m, props.get(m));
+        }
+      });
+    }
+
+    //second iteration, looking for missed tokens
+    found = fileContent.match(/%%\w+%%/g);
+    if(found){
+      found.forEach((m) => {
+        if(!errors["processFileErrors"].includes(m)){
+          errors["processFileErrors"].push(m);
+        }
       });
     }
   }
-  return fileContent;
+  
+  return [fileContent, errors];
 }
 
 function validateConfigInput(text){
@@ -254,14 +268,14 @@ async function importFileList(filesToDeploy, resolveTokens = true){
       });
       var incr = 100/filesToDeploy.length;
       progress.report({ increment: 0 });
-      var result = {"deployed": 0, "failed": 0, "failedFiles": []};
+      var result = {"deployed": 0, "failed": 0, "failedFiles": {}};
 
       for(var i = 0; i < filesToDeploy.length; i++){
         try {
           var f = filesToDeploy[i];
           progress.report({ increment: incr, message: `${require("path").basename(f)}` });
           const fileContent = fs.readFileSync(f, {encoding:'utf8', flag:'r'});
-          var success = await importFile(fileContent, resolveTokens);
+          let [success, processFileErrors] = await importFile(fileContent, resolveTokens);
           if(token.isCancellationRequested){
             wasCancelled = true;
             break;
@@ -271,11 +285,11 @@ async function importFileList(filesToDeploy, resolveTokens = true){
           }
           else{
             result["failed"] += 1;
-            result["failedFiles"].push(require("path").basename(f));
+            result["failedFiles"][require("path").basename(f)] = processFileErrors;
           }
         } catch (error) {
           result["failed"] += 1;
-          result["failedFiles"].push(require("path").basename(filesToDeploy[i]));
+          result["failedFiles"][require("path").basename(filesToDeploy[i])] = {};
         }
       }
       return result;
@@ -288,7 +302,10 @@ async function importFileList(filesToDeploy, resolveTokens = true){
     if(wasCancelled){
       vscode.window.showWarningMessage(`Operation was cancelled. ${result["deployed"]} out of ${filesToDeploy.length} files were deployed`);
     }else{
-      var failedFiles = result["failedFiles"].join("\n");
+      var failedFiles = Object.keys(result["failedFiles"]).
+        map(key => key + (result["failedFiles"][key]["processFileErrors"].length > 0 ? 
+        `\n - Following tokes couldn't be substituted: 
+          ${result["failedFiles"][key]["processFileErrors"]}`:"")).join("\n");
       await vscode.window.showInformationMessage(
         `${result["failed"]} files failed to deploy: \n\n${failedFiles}`, 
         { modal: true });
@@ -298,11 +315,12 @@ async function importFileList(filesToDeploy, resolveTokens = true){
 
 async function importFile(fileContent = null, resolveTokens = true){
   var withProgress = false;
+  var processFileErrors = {};
   if(!fileContent || typeof fileContent === 'object'){
     if(!vscode.window.activeTextEditor || 
       require('path').extname(vscode.window.activeTextEditor.document.fileName) != '.xml'){
       vscode.window.showInformationMessage(`Please open an xml document to import`); 
-      return;
+      return [false, processFileErrors];
     }  
     var document = vscode.window.activeTextEditor.document;
     fileContent = document.getText();
@@ -310,7 +328,17 @@ async function importFile(fileContent = null, resolveTokens = true){
   }
   if(resolveTokens){
     var props = await loadTargetProps();
-    fileContent = processFileContent(fileContent, props);
+    [fileContent, processFileErrors] = processFileContent(fileContent, props);
+  }
+
+  if(processFileErrors["processFileErrors"].length > 0){
+    if(withProgress){
+      vscode.window.showErrorMessage(`Following tokens couldn't be substituted: ${processFileErrors["processFileErrors"]}`);
+      return [false, processFileErrors];
+    }
+    else{
+      return [false, processFileErrors];
+    }
   }
   var post_body = {
     "workflowArgs": {
@@ -344,7 +372,7 @@ async function importFile(fileContent = null, resolveTokens = true){
       isSuccess = false;
     }
   }
-  return isSuccess;
+  return [isSuccess, processFileErrors];
 }
 
 async function getTasksNames(){
