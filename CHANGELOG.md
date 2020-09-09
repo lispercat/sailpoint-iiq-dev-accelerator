@@ -1,4 +1,8 @@
 # Change Log
+## [1.0.16]
+### Added
+ - The ability to deploy currently open files
+
 ## [1.0.15]
 ### Changed
  - Detect if some tokens couldn't be substituted and erroring out on that

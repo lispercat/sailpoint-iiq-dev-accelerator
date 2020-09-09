@@ -55,6 +55,8 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
   * Allows to import your current uncommited (in git) change. 
   It includes all modifed and new (staged or unstaged) *.xml files.
   Deleted files (as expected) will not be deployed.
+* **Deploy Open Files**
+  * Deploys the xml files which are currently open in the editor. It's a nice way to deploy a handful of files, especially if you need to deploy the same set to a few different environments
 * **Compare Local with Deployed**
   * Compares current xml file with the corresponding deployed object in your target environment
 * **Code snippets**

@@ -28,6 +28,7 @@ async function activate(ctx) {
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.deployChange', cmds.deployChange));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.deployCustomBuild', cmds.deployCustomBuild));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.compareLocalWithDeployed', cmds.compareLocalWithDeployed));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.deployOpenFiles', cmds.deployOpenFiles));
 
   let statusBarEnvItem = cmds.getStatusBar();
   statusBarEnvItem.command = 'iiq-dev-accelerator.switchEnv';

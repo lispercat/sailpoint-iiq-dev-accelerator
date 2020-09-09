@@ -27,7 +27,8 @@ module.exports = {
   runContext,
   deployChange,
   deployCustomBuild,
-  compareLocalWithDeployed
+  compareLocalWithDeployed,
+  deployOpenFiles
 }
 
 function getStatusBar(){
@@ -53,6 +54,7 @@ function parseCurrentXmlFile(text = null){
   if(!text){
     text = vscode.window.activeTextEditor.document.getText();
   }
+
   var parsedXml = null;
   xmlParser.parseString(text, function(error, result) {
     if(error === null) {
@@ -331,7 +333,8 @@ async function importFile(fileContent = null, resolveTokens = true){
     [fileContent, processFileErrors] = processFileContent(fileContent, props);
   }
 
-  if(processFileErrors["processFileErrors"].length > 0){
+  if(Object.keys(processFileErrors).length > 0 &&
+     processFileErrors["processFileErrors"].length > 0){
     if(withProgress){
       vscode.window.showErrorMessage(`Following tokens couldn't be substituted: ${processFileErrors["processFileErrors"]}`);
       return [false, processFileErrors];
@@ -1190,4 +1193,49 @@ async function compareLocalWithDeployed(){
   
   const title = "Local vs deployed " + objectClass + ":'" + objectName + "'";
   await vscode.commands.executeCommand("vscode.diff", currObjPath, deployedObjPath, title);
+}
+
+async function collectOpenXMLFiles(){
+  var res = [];
+  var document = vscode.window.activeTextEditor.document;
+  const firstImportedName = document.fileName;
+
+  if(require('path').extname(document.fileName) === '.xml'){
+    res.push(document.fileName);
+  }
+
+  const max_count = 20;
+  var cnt = 0;
+  do{
+    await vscode.commands.executeCommand('workbench.action.nextEditor');
+    document = vscode.window.activeTextEditor.document;
+    if(firstImportedName === document.fileName || cnt++ > max_count){
+      break;
+    }
+
+    if(require('path').extname(document.fileName) === '.xml'){
+      res.push(document.fileName);
+    }
+  }while(true)
+  return res;
+}
+
+async function deployOpenFiles(){
+  const env = await getEnvironment();
+  if(!vscode.window.activeTextEditor){
+    vscode.window.showInformationMessage(`Please open an xml document to import`); 
+    return;
+  }  
+  
+  const openFiles = await collectOpenXMLFiles();
+  const msg_files = openFiles.map(f => require("path").basename(f)).join("\n");
+
+  const pick = await vscode.window.showInformationMessage(
+    `You are about to import the following ${openFiles.length} files to ${env} \n\n${msg_files}`, 
+    { modal: true }, "Yes");
+  if(pick !== "Yes"){
+    return;
+  }
+
+  await importFileList(openFiles);
 }
