@@ -206,7 +206,7 @@
   "dependencies": {
     "base-64": "^0.1.0",
     "form-data": "^3.0.0",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.1",
     "properties-reader": "^2.0.0",
     "tmp": "^0.2.1",
     "xml2js": "^0.4.23"
