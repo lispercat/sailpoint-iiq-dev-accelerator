@@ -140,7 +140,7 @@ function processFileContent(fileContent, props){
     var found = fileContent.match(/%%\w+%%/g);
     if(found){
       found.forEach((m) => {
-        if(props.get(m)){
+        if(props.get(m) != null){
           fileContent = fileContent.replace(m, props.get(m));
         }
       });

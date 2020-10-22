@@ -1,4 +1,8 @@
 # Change Log
+## [1.0.17]
+### Changed
+ - Fixed boolean tokens replacement
+
 ## [1.0.16]
 ### Added
  - The ability to deploy currently open files
