@@ -1,4 +1,9 @@
 # Change Log
+## [1.0.19]
+### Changed
+ - Removed the ability to make token replacements when in format value=%%token%%
+ - Added the ability for double backslashes to be replaced to one backslash (for SSD build compatibility)
+
 ## [1.0.18]
 ### Added
  - Added the ability to make token replacements when in format value=%%token%%

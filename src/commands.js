@@ -135,11 +135,7 @@ async function loadTargetProps(){
   var properties = propertiesReader(g_props["filePath"]).getAllProperties();
   for(var key in properties){
     var value = properties[key];
-    //swap key/value if value is in %%sample%% format
-    if(value.match(/%%\w+%%/g)){
-      delete properties[key];
-      properties[value] = key;
-    }
+    properties[key] = value.replace(/\\\\/g, "\\");
   };
 
   g_props["props"] = properties;
