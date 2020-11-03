@@ -125,12 +125,24 @@ async function loadTargetProps(){
 
   var fileName = `${environment}.target.properties`;
   const uris = await vscode.workspace.findFiles(`**/${fileName}`);
-  uris.forEach((uri) => {
-    console.log(`Trying to read ${uri.fsPath} file`);
-    g_props["filePath"] = uri.fsPath.toString();
-    g_props["mtime"] = fs.statSync(g_props["filePath"]).mtime;
-    g_props["props"] = propertiesReader(g_props["filePath"]);
-  });
+  if(0 == uris.length){
+    return null;
+  }
+  var uri = uris[0];
+  console.log(`Trying to read ${uri.fsPath} file`);
+  g_props["filePath"] = uri.fsPath.toString();
+  g_props["mtime"] = fs.statSync(g_props["filePath"]).mtime;
+  var properties = propertiesReader(g_props["filePath"]).getAllProperties();
+  for(var key in properties){
+    var value = properties[key];
+    //swap key/value if value is in %%sample%% format
+    if(value.match(/%%\w+%%/g)){
+      delete properties[key];
+      properties[value] = key;
+    }
+  };
+
+  g_props["props"] = properties;
   return g_props["props"];
 }
 
@@ -139,9 +151,10 @@ function processFileContent(fileContent, props){
   if(props){
     var found = fileContent.match(/%%\w+%%/g);
     if(found){
-      found.forEach((m) => {
-        if(props.get(m) != null){
-          fileContent = fileContent.replace(m, props.get(m));
+      found.forEach((token) => {
+        var replacement = props[token]; 
+        if(replacement != null){
+          fileContent = fileContent.replace(token, replacement);
         }
       });
     }
@@ -149,9 +162,9 @@ function processFileContent(fileContent, props){
     //second iteration, looking for missed tokens
     found = fileContent.match(/%%\w+%%/g);
     if(found){
-      found.forEach((m) => {
-        if(!errors["processFileErrors"].includes(m)){
-          errors["processFileErrors"].push(m);
+      found.forEach((missed) => {
+        if(!errors["processFileErrors"].includes(missed)){
+          errors["processFileErrors"].push(missed);
         }
       });
     }
@@ -184,9 +197,9 @@ async function getSiteConfig(){
   if(!url || !username || !password){
     const props = await loadTargetProps();
     if(props){
-      url = props.get("%%ECLIPSE_URL%%");
-      username = props.get("%%ECLIPSE_USER%%");
-      password = props.get("%%ECLIPSE_PASS%%");
+      url = props["%%ECLIPSE_URL%%"];
+      username = props["%%ECLIPSE_USER%%"];
+      password = props["%%ECLIPSE_PASS%%"];
     }
     if(!url || !username || !password){
       url = url ? url:"http://localhost:8080/identityiq"; 

@@ -1,4 +1,8 @@
 # Change Log
+## [1.0.18]
+### Added
+ - Added the ability to make token replacements when in format value=%%token%%
+
 ## [1.0.17]
 ### Changed
  - Fixed boolean tokens replacement

@@ -5,3 +5,4 @@ test/**
 **/jsconfig.json
 **/*.map
 **/.eslintrc.json
+src/scratch.js
