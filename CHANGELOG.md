@@ -1,4 +1,8 @@
 # Change Log
+## [1.0.20]
+### Changed
+ - Fixed a typo
+
 ## [1.0.19]
 ### Changed
  - Removed the ability to make token replacements when in format value=%%token%%

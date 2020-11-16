@@ -638,7 +638,7 @@ async function runRule(ruleName = null){
   });
 
   if(result["payload"] !== undefined){
-    vscode.window.showInformationMessage(`Reslut: ${result["payload"]}`);
+    vscode.window.showInformationMessage(`Result: ${result["payload"]}`);
   }
   else{
     vscode.window.showErrorMessage(`Operation failed`);
@@ -678,7 +678,7 @@ async function evalBS(){
     });
 
   if(result["payload"] !== undefined){
-    vscode.window.showInformationMessage(`Reslut: ${result["payload"]}`);
+    vscode.window.showInformationMessage(`Result: ${result["payload"]}`);
   }
   else{
     vscode.window.showErrorMessage(`Operation failed`);
