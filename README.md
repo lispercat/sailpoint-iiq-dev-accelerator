@@ -41,7 +41,7 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
     * Currently open log4j document (including the one obtained with **Get Logging Config** command)
     * Detected **your-target-environment**.log4j(2).properties document, where **your-target-environment** is your target environment configuration. It should work equally with old log4j and new log4j2 files.
 * **Switch Environment**
-  * Allows to switch to a different SSB environment. For better results make sure that you have specified %%ECLIPSE_URL%%, %%ECLIPSE_USER%%, %%ECLIPSE_PASSWORD%% tokens in your **your-target-environment**.target.properties file 
+  * Allows to switch to a different SSB environment. For better results make sure that you have specified %%ECLIPSE_URL%%, %%ECLIPSE_USER%%, %%ECLIPSE_PASSWORD%% tokens in your **your-target-environment**.target.properties file. You can also store your secret tokens in **your-target-environment**.target.secret.properties file
 * **Context-based Execution**
   * Allows to execute a "smart" command based on a currently active file.
     * If the file is a **Rule**, the rule will be executed
@@ -83,20 +83,20 @@ To specify the environment you may also add this to your settings.json:
 ```
 
 * (optional) `iiq.dev-accelerator.iiq_url`: is your IIQ url 
-  * It's optional because I'll try to detect it from %%ECLIPSE_URL%% token of your **your-target-environment**.target.properties file
+  * It's optional because I'll try to detect it from %%ECLIPSE_URL%% token of your **your-target-environment**.target.properties or **your-target-environment**.target.secret.properties file
 To specify the environment you may also add this to your settings.json:
 ```json
 "iiq.dev-accelerator.iiq_url": "http://localhost:8080/identityiq"
 ```
 
 * (optional) `iiq.dev-accelerator.username`: is your IIQ username
-  * It's optional because I'll try to detect it from %%ECLIPSE_USER%% token of your **your-target-environment**.target.properties file
+  * It's optional because I'll try to detect it from %%ECLIPSE_USER%% token of your **your-target-environment**.target.properties or **your-target-environment**.target.secret.properties file
 ```json
 "iiq.dev-accelerator.username": "spadmin"
 ```
 
 * (optional) `iiq.dev-accelerator.password`: is your IIQ password
-  * It's optional because I'll try to detect it from %%ECLIPSE_PASS%% token of your **your-target-environment**.target.properties file
+  * It's optional because I'll try to detect it from %%ECLIPSE_PASS%% token of your **your-target-environment**.target.properties or **your-target-environment**.target.secret.properties file
 ```json
 "iiq.dev-accelerator.password": "admin"
 ```

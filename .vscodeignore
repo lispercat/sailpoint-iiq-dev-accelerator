@@ -6,3 +6,4 @@ test/**
 **/*.map
 **/.eslintrc.json
 src/scratch.js
+publish.cmd

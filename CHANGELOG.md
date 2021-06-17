@@ -1,4 +1,8 @@
 # Change Log
+## [1.0.21]
+### Added
+ - Support for <env>.target.secret.properties where you can store secret tokens (outside of source control) The secret properties files are also supported by SSB
+
 ## [1.0.20]
 ### Changed
  - Fixed a typo

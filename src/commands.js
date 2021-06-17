@@ -114,16 +114,7 @@ async function getEnvironment(){
   return environment;
 }
 
-async function loadTargetProps(){
-  if(canUseCachedProp()){
-    return g_props["props"];
-  }
-  var environment = await getEnvironment();
-  if(!environment){
-    return null;
-  }
-
-  var fileName = `${environment}.target.properties`;
+async function getFileProperties(fileName){
   const uris = await vscode.workspace.findFiles(`**/${fileName}`);
   if(0 == uris.length){
     return null;
@@ -133,12 +124,31 @@ async function loadTargetProps(){
   g_props["filePath"] = uri.fsPath.toString();
   g_props["mtime"] = fs.statSync(g_props["filePath"]).mtime;
   var properties = propertiesReader(g_props["filePath"]).getAllProperties();
+  
   for(var key in properties){
     var value = properties[key];
     properties[key] = value.replace(/\\\\/g, "\\");
   };
 
-  g_props["props"] = properties;
+  return properties;
+}
+
+async function loadTargetProps(){
+  if(canUseCachedProp()){
+    return g_props["props"];
+  }
+  var environment = await getEnvironment();
+  if(!environment){
+    return null;
+  }
+
+  var mainProps = await getFileProperties(`${environment}.target.properties`);
+  if(!mainProps){
+    return null;
+  }
+  var secretProps =  await getFileProperties(`${environment}.target.secret.properties`);
+  var allProps = Object.assign({}, mainProps, secretProps);
+  g_props["props"] = allProps;
   return g_props["props"];
 }
 
