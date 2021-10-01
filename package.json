@@ -3,7 +3,7 @@
   "displayName": "Sailpoint IIQ Development Accelerator",
   "description": "Provides commands to facilitate/accelerate coding/interacting with remote Sailpoint IIQ server",
   "icon": "images/icon.png",
-  "version": "1.0.21",
+  "version": "1.0.22",
   "engines": {
     "vscode": "^1.45.0"
   },
@@ -41,7 +41,7 @@
     "onCommand:iiq-dev-accelerator.getLog",
     "onCommand:iiq-dev-accelerator.reloadLog",
     "onCommand:iiq-dev-accelerator.getObject",
-    "onCommand:iiq-dev-accelerator.deleteObjec",
+    "onCommand:iiq-dev-accelerator.deleteObject",
     "onCommand:iiq-dev-accelerator.switchEnv",
     "onCommand:iiq-dev-accelerator.runContext",
     "onCommand:iiq-dev-accelerator.deployChange",
@@ -115,7 +115,7 @@
       },
       {
         "command": "iiq-dev-accelerator.deleteObject",
-        "title": "iiq: Delete Object"
+        "title": "iiq: Delete Objects"
       },
       {
         "command": "iiq-dev-accelerator.switchEnv",

@@ -17,8 +17,8 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
   * Will retrive an object of selected class
   * You can make modifications and import it with **Import File** command
   * Go **Get Object** + **Import File** gives you the ability to modify objects
-* **Delete Object**
-  * Will delete the selected object from the target system
+* **Delete Objects**
+  * Will delete the selected objects from the target system
 * **Run Task**
   * Given a list of taks you select one to execute
 * **Run Task With Parameters**

@@ -1,4 +1,8 @@
 # Change Log
+## [1.0.22]
+### Added
+ - Updated the delete object features, now the user can select multiple objects instead of just one 
+
 ## [1.0.21]
 ### Added
  - Support for <env>.target.secret.properties where you can store secret tokens (outside of source control) The secret properties files are also supported by SSB

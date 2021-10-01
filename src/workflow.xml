@@ -32,7 +32,7 @@
         import org.apache.log4j.Logger;
         Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
         iidDevAccelLogger.debug("GetVersion is called");         
-        return "1.0.21";
+        return "1.0.22";
       </Source>
     </Script>
     <Transition to="Stop"/>
@@ -185,16 +185,20 @@
             field = "displayName";
           }
 
-          SailPointObject obj = context.getUniqueObject(myClass, Filter.eq(field, objName));
-          if(null == obj){
-            iidDevAccelLogger.error("Couldn't find the object");
-            return "fail"; 
-          }
-          Terminator terminator = new Terminator(context);
-          terminator.setTrace(true);
-          terminator.deleteObject(obj);
+          iidDevAccelLogger.debug("Objects to delete: " + objNames); 
+          
+          for(String objName : objNames){
+            SailPointObject obj = context.getUniqueObject(myClass, Filter.eq(field, objName));
+            if(null == obj){
+              iidDevAccelLogger.error("Couldn't find the object: " + objName);
+              continue; 
+            }
+            Terminator terminator = new Terminator(context);
+            terminator.setTrace(true);
+            terminator.deleteObject(obj);
 
-          iidDevAccelLogger.debug("Finished deleting object"); 
+            iidDevAccelLogger.debug("Finished deleting object"); 
+          }
           return "success"; 
           ]]>
       </Source>

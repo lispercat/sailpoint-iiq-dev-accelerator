@@ -890,20 +890,20 @@ async function getObject(){
   await vscode.window.showTextDocument(doc);
 }
 
-async function deleteObjectInternal(cls, objName){
+async function deleteObjectInternal(cls, objNames){
   var post_body = 
   {
     "workflowArgs":
     {
       "operation": "deleteObject",
       "theClass": cls,
-      "objName": objName
+      "objNames": objNames
     }
   };
   
   var result = await vscode.window.withProgress({
     location: vscode.ProgressLocation.Notification,
-    title: `Deleting object ${objName} ...`,
+    title: `Deleting object ${objNames} ...`,
     cancellable: true
     }, 
     progress => {
@@ -927,21 +927,21 @@ async function deleteObject(){
   }
 
   var classObjects = await getClassObjects(theClass);
-  let objName = await vscode.window.showQuickPick(classObjects, 
-    { placeHolder: `Pick an object for ${theClass} ...`, ignoreFocusOut: true });
-  if(!objName){
+  let objNames = await vscode.window.showQuickPick(classObjects, 
+    { placeHolder: `Pick an object for ${theClass} ...`, ignoreFocusOut: true, canPickMany: true });
+  if(!objNames){
     vscode.window.showInformationMessage("No object was selected, exiting");
     return;
   }
  
   const answer = await vscode.window.showQuickPick(["Yes", "No"],
-                  {placeHolder: `Are you sure you want to delete ${objName}?`});
+                  {placeHolder: `Are you sure you want to delete ${objNames}?`});
   if(!answer || answer === "No"){
     vscode.window.showInformationMessage("No object was deleted");
     return;
   }
 
-  var status = await deleteObjectInternal(theClass, objName);
+  var status = await deleteObjectInternal(theClass, objNames);
   if(status){
     vscode.window.showInformationMessage(`Operation status: ${status}`);
   }
