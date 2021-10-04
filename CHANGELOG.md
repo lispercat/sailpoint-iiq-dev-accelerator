@@ -1,4 +1,9 @@
 # Change Log
+## [1.0.23]
+### Added
+ - Added the ability to show system information (similar in debug about page) 
+ - Refactored code to TypeScript
+
 ## [1.0.22]
 ### Added
  - Updated the delete object features, now the user can select multiple objects instead of just one 

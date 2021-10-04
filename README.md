@@ -63,6 +63,8 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
   * `rule + Tab` - inserts rule code snippet
 * **Syntax highlighting**
   * By default the BeanShell code will be highlighed like regular Java code
+* **Show System Information (About)**
+  * Get some information about IIQ like version and Java properties
 
 ## Requirements
 

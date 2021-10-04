@@ -1,214 +1,222 @@
 {
-  "name": "sailpoint-iiq-dev-accelerator",
-  "displayName": "Sailpoint IIQ Development Accelerator",
-  "description": "Provides commands to facilitate/accelerate coding/interacting with remote Sailpoint IIQ server",
-  "icon": "images/icon.png",
-  "version": "1.0.22",
-  "engines": {
-    "vscode": "^1.45.0"
-  },
-  "keywords": [
-    "sailpoint",
-    "iiq",
-    "beanshell",
-    "remote",
-    "development",
-    "deployment",
-    "automation"
-  ],
-  "author": {
-    "name": "Andrei Stebakov",
-    "email": "lispercat@gmail.com"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/lispercat/sailpoint-iiq-dev-accelerator"
-  },
-  "license": "MIT",
-  "publisher": "AndreiStebakov",
-  "contributors": [
-    "Andrei Stebakov"
-  ],
-  "categories": [
-    "Other"
-  ],
-  "activationEvents": [
-    "onCommand:iiq-dev-accelerator.importFile",
-    "onCommand:iiq-dev-accelerator.runTask",
-    "onCommand:iiq-dev-accelerator.runRule",
-    "onCommand:iiq-dev-accelerator.evalBS",
-    "onCommand:iiq-dev-accelerator.runTaskWithAttr",
-    "onCommand:iiq-dev-accelerator.getLog",
-    "onCommand:iiq-dev-accelerator.reloadLog",
-    "onCommand:iiq-dev-accelerator.getObject",
-    "onCommand:iiq-dev-accelerator.deleteObject",
-    "onCommand:iiq-dev-accelerator.switchEnv",
-    "onCommand:iiq-dev-accelerator.runContext",
-    "onCommand:iiq-dev-accelerator.deployChange",
-    "onCommand:iiq-dev-accelerator.deployCustomBuild",
-    "onCommand:iiq-dev-accelerator.compareLocalWithDeployed",
-    "onCommand:iiq-dev-accelerator.deployOpenFiles"
-  ],
-  "main": "./src/extension.js",
-  "contributes": {
-    "configuration": {
-      "title": "Sailpoint IIQ Development Accelerator",
-      "properties": {
-        "iiq-dev-accelerator.environment": {
-          "type": "string",
-          "description": "iiq environment (dev, uat, prod, etc)",
-          "default": "",
-          "scope": "application"
-        },
-        "iiq-dev-accelerator.iiq_url": {
-          "type": "string",
-          "description": "url for your iiq site",
-          "default": "",
-          "scope": "application"
-        },
-        "iiq-dev-accelerator.username": {
-          "type": "string",
-          "description": "username",
-          "default": "",
-          "scope": "application"
-        },
-        "iiq-dev-accelerator.password": {
-          "type": "string",
-          "description": "password",
-          "default": "",
-          "scope": "application"
-        }
-      }
+    "name": "sailpoint-iiq-dev-accelerator",
+    "displayName": "Sailpoint IIQ Development Accelerator",
+    "description": "Provides commands to facilitate/accelerate coding/interacting with remote Sailpoint IIQ server",
+    "icon": "images/icon.png",
+    "version": "1.0.23",
+    "engines": {
+        "vscode": "^1.60.0"
     },
-    "commands": [
-      {
-        "command": "iiq-dev-accelerator.importFile",
-        "title": "iiq: Import Current File"
-      },
-      {
-        "command": "iiq-dev-accelerator.runTask",
-        "title": "iiq: Run Task"
-      },
-      {
-        "command": "iiq-dev-accelerator.runTaskWithAttr",
-        "title": "iiq: Run Task With Parameters"
-      },
-      {
-        "command": "iiq-dev-accelerator.runRule",
-        "title": "iiq: Run Rule"
-      },
-      {
-        "command": "iiq-dev-accelerator.evalBS",
-        "title": "iiq: Evaluate BeanShell Script"
-      },
-      {
-        "command": "iiq-dev-accelerator.getLog",
-        "title": "iiq: Get Logging Config"
-      },
-      {
-        "command": "iiq-dev-accelerator.reloadLog",
-        "title": "iiq: Reload Logging Config"
-      },
-      {
-        "command": "iiq-dev-accelerator.getObject",
-        "title": "iiq: Get Object"
-      },
-      {
-        "command": "iiq-dev-accelerator.deleteObject",
-        "title": "iiq: Delete Objects"
-      },
-      {
-        "command": "iiq-dev-accelerator.switchEnv",
-        "title": "iiq: Switch Environment"
-      },
-      {
-        "command": "iiq-dev-accelerator.runContext",
-        "title": "iiq: Context-based Execution"
-      },
-      {
-        "command": "iiq-dev-accelerator.deployChange",
-        "title": "iiq: Deploy Uncommitted Change"
-      },
-      {
-        "command": "iiq-dev-accelerator.deployCustomBuild",
-        "title": "iiq: Deploy Custom Build"
-      },
-      {
-        "command": "iiq-dev-accelerator.compareLocalWithDeployed",
-        "title": "iiq: Compare Local with Deployed"
-      },
-      {
-        "command": "iiq-dev-accelerator.deployOpenFiles",
-        "title": "iiq: Deploy Open Files"
-      }
+    "keywords": [
+        "sailpoint",
+        "iiq",
+        "beanshell",
+        "remote",
+        "development",
+        "deployment",
+        "automation"
     ],
-    "keybindings": [
-      {
-        "key": "ctrl+alt+x",
-        "command": "iiq-dev-accelerator.runContext",
-        "when": "editorTextFocus"
-      },
-      {
-        "key": "ctrl+alt+s",
-        "command": "iiq-dev-accelerator.importFile",
-        "when": "editorTextFocus"
-      }
+    "author": {
+        "name": "Andrei Stebakov",
+        "email": "lispercat@gmail.com"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/lispercat/sailpoint-iiq-dev-accelerator"
+    },
+    "license": "MIT",
+    "publisher": "AndreiStebakov",
+    "contributors": [
+        "Andrei Stebakov"
     ],
-    "snippets": [
-      {
-        "language": "xml",
-        "path": "./snippets/xml.json"
-      }
+    "categories": [
+        "Other"
     ],
-    "grammars": [
-      {
-        "injectTo": [
-          "text.xml"
+    "activationEvents": [
+        "onCommand:iiq-dev-accelerator.importFile",
+        "onCommand:iiq-dev-accelerator.runTask",
+        "onCommand:iiq-dev-accelerator.runRule",
+        "onCommand:iiq-dev-accelerator.evalBS",
+        "onCommand:iiq-dev-accelerator.runTaskWithAttr",
+        "onCommand:iiq-dev-accelerator.getLog",
+        "onCommand:iiq-dev-accelerator.reloadLog",
+        "onCommand:iiq-dev-accelerator.getObject",
+        "onCommand:iiq-dev-accelerator.deleteObject",
+        "onCommand:iiq-dev-accelerator.switchEnv",
+        "onCommand:iiq-dev-accelerator.runContext",
+        "onCommand:iiq-dev-accelerator.deployChange",
+        "onCommand:iiq-dev-accelerator.deployCustomBuild",
+        "onCommand:iiq-dev-accelerator.compareLocalWithDeployed",
+        "onCommand:iiq-dev-accelerator.deployOpenFiles",
+        "onCommand:iiq-dev-accelerator.showSysInfo"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "configuration": {
+            "title": "Sailpoint IIQ Development Accelerator",
+            "properties": {
+                "iiq-dev-accelerator.environment": {
+                    "type": "string",
+                    "description": "iiq environment (dev, uat, prod, etc)",
+                    "default": "",
+                    "scope": "application"
+                },
+                "iiq-dev-accelerator.iiq_url": {
+                    "type": "string",
+                    "description": "url for your iiq site",
+                    "default": "",
+                    "scope": "application"
+                },
+                "iiq-dev-accelerator.username": {
+                    "type": "string",
+                    "description": "username",
+                    "default": "",
+                    "scope": "application"
+                },
+                "iiq-dev-accelerator.password": {
+                    "type": "string",
+                    "description": "password",
+                    "default": "",
+                    "scope": "application"
+                }
+            }
+        },
+        "commands": [
+            {
+                "command": "iiq-dev-accelerator.importFile",
+                "title": "iiq: Import Current File"
+            },
+            {
+                "command": "iiq-dev-accelerator.runTask",
+                "title": "iiq: Run Task"
+            },
+            {
+                "command": "iiq-dev-accelerator.runTaskWithAttr",
+                "title": "iiq: Run Task With Parameters"
+            },
+            {
+                "command": "iiq-dev-accelerator.runRule",
+                "title": "iiq: Run Rule"
+            },
+            {
+                "command": "iiq-dev-accelerator.evalBS",
+                "title": "iiq: Evaluate BeanShell Script"
+            },
+            {
+                "command": "iiq-dev-accelerator.getLog",
+                "title": "iiq: Get Logging Config"
+            },
+            {
+                "command": "iiq-dev-accelerator.reloadLog",
+                "title": "iiq: Reload Logging Config"
+            },
+            {
+                "command": "iiq-dev-accelerator.getObject",
+                "title": "iiq: Get Object"
+            },
+            {
+                "command": "iiq-dev-accelerator.deleteObject",
+                "title": "iiq: Delete Objects"
+            },
+            {
+                "command": "iiq-dev-accelerator.switchEnv",
+                "title": "iiq: Switch Environment"
+            },
+            {
+                "command": "iiq-dev-accelerator.runContext",
+                "title": "iiq: Context-based Execution"
+            },
+            {
+                "command": "iiq-dev-accelerator.deployChange",
+                "title": "iiq: Deploy Uncommitted Change"
+            },
+            {
+                "command": "iiq-dev-accelerator.deployCustomBuild",
+                "title": "iiq: Deploy Custom Build"
+            },
+            {
+                "command": "iiq-dev-accelerator.compareLocalWithDeployed",
+                "title": "iiq: Compare Local with Deployed"
+            },
+            {
+                "command": "iiq-dev-accelerator.deployOpenFiles",
+                "title": "iiq: Deploy Open Files"
+            },
+            {
+                "command": "iiq-dev-accelerator.showSysInfo",
+                "title": "iiq: Show System Information"
+            }
         ],
-        "path": "./syntaxes/beanshell-injection.json",
-        "scopeName": "text.xml.beanshell"
-      }
-    ],
-    "menus": {
-      "explorer/context": [
-        {
-          "command": "iiq-dev-accelerator.importFile",
-          "when": "resourceExtname == .xml",
-          "group": "iiq"
+        "keybindings": [
+            {
+                "key": "ctrl+alt+x",
+                "command": "iiq-dev-accelerator.runContext",
+                "when": "editorTextFocus"
+            },
+            {
+                "key": "ctrl+alt+s",
+                "command": "iiq-dev-accelerator.importFile",
+                "when": "editorTextFocus"
+            }
+        ],
+        "snippets": [
+            {
+                "language": "xml",
+                "path": "./snippets/xml.json"
+            }
+        ],
+        "grammars": [
+            {
+                "injectTo": [
+                    "text.xml"
+                ],
+                "path": "./syntaxes/beanshell-injection.json",
+                "scopeName": "text.xml.beanshell"
+            }
+        ],
+        "menus": {
+            "explorer/context": [
+                {
+                    "command": "iiq-dev-accelerator.importFile",
+                    "when": "resourceExtname == .xml",
+                    "group": "iiq"
+                }
+            ],
+            "editor/context": [
+                {
+                    "command": "iiq-dev-accelerator.importFile",
+                    "when": "resourceExtname == .xml",
+                    "group": "iiq"
+                }
+            ]
         }
-      ],
-      "editor/context": [
-        {
-          "command": "iiq-dev-accelerator.importFile",
-          "when": "resourceExtname == .xml",
-          "group": "iiq"
-        }
-      ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "pretest": "npm run compile && npm run lint",
+        "lint": "eslint src --ext ts",
+        "test": "node ./out/test/runTest.js"
+    },
+    "devDependencies": {
+        "@types/glob": "^7.1.4",
+        "@types/mocha": "^9.0.0",
+        "@types/node": "14.x",
+        "@types/vscode": "^1.60.0",
+        "@typescript-eslint/eslint-plugin": "^4.31.1",
+        "@typescript-eslint/parser": "^4.31.1",
+        "@vscode/test-electron": "^1.6.2",
+        "eslint": "^7.32.0",
+        "glob": "^7.1.7",
+        "mocha": "^9.1.1",
+        "typescript": "^4.4.3"
+    },
+    "dependencies": {
+        "base-64": "^1.0.0",
+        "node-fetch": "^2.6.5",
+        "properties-reader": "^2.2.0",
+        "tmp": "^0.2.1",
+        "xml2js": "^0.4.23"
     }
-  },
-  "scripts": {
-    "lint": "eslint .",
-    "pretest": "npm run lint",
-    "test": "node ./test/runTest.js"
-  },
-  "extensionDependencies": [
-    "vscode.git"
-  ],
-  "devDependencies": {
-    "@types/glob": "^7.1.1",
-    "@types/mocha": "^7.0.2",
-    "@types/node": "^13.11.0",
-    "@types/vscode": "^1.45.0",
-    "eslint": "^6.8.0",
-    "mocha": "^7.1.2",
-    "typescript": "^3.8.3"
-  },
-  "dependencies": {
-    "base-64": "^0.1.0",
-    "form-data": "^3.0.0",
-    "node-fetch": "^2.6.1",
-    "properties-reader": "^2.0.0",
-    "tmp": "^0.2.1",
-    "xml2js": "^0.4.23"
-  }
 }

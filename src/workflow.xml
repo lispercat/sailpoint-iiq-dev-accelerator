@@ -24,6 +24,7 @@
     <Transition to="Eval BS" when='"evalBS".equals(operation);'/>
     <Transition to="Get Log File" when='"getLog".equals(operation);'/>
     <Transition to="Reload Log File" when='"reloadLog".equals(operation);'/>
+    <Transition to="Get System Info" when='"getSysInfo".equals(operation);'/>
     <Transition to="Invalid operation"/>
   </Step>
   <Step icon="Default" name="Get Version" resultVariable="payload">
@@ -32,7 +33,7 @@
         import org.apache.log4j.Logger;
         Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
         iidDevAccelLogger.debug("GetVersion is called");         
-        return "1.0.22";
+        return "1.0.23";
       </Source>
     </Script>
     <Transition to="Stop"/>
@@ -439,6 +440,47 @@
 
           iidDevAccelLogger.debug("Finished reloading logging config"); 
           return "succeeded"; 
+          ]]>
+      </Source>
+    </Script>
+    <Transition to="Stop"/>
+  </Step>
+  <Step icon="Default" name="Get System Info" resultVariable="payload">
+    <Script>
+      <Source>
+        <![CDATA[ 
+          import sailpoint.object.*;
+          import java.util.*;
+          import java.io.*;
+          import java.nio.file.*;
+          import java.nio.charset.StandardCharsets;
+          import org.apache.log4j.Logger;
+          import org.apache.logging.log4j.LogManager;
+          import org.apache.logging.log4j.core.LoggerContext;
+          import sailpoint.tools.Util;
+          import sailpoint.Version;
+
+          Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
+          iidDevAccelLogger.debug("Getting System Info...");
+          String[] logToSearchArr = {"log4j2.properties", "log4j.properties"};
+          String contents = "";
+          contents += String.format("Product information: \n\n");
+          contents += String.format("  Version: %s\n", Version.getFullVersion());
+          contents += String.format("  Source Repository Location: %s\n", Version.getRepoLocation());
+          contents += String.format("  Bulder: %s\n", Version.getBuilder());
+          contents += String.format("  Build Date: %s\n", Version.getBuildDate());
+          contents += String.format("  ApplicationHome: %s\n", Util.getApplicationHome());
+          contents += String.format("  HostName: %s\n", Util.getHostName());
+          contents += String.format(" %s\n\n", Util.getMemoryStats());
+          contents += String.format("Java System Properties\n\n");
+          Enumeration e = System.getProperties().propertyNames();
+          while(e.hasMoreElements()) {
+            String key = e.nextElement().toString();
+            contents += String.format("  %s: %s\n", key, System.getProperty(key));
+          }
+
+          iidDevAccelLogger.debug("Successfully read a log4j file contents"); 
+          return contents; 
           ]]>
       </Source>
     </Script>

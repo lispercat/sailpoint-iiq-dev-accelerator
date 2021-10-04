@@ -1,0 +1,1282 @@
+import * as vscode from 'vscode';
+import fetch from 'node-fetch';
+import {Headers} from 'node-fetch';
+import * as base64 from 'base-64';
+import * as fs from 'fs';
+import * as propertiesReader from 'properties-reader';
+import * as xml2js from 'xml2js';
+import * as tmp from 'tmp';
+import { URL } from 'url';
+
+export class DevIIQCommands {
+  private g_props: { [key: string]: any } = {"filePath": null, "props": null, "mtime": null};
+  private g_statusBarEnvItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+  private g_IIQClasses = null;
+
+  public  getStatusBar(){
+    return this.g_statusBarEnvItem;
+  }
+
+  public async updateStatusBar(currEnv: string){
+    this.g_statusBarEnvItem.text = "IIQ: " + currEnv;
+    if(currEnv){
+      this.g_statusBarEnvItem.show();
+    }else{
+      this.g_statusBarEnvItem.hide();
+    }
+  }
+
+  private parseCurrentXmlFile(text:string | null = null){
+    const xmlParser = new xml2js.Parser({ attrkey: "ATTR" });
+
+    if(!text){
+      text = vscode.window.activeTextEditor.document.getText();
+    }
+
+    var parsedXml = null;
+    xmlParser.parseString(text, function(error, result) {
+      if(error === null) {
+        parsedXml = result;
+      }
+      else {
+          console.log(error);
+      }
+    });
+    return parsedXml;
+  }
+
+
+  private canUseCachedProp(){
+    if(!this.g_props["filePath"]){
+      return false;
+    }
+    const mtime = fs.statSync(this.g_props["filePath"]).mtime;
+    if(mtime.getTime() != this.g_props["mtime"].getTime()){
+      return false;
+    }
+    if(!this.g_props["props"]){
+      return false;
+    }
+    return true;
+  }
+
+  private async listEnvironments(): Promise<string[]>{
+    var result:string[] = [];
+
+    var searchFileName = '*.target.properties';
+    const uris = await vscode.workspace.findFiles(`**/${searchFileName}`);
+    uris.forEach((uri) => {
+      let [env, rest] = require('path').basename(uri.fsPath).split(".");
+      result.push(env);
+    });
+    return result;
+  }
+
+  private async getEnvironment(){
+    var environment: string = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('environment');
+    if(!environment){
+      var environments = await this.listEnvironments();
+      if(!environments || environments.length < 1){
+        return null;
+      }
+      environment = await vscode.window.showQuickPick(environments, 
+      { placeHolder: 'Select an environment', ignoreFocusOut: false });
+      if(environment === undefined){
+        return null;
+      }
+      await vscode.workspace.getConfiguration('iiq-dev-accelerator').
+            update('environment', environment, true);
+      environment = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('environment');
+    }
+    await this.updateStatusBar(environment);
+    return environment;
+  }
+
+  public async getFileProperties(fileName){
+    const uris = await vscode.workspace.findFiles(`**/${fileName}`);
+    if(0 == uris.length){
+      return null;
+    }
+    var uri = uris[0];
+    console.log(`Trying to read ${uri.fsPath} file`);
+    this.g_props["filePath"] = uri.fsPath.toString();
+    this.g_props["mtime"] = fs.statSync(this.g_props["filePath"]).mtime;
+    var properties = propertiesReader(this.g_props["filePath"]).getAllProperties();
+    for(var key in properties){
+      var val: string = properties[key].toString();
+      properties[key] = val.replace(/\\\\/g, "\\");
+    };
+
+    return properties;
+  }
+
+  public async loadTargetProps(){
+    if(this.canUseCachedProp()){
+      return this.g_props["props"];
+    }
+    var environment = await this.getEnvironment();
+    if(!environment){
+      return null;
+    }
+
+    var mainProps = await this.getFileProperties(`${environment}.target.properties`);
+    if(!mainProps){
+      return null;
+    }
+    var secretProps =  await this.getFileProperties(`${environment}.target.secret.properties`);
+    var allProps = Object.assign({}, mainProps, secretProps);
+    this.g_props["props"] = allProps;
+    return this.g_props["props"];
+  }
+
+  public processFileContent(fileContent, props){
+    var errors = {"processFileErrors" : []};
+    if(props){
+      var found = fileContent.match(/%%\w+%%/g);
+      if(found){
+        found.forEach((token) => {
+          var replacement = props[token]; 
+          if(replacement != null){
+            fileContent = fileContent.replace(token, replacement);
+          }
+        });
+      }
+
+      //second iteration, looking for missed tokens
+      found = fileContent.match(/%%\w+%%/g);
+      if(found){
+        found.forEach((missed) => {
+          if(!errors["processFileErrors"].includes(missed)){
+            errors["processFileErrors"].push(missed);
+          }
+        });
+      }
+    }
+    
+    return [fileContent, errors];
+  }
+
+  private validateConfigInput(text){
+    if (!text) {
+      return 'You must enter some input';
+    }
+    let [url, username, password] = text.split(";");
+    if(!url || !username || !password){
+      return "Please enter: url;username;password"
+    }
+    let m = url.match(/https?:\/\/.*/g);
+    if(!m || m[0] !== url){
+      return "please enter correct url";
+    }
+    return undefined;
+  }
+
+  private async getSiteConfig() : Promise<[string, string, string]>{
+    var environment = await this.getEnvironment();
+    var url: string = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('iiq_url');
+    var username: string = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('username');
+    var password: string = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('password');
+
+    if(!url || !username || !password){
+      const props = await this.loadTargetProps();
+      if(props){
+        url = props["%%ECLIPSE_URL%%"];
+        username = props["%%ECLIPSE_USER%%"];
+        password = props["%%ECLIPSE_PASS%%"];
+      }
+      if(!url || !username || !password){
+        url = url ? url:"http://localhost:8080/identityiq"; 
+        username = username ? username:"spadmin";
+        password = password ? password:"admin";
+        let configParams = await vscode.window.showInputBox({
+          ignoreFocusOut: true,
+          value: `${url};${username};${password}`,
+          prompt: `Couldn't detect your full configuration from ${environment}.target.properties. Please enter here `, 
+          validateInput: this.validateConfigInput
+        });
+        if(configParams === undefined){
+          return;
+        }
+        [url, username, password] = configParams.split(";");
+        vscode.workspace.getConfiguration('iiq-dev-accelerator').update('iiq_url', url, true);
+        vscode.workspace.getConfiguration('iiq-dev-accelerator').update('username', username, true);
+        vscode.workspace.getConfiguration('iiq-dev-accelerator').update('password', password, true);
+      }
+    }
+    return [url, username, password];
+  }
+
+  private async postRequest(post_body){
+    var result = {};
+    const [url, username, password] = await this.getSiteConfig();
+    if(!url || !username || !password){
+      vscode.window.showInformationMessage(`Please update your configuration with url, username and password`);
+      return;
+    }
+
+    const headers = new Headers();
+    //process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0;
+    
+    headers.append('Content-Type', 'application/json');
+    headers.append('Authorization', 'Basic ' + base64.encode(username + ":" + password));
+    const parsedUrl = new URL(url);
+    const https = require("https");
+    const http = require("http");
+    const agent = parsedUrl.protocol === 'https:' ? 
+                  new https.Agent({rejectUnauthorized: false}):new http.Agent();
+
+    try {
+      let full_url = `${url.replace(/\/$/g, "")}/rest/workflows/IIQDevAcceleratorWF/launch`;
+      const response = await fetch(full_url, {
+        method: 'POST', 
+        body: post_body,
+        headers: headers, 
+        agent: agent}
+      );
+      const json = await response.json();
+      const payload = await json.attributes.payload;
+      if(response.ok){
+        result["payload"] = payload;
+      }
+      else{
+        result["fail"] = response.status;
+      }
+    }
+    catch(error){
+      vscode.window.showErrorMessage(`Post request failed with ${error}`);
+    }
+    
+    return result;
+  }
+
+  public async importFileList(filesToDeploy, resolveTokens = true){
+    if(!filesToDeploy || filesToDeploy.length < 0){
+      vscode.window.showInformationMessage(`Nothing to deploy, exiting`); 
+      return;
+    }
+    var wasCancelled = false;
+    var result = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: "Importing ",
+      cancellable: true
+      }, 
+      async (progress, token) => {
+        token.onCancellationRequested(() => {
+          //vscode.window.showInformationMessage(`Operation was cancelled`); 
+        });
+        var incr = 100/filesToDeploy.length;
+        progress.report({ increment: 0 });
+        var result = {"deployed": 0, "failed": 0, "failedFiles": {}};
+
+        for(var i = 0; i < filesToDeploy.length; i++){
+          try {
+            var f = filesToDeploy[i];
+            progress.report({ increment: incr, message: `${require("path").basename(f)}` });
+            const fileContent = fs.readFileSync(f, {encoding:'utf8', flag:'r'});
+            let [success, processFileErrors] = await this.importFile(fileContent, resolveTokens);
+            if(token.isCancellationRequested){
+              wasCancelled = true;
+              break;
+            }
+            if(success){
+              result["deployed"] += 1;
+            }
+            else{
+              result["failed"] += 1;
+              result["failedFiles"][require("path").basename(f)] = processFileErrors;
+            }
+          } catch (error) {
+            result["failed"] += 1;
+            result["failedFiles"][require("path").basename(filesToDeploy[i])] = {};
+          }
+        }
+        return result;
+      });
+
+    if(result["deployed"] == filesToDeploy.length){
+      vscode.window.showInformationMessage(`All files were successfully deployed!`);   
+    }
+    else{
+      if(wasCancelled){
+        vscode.window.showWarningMessage(`Operation was cancelled. ${result["deployed"]} out of ${filesToDeploy.length} files were deployed`);
+      }else{
+        var failedFiles = Object.keys(result["failedFiles"]).
+          map(key => key + (result["failedFiles"][key]["processFileErrors"].length > 0 ? 
+          `\n - Following tokes couldn't be substituted: 
+            ${result["failedFiles"][key]["processFileErrors"]}`:"")).join("\n");
+        await vscode.window.showInformationMessage(
+          `${result["failed"]} files failed to deploy: \n\n${failedFiles}`, 
+          { modal: true });
+      }
+    }
+  }
+
+  public async importFile(fileContent = null, resolveTokens = true){
+    var withProgress = false;
+    var processFileErrors = {};
+    if(!fileContent || typeof fileContent === 'object'){
+      if(!vscode.window.activeTextEditor || 
+        require('path').extname(vscode.window.activeTextEditor.document.fileName) != '.xml'){
+        vscode.window.showInformationMessage(`Please open an xml document to import`); 
+        return [false, processFileErrors];
+      }  
+      var document = vscode.window.activeTextEditor.document;
+      fileContent = document.getText();
+      withProgress = true;
+    }
+    if(resolveTokens){
+      var props = await this.loadTargetProps();
+      [fileContent, processFileErrors] = this.processFileContent(fileContent, props);
+    }
+
+    if(Object.keys(processFileErrors).length > 0 &&
+      processFileErrors["processFileErrors"].length > 0){
+      if(withProgress){
+        vscode.window.showErrorMessage(`Following tokens couldn't be substituted: ${processFileErrors["processFileErrors"]}`);
+        return [false, processFileErrors];
+      }
+      else{
+        return [false, processFileErrors];
+      }
+    }
+    var post_body = {
+      "workflowArgs": {
+        "operation": "Import",
+        "resource": fileContent
+      }
+    };
+
+    var isSuccess = true;
+    if(withProgress){
+      var result = await vscode.window.withProgress({
+        location: vscode.ProgressLocation.Notification,
+        title: "Importing file...",
+        cancellable: true
+        }, 
+        progress => {
+          return this.postRequest(JSON.stringify(post_body));
+        });
+
+      if(result["payload"] !== undefined){
+        vscode.window.showInformationMessage(`File import result: ${result["payload"]}`);
+      }
+      else{
+        vscode.window.showErrorMessage(`Operation failed`);
+        isSuccess = false;
+      }
+    }
+    else{
+      var result = await this.postRequest(JSON.stringify(post_body));
+      if(!result["payload"]){
+        isSuccess = false;
+      }
+    }
+    return [isSuccess, processFileErrors];
+  }
+
+  public async getTasksNames(){
+    var post_body = 
+    {
+      "workflowArgs":
+      {
+        "operation": "getTaskList"
+      }
+    };
+    
+    var result = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: "Getting task names...",
+      cancellable: true
+      }, 
+        progress => {
+          return this.postRequest(JSON.stringify(post_body));
+      });
+
+    return result["payload"];
+  }
+
+
+  public async runTask(taskName = null){
+    if(!taskName){
+      taskName = await vscode.window.showQuickPick(this.getTasksNames(), 
+      { placeHolder: 'Pick a task...', ignoreFocusOut: true });
+    }
+    if(!taskName){
+      vscode.window.showInformationMessage(`No task name was specified, cancelled`);
+      return;
+    }
+
+    var post_body = 
+    {
+      "workflowArgs":
+      {
+        "operation": "runTask",
+        "taskName": taskName,
+        "inputArgs": {}
+      }
+    };
+    
+    var result = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: "Running task...",
+      cancellable: true
+      }, 
+      progress => {
+        return this.postRequest(JSON.stringify(post_body));
+      });
+
+
+    if(result["payload"] !== undefined){
+      vscode.window.showInformationMessage(`Launched "${taskName} with result: ${result["payload"]}"`);
+    }
+    else{
+      vscode.window.showErrorMessage(`Operation failed`);
+    }
+  }
+
+  private async getArgumentsFromBuffer(){
+    var retArgs = null;
+    var editor = vscode.window.activeTextEditor;
+    if(!editor || require('path').extname(editor.document.fileName) != '.xml'){
+      vscode.window.showInformationMessage(`Please open rule or rule argument file`); 
+      return null;
+    }
+
+    var parsedXml = this.parseCurrentXmlFile();
+    if(parsedXml){
+      try{
+        retArgs =
+          parsedXml["Map"]["entry"].reduce(function(map, obj) {
+            map[obj["ATTR"]["key"]] = obj["ATTR"]["value"];
+            return map;}, {});
+      }
+      catch(error){
+        //it's ok, we expect to fail if our current file is a rule file
+      }
+    }
+
+    return retArgs;
+  }
+
+  private async getArgumentsFromInput(prompt, initialValues){
+    let inputArgs = {};
+    let inputParams = await vscode.window.showInputBox({
+      value: initialValues,
+      prompt: prompt, 
+      validateInput: (text) => {
+        if (!text) {
+            return 'You must enter some input';
+        } else {
+            return undefined;
+        }
+    }
+    });
+
+    if(inputParams === undefined){
+      return inputArgs;
+    }
+    
+    //arg-1->'asdf adsf' arg2->something blah arg3->name=="Identity-1234"
+    var pairs = inputParams.match(/\S+->(?:(['"]).*?\1|\S+)/g);
+    if(pairs){
+      pairs.forEach((pair) => {
+        var pairArr = pair.split("->");
+        let value = pairArr[1];
+        //remove quotes from value
+        if(value.match(/^(['"])(.*)?\1/g)){
+          value = value.substring(1, value.length-1);
+        }
+        inputArgs[pairArr[0]] = value;
+      });
+    }
+    return inputArgs;
+  }
+
+
+  public async runTaskWithAttr(){
+    let taskName = await vscode.window.showQuickPick(this.getTasksNames(), 
+    { placeHolder: 'Pick a task...', ignoreFocusOut: true});
+
+    if(!taskName){
+      vscode.window.showInformationMessage(`No task name was specified, cancelled`);
+      return;
+    }
+
+    let inputArgs = await this.getArgumentsFromInput("Please enter arguments (filter->name==\"Identity-XYZ\" etc.): ",  "");
+
+    var post_body = 
+    {
+      "workflowArgs":
+      {
+        "operation": "runTask",
+        "taskName": taskName,
+        "inputArgs": inputArgs
+      }
+    };
+    
+    var result = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: "Running task...",
+      cancellable: true
+      }, 
+      progress => {
+        return this.postRequest(JSON.stringify(post_body));
+      });
+
+    if(result["payload"] !== undefined){
+      vscode.window.showInformationMessage(`Launched "${taskName} with result: ${result["payload"]}"`);
+    }
+    else{
+      vscode.window.showErrorMessage(`Operation failed`);
+    }
+
+  }
+
+
+  public async getRuleNames(ruleName = null){
+    var post_body = 
+    {
+      "workflowArgs":
+      {
+        "operation": "getRules",
+        "ruleName": ruleName
+      }
+    };
+    
+    ruleName = ruleName ? ruleName:"all rules";
+    var result = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: `Retrieving information for ${ruleName}`,
+      cancellable: true
+      }, 
+      progress => {
+        return this.postRequest(JSON.stringify(post_body));
+      });
+
+    return result["payload"];
+  }
+
+  public argsIntersect(ruleArgs, fileArgs){
+    var result = ruleArgs.filter(value => -1 !== fileArgs.indexOf(value));
+    return result.length > 0;
+  }
+
+  private async retrieveCurrentRuleName(){
+    var ruleName = null;
+    var argText = vscode.window.activeTextEditor.document.getText();
+    var parsedXml = null;
+    const xmlParser = new xml2js.Parser({ attrkey: "ATTR" });
+
+    xmlParser.parseString(argText, function(error, result) {
+      if(error === null) {
+        parsedXml = result;
+      }
+      else {
+          console.log(error);
+      }
+    });
+    
+    if(parsedXml){
+      try{
+        ruleName = parsedXml["Rule"]["ATTR"]["name"];
+      }
+      catch(error){}
+    }
+
+    return ruleName;
+  }
+
+  public async runRule(ruleName = null){
+    let rulesMap = await this.getRuleNames(ruleName);
+    if(!ruleName){
+      ruleName = await vscode.window.showQuickPick(Object.keys(rulesMap), 
+      { placeHolder: 'Pick a rule or press Esc to run the currently open rule', ignoreFocusOut: true });
+    }
+    if(!ruleName){
+      vscode.window.showInformationMessage(`No rule name was specified, exiting`);
+      return;
+    }
+    let ruleArgs = rulesMap[ruleName];
+    let inputArgs = {};
+    if(ruleArgs.length > 0){
+      inputArgs = await this.getArgumentsFromBuffer();
+      if(!inputArgs || !this.argsIntersect(ruleArgs, Object.keys(inputArgs))){
+        inputArgs = await this.getArgumentsFromInput("Please enter arguments (arg1->value1 arg2->'value two' etc.): ",  ruleArgs.join('-> ') + "->");
+      }
+      if(!inputArgs){
+        inputArgs = {};
+      }
+    }
+    var post_body = 
+    {
+      "workflowArgs":
+      {
+        "operation": "runRule",
+        "ruleName": ruleName,
+        "inputArgs": inputArgs
+      }
+    };
+
+    var result = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: "Running rule is in progress...",
+      cancellable: true
+    }, 
+    progress => {
+      return this.postRequest(JSON.stringify(post_body));
+    });
+
+    if(result["payload"] !== undefined){
+      vscode.window.showInformationMessage(`Result: ${result["payload"]}`);
+    }
+    else{
+      vscode.window.showErrorMessage(`Operation failed`);
+    }
+  }
+
+  public async evalBS(){
+    var editor = vscode.window.activeTextEditor;
+    if(!editor || !editor.document)  {
+      vscode.window.showInformationMessage(`Please open a document and select your BeanShell script`); 
+      return;
+    }
+
+    var selection = editor.selection;
+    var script = editor.document.getText(selection);
+    if(!script)  {
+      vscode.window.showInformationMessage(`Please select a few lines of beanshell script`); 
+      return;
+    }
+
+    var post_body = 
+    {
+      "workflowArgs":
+      {
+        "operation": "evalBS",
+        "script": script
+      }
+    };
+
+    var result = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: "Bean Shell script is being evaluated...",
+      cancellable: true
+      }, 
+      progress => {
+        return this.postRequest(JSON.stringify(post_body));
+      });
+
+    if(result["payload"] !== undefined){
+      vscode.window.showInformationMessage(`Result: ${result["payload"]}`);
+    }
+    else{
+      vscode.window.showErrorMessage(`Operation failed`);
+    }
+  }
+
+  public async getLog(){
+    var post_body = 
+    {
+      "workflowArgs":
+      {
+        "operation": "getLog"
+      }
+    };
+
+    var result = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: "Retrieving logging configuration...",
+      cancellable: true
+      }, 
+      progress => {
+        return this.postRequest(JSON.stringify(post_body));
+      });
+
+    if(result["payload"] !== undefined){
+      //let rootFolder = vscode.workspace.rootPath;
+      const tempFile = tmp.fileSync({ prefix: 'log4j-', postfix: '.properties' });
+      fs.writeFileSync(tempFile.name, result["payload"]);
+      let doc = await vscode.workspace.openTextDocument(tempFile.name); 
+      await vscode.window.showTextDocument(doc);
+    }
+    else{
+      vscode.window.showErrorMessage(`Operation failed`);
+    }
+  }
+
+  public async reloadLog(){
+    var logContent = null;
+    var environment = await this.getEnvironment();
+    var searchFileName = `${environment}.log4*.properties`;
+    var foundFullLogFileName = null;
+    var foundLogFileName = null;
+    console.log(`Looking for and loading ${searchFileName}`);
+
+    //Priority #1
+    var editor = vscode.window.activeTextEditor;
+    if(!logContent && editor && editor.document && 
+      editor.document.getText(editor.selection)){
+      logContent = editor.document.getText(editor.selection);
+    }
+
+    //Priority #2
+    if(!logContent && editor && editor.document &&
+      editor.document.fileName.includes("log4j")){
+        logContent = editor.document.getText();
+    }
+
+    //Priority #3
+    if(foundLogFileName){
+      var folders  = vscode.workspace.workspaceFolders;
+      for(var i = 0; i < folders.length; i++){
+        const uris = await vscode.workspace.findFiles(`**/${searchFileName}`, `${folders[i].uri.fsPath}/**`);
+        console.log("now trying to go over files...");
+        uris.forEach((uri) => {
+          console.log(`Trying to read ${uri.fsPath} file`);
+          logContent = fs.readFileSync(uri.fsPath, {encoding:'utf8', flag:'r'}); 
+        });
+      }
+    }
+
+    var post_body = 
+    {
+      "workflowArgs":
+      {
+        "operation": "reloadLog",
+        "logContent": logContent
+      }
+    };
+    
+    var result = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: `Reloading Logging Config from ${foundLogFileName ? foundLogFileName:'server log file'}`,
+      cancellable: true
+      }, 
+      progress => {
+        return this.postRequest(JSON.stringify(post_body));
+      });
+
+
+    if(result["payload"] !== undefined){
+      vscode.window.showInformationMessage(`Refreshing from ${foundLogFileName ? foundLogFileName:'server log file'}: ${result["payload"]}`);
+    }
+    else{
+      vscode.window.showErrorMessage(`Operation failed`);
+    }
+  }
+
+  private async getClasses(){
+    if(this.g_IIQClasses){
+      return this.g_IIQClasses;
+    }
+
+    var post_body = 
+    {
+      "workflowArgs":
+      {
+        "operation": "getClasses"
+      }
+    };
+    
+    var result = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: "Getting classes ...",
+      cancellable: true
+      }, 
+      progress => {
+        return this.postRequest(JSON.stringify(post_body));
+      });
+    
+    this.g_IIQClasses = result["payload"];
+    return this.g_IIQClasses;
+  }
+
+  private async getClassObjects(cls){
+    var post_body = 
+    {
+      "workflowArgs":
+      {
+        "operation": "getClassObjects",
+        "theClass": cls
+      }
+    };
+    
+    var result = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: "Getting class objects ...",
+      cancellable: true
+      }, 
+      progress => {
+        return this.postRequest(JSON.stringify(post_body));
+      });
+
+    return result["payload"];
+  
+  }
+
+  private async searchObject(cls, objName){
+    var post_body = 
+    {
+      "workflowArgs":
+      {
+        "operation": "getObject",
+        "theClass": cls,
+        "objName": objName
+      }
+    };
+    
+    var result = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: `Getting the object for ${objName} ...`,
+      cancellable: true
+      }, 
+      progress => {
+        return this.postRequest(JSON.stringify(post_body));
+      });
+
+    return result["payload"];
+  }
+
+  public async getObject(){
+    var classes = await this.getClasses();
+    if(!classes){
+      vscode.window.showInformationMessage("No classes were found, exiting");
+      return;
+    }
+    let theClass = await vscode.window.showQuickPick(classes, 
+    { placeHolder: 'Pick a class...', ignoreFocusOut: true });
+    if(!theClass){
+      vscode.window.showInformationMessage("No class was selected, exiting");
+      return;
+    }
+
+    var classObjects = await this.getClassObjects(theClass);
+    let objName = await vscode.window.showQuickPick(classObjects, 
+      { placeHolder: `Pick an object for ${theClass} ...`, ignoreFocusOut: true });
+    if(!objName){
+      vscode.window.showInformationMessage("No object was selected, exiting");
+      return;
+    }
+  
+    var xml = await this.searchObject(theClass, objName);
+    if(!xml){
+      vscode.window.showInformationMessage("Empty object, exiting");
+      return;
+    }
+    const tempFile = tmp.fileSync({ prefix: `${theClass}-${objName}`, postfix: '.xml' });
+    fs.writeFileSync(tempFile.name, xml);
+    let doc = await vscode.workspace.openTextDocument(tempFile.name); 
+    await vscode.window.showTextDocument(doc);
+  }
+
+  private async deleteObjectInternal(cls, objNames){
+    var post_body = 
+    {
+      "workflowArgs":
+      {
+        "operation": "deleteObject",
+        "theClass": cls,
+        "objNames": objNames
+      }
+    };
+    
+    var result = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: `Deleting object ${objNames} ...`,
+      cancellable: true
+      }, 
+      progress => {
+        return this.postRequest(JSON.stringify(post_body));
+      });
+
+    return result["payload"];
+  }
+
+  public async deleteObject(){
+    var classes = await this.getClasses();
+    if(!classes){
+      vscode.window.showInformationMessage("No classes were found, exiting");
+      return;
+    }
+    let theClass = await vscode.window.showQuickPick(classes, 
+    { placeHolder: 'Pick a class...', ignoreFocusOut: true });
+    if(!theClass){
+      vscode.window.showInformationMessage("No class was selected, exiting");
+      return;
+    }
+
+    var classObjects = await this.getClassObjects(theClass);
+    let objNames = await vscode.window.showQuickPick(classObjects, 
+      { placeHolder: `Pick an object for ${theClass} ...`, ignoreFocusOut: true, canPickMany: true });
+    if(!objNames){
+      vscode.window.showInformationMessage("No object was selected, exiting");
+      return;
+    }
+  
+    const answer = await vscode.window.showQuickPick(["Yes", "No"],
+                    {placeHolder: `Are you sure you want to delete ${objNames}?`});
+    if(!answer || answer === "No"){
+      vscode.window.showInformationMessage("No object was deleted");
+      return;
+    }
+
+    var status = await this.deleteObjectInternal(theClass, objNames);
+    if(status){
+      vscode.window.showInformationMessage(`Operation status: ${status}`);
+    }
+  }
+
+   public async switchEnv(){
+
+    var old_environment = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('environment');
+    
+    var environments = await this.listEnvironments();
+    var environment = await vscode.window.showQuickPick(environments, 
+    { placeHolder: 'Select an environment', ignoreFocusOut: false });
+    if(environment === undefined){
+      return null;
+    }
+
+    if(old_environment === environment){
+      return environment;
+    }
+
+    await vscode.workspace.getConfiguration('iiq-dev-accelerator').update('environment', environment, true);
+    environment = await vscode.workspace.getConfiguration('iiq-dev-accelerator').get('environment');
+
+    //reset old environment's settings
+    this.g_props["props"] = null;
+    var url = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('iiq_url');
+    var username = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('username');
+    var password = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('password');
+    if(url || username || password){
+      vscode.workspace.getConfiguration('iiq-dev-accelerator').update('iiq_url', "", true);
+      vscode.workspace.getConfiguration('iiq-dev-accelerator').update('username', "", true);
+      vscode.workspace.getConfiguration('iiq-dev-accelerator').update('password', "", true);
+    }
+
+    await this.updateStatusBar(environment);
+    return environment;
+  }
+
+
+  public async runContext(){
+    var editor = vscode.window.activeTextEditor;
+    if(!editor || !editor.document)  {
+      vscode.window.showInformationMessage(`To execute based on context, please open file with some IIQ object or a logging config`); 
+      return;
+    }
+
+    var ext = require('path').extname(vscode.window.activeTextEditor.document.fileName);
+    var baseName = require('path').basename(vscode.window.activeTextEditor.document.fileName);
+    var selection = editor.selection;
+    var script = editor.document.getText(selection);
+    if(script && ext === '.xml'){
+      this.evalBS();
+    }
+    else if(ext === ".properties" && baseName.startsWith("log4j")){
+      this.reloadLog();
+    }
+    else if(ext === '.xml'){
+      var parsedXml = this.parseCurrentXmlFile();
+      if(parsedXml){
+        try{
+          if(parsedXml["Rule"] && parsedXml["Rule"]["ATTR"]["name"]){
+            this.runRule(parsedXml["Rule"]["ATTR"]["name"]);
+          }
+          else if(parsedXml["TaskDefinition"] && parsedXml["TaskDefinition"]["ATTR"]["name"]){
+            this.runTask(parsedXml["TaskDefinition"]["ATTR"]["name"]);
+          }
+        }
+        catch(error){
+          vscode.window.showErrorMessage(`Error parsing ${editor.document.fileName}`);
+        }
+      }
+    }
+  }
+
+  public async deployChange(){
+    var gitExtension = vscode.extensions.getExtension('vscode.git');
+    if(!gitExtension){
+      vscode.window.showInformationMessage(`Can't get git extension`);
+      return;
+    }
+    const gitExports = await gitExtension.activate();
+    const gitAPI = gitExports.getAPI(1);
+    while(gitAPI.repositories.length === 0){
+      vscode.window.showInformationMessage(`Couldn't find any git repositories`);
+      //await gitAPI.onDidOpenRepository();
+      return;
+    }
+    
+    const rootPaths = vscode.workspace.workspaceFolders;
+    var repository = null;
+    for(var i=0; i < rootPaths.length; i++){
+      var dir = rootPaths[i].uri.fsPath;
+      repository = gitAPI.repositories.filter(r => r.rootUri.fsPath.startsWith(dir))[0];
+      if(undefined != repository){
+        break;
+      }
+      else{
+        vscode.window.showErrorMessage(`Couldn't find a git repository at ${dir} try to open VSCode with a different folder`);
+      }
+    }
+    if(undefined == repository){
+      return;
+    }
+    const unstaged = repository._repository.workingTreeGroup.resourceStates;
+    const staged = repository._repository.indexGroup.resourceStates;
+    const all = unstaged.concat(staged);
+    //const all = Array.from(new Set([...unstaged, ...staged]));
+    var filesToDeploy = all.filter(res => res.letter !== "D").
+                            filter(res => require('path').extname(res.resourceUri.fsPath) === '.xml').
+                            map(res => res.resourceUri.fsPath);
+    filesToDeploy = Array.from(new Set(filesToDeploy));
+    if(filesToDeploy.length === 0){
+      vscode.window.showWarningMessage(`Currently you don't have any modified or new files to import`);
+      return;
+    }
+  
+    var files = filesToDeploy.map(f => require("path").basename(f)).join("\n");
+    
+    var environment = await this.getEnvironment();
+    environment = environment ? `to ${environment}`:"";
+    const isPlural = filesToDeploy.length > 1 ? "s":"";
+    const pick = await vscode.window.showInformationMessage(
+      `You are about to import the following file${isPlural} ${environment}:\n\n${files}`, 
+      { modal: true }, "Yes");
+    if(pick !== "Yes"){
+      return;
+    }
+
+    await this.importFileList(filesToDeploy);
+  }
+  public async getWorkflowVersion(){
+    var post_body = 
+    {
+      "workflowArgs":
+      {
+        "operation": "getVersion"
+      }
+    };
+
+    var result = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: "Getting current version...",
+      cancellable: true
+      }, 
+      progress => {
+        return this.postRequest(JSON.stringify(post_body));
+      });
+
+    if(result["payload"] === undefined){
+      vscode.window.showInformationMessage(`Couldn't connect to the server, exiting`);
+      return "undefined";
+    }
+    return result["payload"];
+  }
+
+  public async buildDeployment(environment){
+    const buildProps = await vscode.workspace.findFiles("**/build.properties");
+    if(1 != buildProps.length){
+      vscode.window.showWarningMessage(`Couldn't find build.properties.`);
+      return false;
+    }
+    const buildBaseDir = require("path").dirname(buildProps[0].fsPath);
+    const util = require('util');
+    const exec = util.promisify(require('child_process').exec);
+    
+    const buildCmd = "build clean main";
+    const result = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: `Running SSB "${buildCmd}" for ${environment}`,
+      cancellable: false
+      }, 
+      async (progress) => {
+        const {stdout, stderr} = await exec(`${buildCmd}`, 
+                                      {cwd: `${buildBaseDir}`, 
+                                        env: {"SPTARGET": environment}}); 
+        if (stderr) {
+          vscode.window.showWarningMessage(`Build failed. ${stderr}`);
+          return false;
+        }
+        return true;
+      });
+
+    return result;
+  }
+
+  public async deployCustomBuild(){
+    const env = await this.getEnvironment();
+    if(!env){
+      vscode.window.showInformationMessage(`Can't deploy without knowing the SSB environment`);
+      return;
+    }
+
+    const pick1 = await vscode.window.showInformationMessage(
+      `Would you like to run SSB build for ${env}?\n(In case you already have the build, please say "No")`, 
+      { modal: true }, "Yes", "No");
+    if(!pick1){
+      vscode.window.showInformationMessage(`Deployment was cancelled`);
+      return;
+    }
+    if(pick1 === 'Yes'){
+      const isSuccess = await this.buildDeployment(env);
+      // if(!isSuccess){
+      //   vscode.window.showInformationMessage(`Something went wrong during the build, please fix it and try again`);
+      //   return;
+      // }
+    }
+
+    const spInitCustom = await vscode.workspace.findFiles("**/build/extract/WEB-INF/config/sp.init-custom.xml");
+    if(1 != spInitCustom.length){
+      vscode.window.showInformationMessage(`Couldn't find /build/extract/WEB-INF/config/sp.init-custom.xml. Please run SSB build`);
+      return;
+    }
+    const spInitCustomPath = spInitCustom[0].fsPath.replace(/\\/g, "/");
+    const deployBaseDir = require("path").dirname(spInitCustomPath);
+    const spInitCustomContent = fs.readFileSync(spInitCustomPath, {encoding:'utf8', flag:'r'});
+    const parsedXml = this.parseCurrentXmlFile(spInitCustomContent);
+    const filesToDeploy = parsedXml.sailpoint.ImportAction
+                              .reduce(function(arr, obj){
+                                if("include" === obj.ATTR.name){
+                                  arr.push(obj.ATTR.value);
+                                }
+                                return arr;
+                              }, [])
+                              .map(f=>deployBaseDir + "/" + f);
+    if(!filesToDeploy){
+      vscode.window.showInformationMessage(`Couldn't find files in sp.init-custom.xml`);
+      return;
+    }
+    if(0 == filesToDeploy.length){
+      vscode.window.showInformationMessage(`Couldn't find files under build/extract folder. Please run SSB build`);
+      return;
+    }
+    var files = filesToDeploy.map(f => require("path").basename(f)).join("\n");
+    const pick2 = await vscode.window.showInformationMessage(
+      `You are about to import the following ${filesToDeploy.length} files to ${env} \n\n${files}`, 
+      { modal: true }, "Yes");
+    if(pick2 !== "Yes"){
+      return;
+    }
+
+    await this.importFileList(filesToDeploy, false);
+  }
+
+  public async compareLocalWithDeployed(){
+    var editor = vscode.window.activeTextEditor;
+    if(!editor || !editor.document || 
+      require('path').extname(editor.document.fileName) != '.xml')  {
+      vscode.window.showWarningMessage(`Please make sure that your currently open document is a of xml type`); 
+      return;
+    }  
+
+    var classes = await this.getClasses();
+    if(!classes){
+      vscode.window.showInformationMessage("No supported classes were found, exiting");
+      return;
+    }
+    
+    const parsedXml = this.parseCurrentXmlFile();
+    const keys = Object.keys(parsedXml);
+    if(!keys || keys.length == 0 || keys.length > 1){
+      vscode.window.showWarningMessage(`An IIQ object should have a well formed xml with one root element`); 
+      return;
+    }
+
+    const objectClass = keys[0];
+    if(!classes.includes(objectClass)){
+      vscode.window.showWarningMessage(`${objectClass} is not a valid IIQ class. Please make sure your xml contains only one object`); 
+      return;
+    }
+
+    const objectName = parsedXml[objectClass].ATTR.name;
+    var xml = await this.searchObject(objectClass, objectName);
+    if(!xml || xml === 'fail'){
+      vscode.window.showInformationMessage("Couldn't find the deployed object in your target environment");
+      return;
+    }
+    const tempFile = tmp.fileSync({ prefix: `${objectClass}-${objectName}`, postfix: '.xml' });
+    fs.writeFileSync(tempFile.name, xml);
+  
+    const currObjPath = vscode.Uri.file(editor.document.fileName);
+    const deployedObjPath = vscode.Uri.file(tempFile.name);
+    
+    const title = "Local vs deployed " + objectClass + ":'" + objectName + "'";
+    await vscode.commands.executeCommand("vscode.diff", currObjPath, deployedObjPath, title);
+  }
+
+  public async collectOpenXMLFiles(){
+    var res = [];
+    var document = vscode.window.activeTextEditor.document;
+    const firstImportedName = document.fileName;
+
+    if(require('path').extname(document.fileName) === '.xml'){
+      res.push(document.fileName);
+    }
+
+    const max_count = 20;
+    var cnt = 0;
+    do{
+      await vscode.commands.executeCommand('workbench.action.nextEditor');
+      document = vscode.window.activeTextEditor.document;
+      if(firstImportedName === document.fileName || cnt++ > max_count){
+        break;
+      }
+
+      if(require('path').extname(document.fileName) === '.xml'){
+        res.push(document.fileName);
+      }
+    }while(true)
+    return res;
+  }
+
+  public async deployOpenFiles(){
+    const env = await this.getEnvironment();
+    if(!vscode.window.activeTextEditor){
+      vscode.window.showInformationMessage(`Please open an xml document to import`); 
+      return;
+    }  
+    
+    const openFiles = await this.collectOpenXMLFiles();
+    const files = openFiles.map(f => require("path").basename(f)).join("\n");
+
+    const pick = await vscode.window.showInformationMessage(
+      `You are about to import the following ${openFiles.length} files to ${env} \n\n${files}`, 
+      { modal: true }, "Yes");
+    if(pick !== "Yes"){
+      return;
+    }
+
+    await this.importFileList(openFiles);
+  }
+  public async showSysInfo(){
+    var post_body = 
+    {
+      "workflowArgs":
+      {
+        "operation": "getSysInfo"
+      }
+    };
+
+    var result = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: "Retrieving system information...",
+      cancellable: true
+      }, 
+      progress => {
+        return this.postRequest(JSON.stringify(post_body));
+      });
+
+    if(result["payload"] !== undefined){
+      const tempFile = tmp.fileSync({ prefix: 'sysinfo-', postfix: '.info' });
+      fs.writeFileSync(tempFile.name, result["payload"]);
+      let doc = await vscode.workspace.openTextDocument(tempFile.name); 
+      await vscode.window.showTextDocument(doc);
+    }
+    else{
+      vscode.window.showErrorMessage(`Operation failed`);
+    }
+  }
+}
