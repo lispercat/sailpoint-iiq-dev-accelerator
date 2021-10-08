@@ -1,4 +1,8 @@
 # Change Log
+## [1.0.24]
+### Added
+ - Added an option to choose whether or not to show the progess bar while deleting multiple objects 
+
 ## [1.0.23]
 ### Added
  - Added the ability to show system information (similar in debug about page) 

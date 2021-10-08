@@ -869,7 +869,7 @@ export class DevIIQCommands {
     await vscode.window.showTextDocument(doc);
   }
 
-  private async deleteObjectInternal(cls, objNames){
+  private async deleteObjectInBulk(cls, objNames){
     var post_body = 
     {
       "workflowArgs":
@@ -883,13 +883,54 @@ export class DevIIQCommands {
     var result = await vscode.window.withProgress({
       location: vscode.ProgressLocation.Notification,
       title: `Deleting object ${objNames} ...`,
-      cancellable: true
+      cancellable: false
       }, 
       progress => {
         return this.postRequest(JSON.stringify(post_body));
       });
 
     return result["payload"];
+  }
+
+  private async deleteObjectWithProgress(cls, objNames){
+
+    var wasCancelled = false;
+    var result = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: "Deleting objects: ",
+      cancellable: true
+      }, 
+      async (progress, token) => {
+        token.onCancellationRequested(() => {
+        });
+        var incr = 100/objNames.length;
+        progress.report({ increment: 0 });
+
+        for(var i = 0; i < objNames.length; i++){
+          try {
+            var obj = objNames[i];
+            progress.report({ increment: incr, message: `${obj}` });
+            var post_body = {
+              "workflowArgs":
+              {
+                "operation": "deleteObject",
+                "theClass": cls,
+                "objNames": [obj]
+              }
+            };
+            let res = await this.postRequest(JSON.stringify(post_body));
+            if(token.isCancellationRequested){
+              wasCancelled = true;
+              break;
+            }
+          } catch (error) {
+            vscode.window.showErrorMessage(`Operation failed`);
+            return "Error";
+          }
+        }
+        return "Success";
+      });
+      return result;
   }
 
   public async deleteObject(){
@@ -914,13 +955,20 @@ export class DevIIQCommands {
     }
   
     const answer = await vscode.window.showQuickPick(["Yes", "No"],
-                    {placeHolder: `Are you sure you want to delete ${objNames}?`});
+                    {placeHolder: `Are you sure you want to delete ${objNames.length} object(s)?`});
     if(!answer || answer === "No"){
       vscode.window.showInformationMessage("No object was deleted");
       return;
     }
 
-    var status = await this.deleteObjectInternal(theClass, objNames);
+    var showDeleteProgress: boolean = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('showDeleteProgress');
+    var status = null; 
+    if(showDeleteProgress){
+      status = await this.deleteObjectWithProgress(theClass, objNames);
+    }
+    else{
+      status = await this.deleteObjectInBulk(theClass, objNames);
+    }
     if(status){
       vscode.window.showInformationMessage(`Operation status: ${status}`);
     }

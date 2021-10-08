@@ -103,6 +103,13 @@ To specify the environment you may also add this to your settings.json:
 "iiq.dev-accelerator.password": "admin"
 ```
 
+* (optional) `iiq.dev-accelerator.showDeleteProgress`: When set to true, you will see a progress bar when deleting multiple objects. It makes the process slower, but more tangible
+  * By default this property is true so you will see the progress bar with the option to cancel when you delete multiple objects. 
+  * When it's false, once you start the deletion process you will have to wait till the end, but it will be a bit faster. 
+```json
+"iiq.dev-accelerator.showDeleteProgress": true 
+```
+
 
 ## Release Notes
 

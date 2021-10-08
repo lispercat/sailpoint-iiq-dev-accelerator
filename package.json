@@ -3,7 +3,7 @@
     "displayName": "Sailpoint IIQ Development Accelerator",
     "description": "Provides commands to facilitate/accelerate coding/interacting with remote Sailpoint IIQ server",
     "icon": "images/icon.png",
-    "version": "1.0.23",
+    "version": "1.0.24",
     "engines": {
         "vscode": "^1.60.0"
     },
@@ -77,6 +77,12 @@
                     "type": "string",
                     "description": "password",
                     "default": "",
+                    "scope": "application"
+                },
+                "iiq-dev-accelerator.showDeleteProgress": {
+                    "type": "boolean",
+                    "description": "When set to true, you will see a progress bar when deleting multiple objects. It makes the process slower, but more tangible",
+                    "default": true,
                     "scope": "application"
                 }
             }
