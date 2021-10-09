@@ -3,7 +3,7 @@
     "displayName": "Sailpoint IIQ Development Accelerator",
     "description": "Provides commands to facilitate/accelerate coding/interacting with remote Sailpoint IIQ server",
     "icon": "images/icon.png",
-    "version": "1.0.24",
+    "version": "1.0.25",
     "engines": {
         "vscode": "^1.60.0"
     },
@@ -33,6 +33,7 @@
         "Other"
     ],
     "activationEvents": [
+        "onLanguage:xml",
         "onCommand:iiq-dev-accelerator.importFile",
         "onCommand:iiq-dev-accelerator.runTask",
         "onCommand:iiq-dev-accelerator.runRule",
@@ -48,7 +49,8 @@
         "onCommand:iiq-dev-accelerator.deployCustomBuild",
         "onCommand:iiq-dev-accelerator.compareLocalWithDeployed",
         "onCommand:iiq-dev-accelerator.deployOpenFiles",
-        "onCommand:iiq-dev-accelerator.showSysInfo"
+        "onCommand:iiq-dev-accelerator.showSysInfo",
+        "onCommand:iiq-dev-accelerator.refreshObject"
     ],
     "main": "./out/extension.js",
     "contributes": {
@@ -83,6 +85,12 @@
                     "type": "boolean",
                     "description": "When set to true, you will see a progress bar when deleting multiple objects. It makes the process slower, but more tangible",
                     "default": true,
+                    "scope": "application"
+                },
+                "iiq-dev-accelerator.deployCustomBuildQuietly": {
+                    "type": "boolean",
+                    "description": "When set to true, you will not be asked during custom build to confirm the list of files to import",
+                    "default": false,
                     "scope": "application"
                 }
             }
@@ -151,6 +159,10 @@
             {
                 "command": "iiq-dev-accelerator.showSysInfo",
                 "title": "iiq: Show System Information"
+            },
+            {
+                "command": "iiq-dev-accelerator.refreshObject",
+                "title": "iiq: Refresh Current Object"
             }
         ],
         "keybindings": [
@@ -184,14 +196,39 @@
             "explorer/context": [
                 {
                     "command": "iiq-dev-accelerator.importFile",
-                    "when": "resourceExtname == .xml",
+                    "when": "iiq.context == Rule || iiq.context == Task || iiq.context == ProjectXMLObject || iiq.context = TempXMLObject",
                     "group": "iiq"
                 }
             ],
             "editor/context": [
                 {
                     "command": "iiq-dev-accelerator.importFile",
-                    "when": "resourceExtname == .xml",
+                    "when": "iiq.context == Rule || iiq.context == Task || iiq.context == ProjectXMLObject || iiq.context = TempXMLObject",
+                    "group": "iiq"
+                },
+                {
+                    "command": "iiq-dev-accelerator.runRule",
+                    "when": "iiq.context == Rule",
+                    "group": "iiq"
+                },
+                {
+                    "command": "iiq-dev-accelerator.runTask",
+                    "when": "iiq.context == Task",
+                    "group": "iiq"
+                },
+                {
+                    "command": "iiq-dev-accelerator.runTaskWithAttr",
+                    "when": "iiq.context == Task",
+                    "group": "iiq"
+                },
+                {
+                    "command": "iiq-dev-accelerator.reloadLog",
+                    "when": "iiq.context == LogConfig",
+                    "group": "iiq"
+                },
+                {
+                    "command": "iiq-dev-accelerator.evalBS",
+                    "when": "iiq.context == BeanShellSelection",
                     "group": "iiq"
                 }
             ]

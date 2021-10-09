@@ -3,8 +3,8 @@
 This is the README for "Sailpoint IIQ Development Accelerator" VSCode extension.
 The main goal to accelerate and facilitate development by directly interacting with the target IIQ server via VSCode commands.
 To use the extension, you need to:
-* Import in Sailpoint IIQ the ["IIQDevAcceleratorWF" workflow](https://raw.githubusercontent.com/lispercat/sailpoint-iiq-dev-accelerator/master/src/workflow.xml) 
-* update the configuration of the extension with the name of your target IIQ environment (sandbox, dev, uat etc.).
+* **Import in Sailpoint IIQ** the ["IIQDevAcceleratorWF" workflow](https://raw.githubusercontent.com/lispercat/sailpoint-iiq-dev-accelerator/master/src/workflow.xml) 
+* (Optional) update the configuration of the extension with the name of your target IIQ environment (sandbox, dev, uat etc.).
 
 ![Example of how to evalue a snippet of BeanShell script, import and run a rule with parameters](https://raw.githubusercontent.com/lispercat/sailpoint-iiq-dev-accelerator/master/images/EvalAndRunRule.gif)
 
@@ -16,7 +16,10 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
 * **Get Object**
   * Will retrive an object of selected class
   * You can make modifications and import it with **Import File** command
-  * Go **Get Object** + **Import File** gives you the ability to modify objects
+  * **Get Object** + **Import File** gives you the ability to modify objects
+* **Refresh Object**
+  * Will refresh the currently open object (that you got with a **Get Object** command)
+  * You can also choose to see the difference between the old and the new objects
 * **Delete Objects**
   * Will delete the selected objects from the target system
 * **Run Task**
@@ -108,6 +111,11 @@ To specify the environment you may also add this to your settings.json:
   * When it's false, once you start the deletion process you will have to wait till the end, but it will be a bit faster. 
 ```json
 "iiq.dev-accelerator.showDeleteProgress": true 
+```
+
+* (optional) `iiq.dev-accelerator.deployCustomBuildQuietly`: When set to true, you will not be asked during custom build to confirm the list of files to import  
+```json
+"iiq.dev-accelerator.deployCustomBuildQuietly": false 
 ```
 
 

@@ -1,7 +1,14 @@
 # Change Log
+## [1.0.25]
+### Added
+ - Enhanced context-based menu commands
+ - Added an option to choose whether or not get confirmation for multipe files to be imported (deployCustomBuildQuietly = false by default)
+ - Added the ability to refresh an XML object (obtained via GetObject before). Also you can choose to see the difference between the old and new objects
+ - The workflow will now get updated automatically to the new version (before you had to do it manually)
+ 
 ## [1.0.24]
 ### Added
- - Added an option to choose whether or not to show the progess bar while deleting multiple objects 
+ - Added an option to choose whether or not to show the progess bar while deleting multiple objects (showDeleteProgress = true by default) 
 
 ## [1.0.23]
 ### Added

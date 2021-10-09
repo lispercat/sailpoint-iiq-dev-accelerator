@@ -7,11 +7,147 @@ import * as propertiesReader from 'properties-reader';
 import * as xml2js from 'xml2js';
 import * as tmp from 'tmp';
 import { URL } from 'url';
+import { basename } from 'path';
+
+enum ContextValue {
+  NotIIQContext = "NotIIQContext",
+  BeanShellSelection = "BeanShellSelection",
+  Rule = "Rule",
+  Task = "Task",
+  ProjectXMLObject = "ProjectXMLObject",
+  TempXMLObject = "TempXMLObject",
+  LogConfig = "LogConfig",
+}
+
+class ContextManager {
+  private _name: string;
+  private _lastValue: ContextValue;
+  private _objClass: string;
+  private _objName: string;
+
+  constructor(name: string) {
+    this._name = name;
+  }
+
+  public set(contextValue: ContextValue, objClass? :string, objName?: string, isProjectObject?: boolean): void {
+    //try to deduce contextValue when only objClass and objNames are set
+    if(null == contextValue && objClass){
+      switch(objClass){
+        case "Rule":
+          contextValue = ContextValue.Rule;
+          break;
+        case "TaskDefinition":
+          contextValue = ContextValue.Task;
+          break;
+        default:
+          contextValue = isProjectObject ? ContextValue.ProjectXMLObject : ContextValue.TempXMLObject;
+      }
+    }
+    else if(null == contextValue && !objClass){
+      throw new Error('Either context or objClass need to be initialized');
+    }
+    this._lastValue = contextValue;
+    this._objClass = objClass;
+    this._objName = objName;
+    vscode.commands.executeCommand('setContext', this._name, this._lastValue);
+  }
+  public getContextValue() : ContextValue{
+    return this._lastValue;
+  }
+  public getObjClass(): string{
+    return this._objClass;
+  }
+  public getObjName(): string{
+    return this._objName;
+  }
+}
 
 export class DevIIQCommands {
   private g_props: { [key: string]: any } = {"filePath": null, "props": null, "mtime": null};
   private g_statusBarEnvItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
   private g_IIQClasses = null;
+  private g_workflowUpdated: boolean = false;
+  private g_workflowUrl: string = "/rest/workflows/IIQDevAcceleratorWF/launch";
+  private g_contextManager : ContextManager = new ContextManager("iiq.context");
+
+  constructor(){
+    vscode.window.onDidChangeActiveTextEditor((textEditor: vscode.TextEditor | undefined) => {
+      if (!textEditor || undefined == textEditor) {
+        return;
+      }
+      this.changeState();
+    });
+		vscode.window.onDidChangeTextEditorSelection((e: vscode.TextEditorSelectionChangeEvent) => {
+			this.changeState();
+		});
+  }
+
+  private async changeState(){
+    var editor = vscode.window.activeTextEditor;
+    if(!editor.document)  {
+      vscode.window.showInformationMessage(`To execute based on context, please open file with some IIQ object or a logging config`); 
+      return;
+    }
+
+    var ext = require('path').extname(editor.document.fileName);
+    var baseName = require('path').basename(editor.document.fileName);
+    var selection = editor.selection;
+    var script = editor.document.getText(selection);
+    if(script && ext === '.xml'){
+      this.g_contextManager.set(ContextValue.BeanShellSelection);
+    }
+    else if(ext === ".properties" && baseName.startsWith("log4j")){
+      this.g_contextManager.set(ContextValue.LogConfig);
+    }
+    else if(ext === '.xml'){
+      try {
+        var parsedXml = this.parseCurrentXmlFile();
+        if(parsedXml){
+          var theClass = Object.keys(parsedXml)[0];
+          var objName = parsedXml[theClass]["ATTR"]["name"];
+          var isProjectObject: boolean = await this.isProjectFile(baseName);
+          this.g_contextManager.set(null, theClass, objName, isProjectObject);
+        }
+      } 
+      catch (error) {
+        vscode.window.showErrorMessage(`Error parsing ${editor.document.fileName}`);
+      }
+    }
+    else{
+      this.g_contextManager.set(ContextValue.NotIIQContext);
+    }
+  }
+
+  private getVersion() : string{
+    const version = vscode.extensions.getExtension('AndreiStebakov.sailpoint-iiq-dev-accelerator').packageJSON.version;
+    return version;
+  }
+
+  public async updateWorkflowIfNeeded(url, username, password) : Promise<boolean>{
+    var retValue : boolean = false;
+    const extVersion: string = this.getVersion();
+    const wfVersion: string = await this.getWorkflowVersion(url, username, password);
+    if("undefined" == wfVersion){
+      return false;
+    }
+    if(extVersion != wfVersion){
+      const json = vscode.extensions.getExtension('AndreiStebakov.sailpoint-iiq-dev-accelerator').packageJSON;
+      const path = require("path");
+      const fullWFPath = path.resolve(__dirname, "../src/workflow.xml");
+      const fileContent = fs.readFileSync(fullWFPath, {encoding:'utf8', flag:'r'});
+      var post_body = {
+        "workflowArgs": {
+          "operation": "Import",
+          "resource": fileContent
+        }
+      };
+      var result = await this.postRequestInternal(JSON.stringify(post_body), url, username, password);
+      if(result["payload"] !== undefined){
+        retValue = true;
+      }
+    }
+    return retValue;
+  }
 
   public  getStatusBar(){
     return this.g_statusBarEnvItem;
@@ -70,6 +206,14 @@ export class DevIIQCommands {
       result.push(env);
     });
     return result;
+  }
+
+  public async updateStatusBarIfEnvironmentIsSet(){
+    var environment: string = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('environment');
+    if(!environment){
+      return;
+    }
+    await this.updateStatusBar(environment);
   }
 
   private async getEnvironment(){
@@ -203,20 +347,16 @@ export class DevIIQCommands {
         vscode.workspace.getConfiguration('iiq-dev-accelerator').update('password', password, true);
       }
     }
+    if(!this.g_workflowUpdated){
+      this.g_workflowUpdated = await this.updateWorkflowIfNeeded(url, username, password);
+    }
     return [url, username, password];
   }
 
-  private async postRequest(post_body){
+  private async postRequestInternal(post_body, url, username, password){
     var result = {};
-    const [url, username, password] = await this.getSiteConfig();
-    if(!url || !username || !password){
-      vscode.window.showInformationMessage(`Please update your configuration with url, username and password`);
-      return;
-    }
-
     const headers = new Headers();
     //process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0;
-    
     headers.append('Content-Type', 'application/json');
     headers.append('Authorization', 'Basic ' + base64.encode(username + ":" + password));
     const parsedUrl = new URL(url);
@@ -226,7 +366,7 @@ export class DevIIQCommands {
                   new https.Agent({rejectUnauthorized: false}):new http.Agent();
 
     try {
-      let full_url = `${url.replace(/\/$/g, "")}/rest/workflows/IIQDevAcceleratorWF/launch`;
+      let full_url = `${url.replace(/\/$/g, "")}${this.g_workflowUrl}`;
       const response = await fetch(full_url, {
         method: 'POST', 
         body: post_body,
@@ -243,10 +383,22 @@ export class DevIIQCommands {
       }
     }
     catch(error){
-      vscode.window.showErrorMessage(`Post request failed with ${error}`);
+      const path = require("path");
+      const fullWFPath = path.resolve(__dirname, "../src/workflow.xml");
+      vscode.window.showErrorMessage(`Check if you manually imported the IIQ Dev Accelerator Workflow at ${fullWFPath}. Post request failed with ${error}`);
+      result["fail"] = error;
     }
     
     return result;
+
+  }
+  private async postRequest(post_body){
+    const [url, username, password] = await this.getSiteConfig();
+    if(!url || !username || !password){
+      vscode.window.showInformationMessage(`Please update your configuration with url, username and password`);
+      return;
+    }
+    return this.postRequestInternal(post_body, url, username, password);
   }
 
   public async importFileList(filesToDeploy, resolveTokens = true){
@@ -294,7 +446,7 @@ export class DevIIQCommands {
       });
 
     if(result["deployed"] == filesToDeploy.length){
-      vscode.window.showInformationMessage(`All files were successfully deployed!`);   
+      vscode.window.showInformationMessage(`All ${filesToDeploy.length} files were successfully deployed!`);   
     }
     else{
       if(wasCancelled){
@@ -311,7 +463,7 @@ export class DevIIQCommands {
     }
   }
 
-  public async importFile(fileContent = null, resolveTokens = true){
+  public async importFile(fileContent = null, resolveTokens = true) : Promise<[boolean, {}]>{
     var withProgress = false;
     var processFileErrors = {};
     if(!fileContent || typeof fileContent === 'object'){
@@ -597,7 +749,7 @@ export class DevIIQCommands {
       return;
     }
     let ruleArgs = rulesMap[ruleName];
-    let inputArgs = {};
+    let inputArgs: object = {};
     if(ruleArgs.length > 0){
       inputArgs = await this.getArgumentsFromBuffer();
       if(!inputArgs || !this.argsIntersect(ruleArgs, Object.keys(inputArgs))){
@@ -607,6 +759,12 @@ export class DevIIQCommands {
         inputArgs = {};
       }
     }
+
+    if(ruleArgs.length != Object.keys(inputArgs).length){
+      vscode.window.showWarningMessage(`Please specify the correct arguments`);
+      return;
+    }
+
     var post_body = 
     {
       "workflowArgs":
@@ -1014,32 +1172,21 @@ export class DevIIQCommands {
       vscode.window.showInformationMessage(`To execute based on context, please open file with some IIQ object or a logging config`); 
       return;
     }
-
-    var ext = require('path').extname(vscode.window.activeTextEditor.document.fileName);
-    var baseName = require('path').basename(vscode.window.activeTextEditor.document.fileName);
-    var selection = editor.selection;
-    var script = editor.document.getText(selection);
-    if(script && ext === '.xml'){
-      this.evalBS();
-    }
-    else if(ext === ".properties" && baseName.startsWith("log4j")){
-      this.reloadLog();
-    }
-    else if(ext === '.xml'){
-      var parsedXml = this.parseCurrentXmlFile();
-      if(parsedXml){
-        try{
-          if(parsedXml["Rule"] && parsedXml["Rule"]["ATTR"]["name"]){
-            this.runRule(parsedXml["Rule"]["ATTR"]["name"]);
-          }
-          else if(parsedXml["TaskDefinition"] && parsedXml["TaskDefinition"]["ATTR"]["name"]){
-            this.runTask(parsedXml["TaskDefinition"]["ATTR"]["name"]);
-          }
-        }
-        catch(error){
-          vscode.window.showErrorMessage(`Error parsing ${editor.document.fileName}`);
-        }
-      }
+    switch(this.g_contextManager.getContextValue()){
+      case ContextValue.BeanShellSelection:
+        this.evalBS();
+        break;
+      case ContextValue.LogConfig:
+        this.reloadLog();
+        break;
+      case ContextValue.Rule:
+        this.runRule(this.g_contextManager.getObjName());
+        break;
+      case ContextValue.Task:
+        this.runTask(this.g_contextManager.getObjName());
+        break;
+      case ContextValue.TempXMLObject:
+        this.refreshObject();
     }
   }
 
@@ -1099,7 +1246,8 @@ export class DevIIQCommands {
 
     await this.importFileList(filesToDeploy);
   }
-  public async getWorkflowVersion(){
+
+  public async getWorkflowVersion(url, username, password) : Promise<string>{
     var post_body = 
     {
       "workflowArgs":
@@ -1108,17 +1256,8 @@ export class DevIIQCommands {
       }
     };
 
-    var result = await vscode.window.withProgress({
-      location: vscode.ProgressLocation.Notification,
-      title: "Getting current version...",
-      cancellable: true
-      }, 
-      progress => {
-        return this.postRequest(JSON.stringify(post_body));
-      });
-
+    var result = await this.postRequestInternal(JSON.stringify(post_body), url, username, password);
     if(result["payload"] === undefined){
-      vscode.window.showInformationMessage(`Couldn't connect to the server, exiting`);
       return "undefined";
     }
     return result["payload"];
@@ -1202,13 +1341,16 @@ export class DevIIQCommands {
       return;
     }
     var files = filesToDeploy.map(f => require("path").basename(f)).join("\n");
-    const pick2 = await vscode.window.showInformationMessage(
-      `You are about to import the following ${filesToDeploy.length} files to ${env} \n\n${files}`, 
-      { modal: true }, "Yes");
-    if(pick2 !== "Yes"){
-      return;
+    var deployCustomBuildQuietly: boolean = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('deployCustomBuildQuietly');
+    if(!deployCustomBuildQuietly){
+      const pick2 = await vscode.window.showInformationMessage(
+        `You are about to import the following ${filesToDeploy.length} files to ${env} \n\n${files}`, 
+        { modal: true }, "Yes");
+      if(pick2 !== "Yes"){
+        return;
+      }
     }
-
+    
     await this.importFileList(filesToDeploy, false);
   }
 
@@ -1326,5 +1468,56 @@ export class DevIIQCommands {
     else{
       vscode.window.showErrorMessage(`Operation failed`);
     }
+  }
+
+  private async isProjectFile(searchFileName){
+    var folders  = vscode.workspace.workspaceFolders;
+    for(var i = 0; i < folders.length; i++){
+      const uris = await vscode.workspace.findFiles(`**/${searchFileName}`, `${folders[i].uri.fsPath}/**`);
+      console.log("now trying to go over files...");
+      if(uris.length > 0){
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public async refreshObject(){
+    if(this.g_contextManager.getContextValue() != ContextValue.TempXMLObject || !this.g_contextManager.getObjName())  {
+      vscode.window.showInformationMessage(`To execute based on context, please open file with some IIQ object or a logging config`); 
+      return;
+    }
+
+    var editor = vscode.window.activeTextEditor;
+    var theClass = this.g_contextManager.getObjClass();
+    var objName = this.g_contextManager.getObjName();
+
+    var xml = await this.searchObject(theClass, objName);
+    if(!xml){
+      vscode.window.showInformationMessage("Empty object, exiting");
+      return;
+    }
+
+    var showDiff = false;
+    const answer = await vscode.window.showQuickPick(["Yes", "No"],
+                    {placeHolder: `Would you like to display it in a diff mode?`});
+    if(answer === "Yes"){
+      showDiff = true;
+    }
+
+    const oldFileName = editor.document.fileName;
+    const newFile = tmp.fileSync({ prefix: `${theClass}-${objName}`, postfix: '.xml' });
+    const newFileName = newFile.name;
+    fs.writeFileSync(newFileName, xml);
+
+    if(showDiff){
+      const title = "Old vs new " + theClass + ":'" + objName + "'";
+      await vscode.commands.executeCommand("vscode.diff", vscode.Uri.file(oldFileName), vscode.Uri.file(newFileName), title);
+    }
+    else{
+      let doc = await vscode.workspace.openTextDocument(newFileName); 
+      await vscode.window.showTextDocument(doc);
+    }
+    
   }
 }
