@@ -7,7 +7,9 @@ import * as propertiesReader from 'properties-reader';
 import * as xml2js from 'xml2js';
 import * as tmp from 'tmp';
 import { URL } from 'url';
-import { basename } from 'path';
+import  {execute as compileJavaSource}  from 'compile-run/dist/lib/execute-command';
+import { Result } from 'compile-run';
+tmp.setGracefulCleanup()
 
 enum ContextValue {
   NotIIQContext = "NotIIQContext",
@@ -16,6 +18,7 @@ enum ContextValue {
   Task = "Task",
   ProjectXMLObject = "ProjectXMLObject",
   TempXMLObject = "TempXMLObject",
+  JavaFile = "JavaFile",
   LogConfig = "LogConfig",
 }
 
@@ -71,18 +74,19 @@ export class DevIIQCommands {
   private g_contextManager : ContextManager = new ContextManager("iiq.context");
 
   constructor(){
+    this.contextChange();
     vscode.window.onDidChangeActiveTextEditor((textEditor: vscode.TextEditor | undefined) => {
       if (!textEditor || undefined == textEditor) {
         return;
       }
-      this.changeState();
+      this.contextChange();
     });
 		vscode.window.onDidChangeTextEditorSelection((e: vscode.TextEditorSelectionChangeEvent) => {
-			this.changeState();
+			this.contextChange();
 		});
   }
 
-  private async changeState(){
+  private async contextChange(){
     var editor = vscode.window.activeTextEditor;
     if(!editor.document)  {
       vscode.window.showInformationMessage(`To execute based on context, please open file with some IIQ object or a logging config`); 
@@ -98,6 +102,9 @@ export class DevIIQCommands {
     }
     else if(ext === ".properties" && baseName.startsWith("log4j")){
       this.g_contextManager.set(ContextValue.LogConfig);
+    }
+    else if(ext === ".java"){
+      this.g_contextManager.set(ContextValue.JavaFile);
     }
     else if(ext === '.xml'){
       try {
@@ -145,6 +152,9 @@ export class DevIIQCommands {
       if(result["payload"] !== undefined){
         retValue = true;
       }
+    }
+    else{
+      return true;
     }
     return retValue;
   }
@@ -367,12 +377,16 @@ export class DevIIQCommands {
 
     try {
       let full_url = `${url.replace(/\/$/g, "")}${this.g_workflowUrl}`;
-      const response = await fetch(full_url, {
+      const options = 
+      {
         method: 'POST', 
         body: post_body,
         headers: headers, 
-        agent: agent}
-      );
+        agent: agent,
+        timeout: 10000000
+      };
+      const response = await fetch(full_url, options);
+
       const json = await response.json();
       const payload = await json.attributes.payload;
       if(response.ok){
@@ -463,7 +477,153 @@ export class DevIIQCommands {
     }
   }
 
+  private async findIIQLibFolder(){
+    var folders  = vscode.workspace.workspaceFolders;
+    for(var i = 0; i < folders.length; i++){
+      //const uris = await vscode.workspace.findFiles(`**/WEB-INF/lib/identityiq.jar`);
+      const uris = await vscode.workspace.findFiles(`**/identityiq.jar`);
+      console.log("now trying to go over files...");
+      if(uris.length > 0){
+        var iiqJar = uris[0].fsPath;
+        return require('path').dirname(iiqJar).replace(/\\/g, "/");
+      }
+    }
+    return null;
+  }
+
+  private validateIIQLibPath(path){
+    if (!path) {
+      return 'You must enter some input';
+    }
+    const glob = require('glob');
+    var result = glob.sync(path + '/identityiq.jar');
+    if(result.length == 0){
+      return `Couldn't find *.jar files under the folder ${path}`
+    }
+    return undefined;
+  }
+
+  private getClassFile(path, file) : string{
+    const glob = require('glob');
+    var result = glob.sync(`${path}/**/${file}`);
+    if(result.length == 0){
+      return null;
+    }
+    return result[0];
+  }
+  
+  private async getIIQClassPath() : Promise<string>{
+    var classPath: string = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('iiq_lib_path');
+    if(!classPath){
+      classPath = await this.findIIQLibFolder();
+      if(!classPath){
+        classPath = await vscode.window.showInputBox({
+          ignoreFocusOut: true,
+          value: "",
+          prompt: `Couldn't detect your IIQ library path. Please enter here `, 
+          validateInput: this.validateIIQLibPath
+        });
+        if(classPath === undefined){
+          vscode.window.showErrorMessage(`Please specify the path to IIQ libraries so that you file can get compiled`);
+          return;
+        }
+        classPath = classPath.replace(/\\/g, "/");
+        vscode.workspace.getConfiguration('iiq-dev-accelerator').update('iiq_lib_path', classPath, true);
+      }
+    }
+    classPath = classPath + "/*";
+    return classPath;
+  }
+
+  public async importJava(){
+    const [url, username, password] = await this.getSiteConfig();
+    var classPath = await this.getIIQClassPath();
+    var outputClassDir = tmp.dirSync().name.replace(/\\/g, "/"); 
+    var javaFile = vscode.window.activeTextEditor.document.fileName.replace(/\\/g, "/");
+    var classFileBaseName = require('path').basename(javaFile, '.java') + '.class';
+    var compilerPath = `javac`;  
+    var compilationResult: Result = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: `Compiling ${require('path').basename(javaFile)}`,
+      cancellable: true
+      }, 
+      progress => {
+        return compileJavaSource(compilerPath, ['-d', outputClassDir, '-cp', classPath, javaFile]);
+      });
+
+    if(compilationResult.exitCode !== 0){
+      vscode.window.showErrorMessage(`Couldn't compile ${require('path').basename(javaFile)}`);
+      fs.rmdirSync(outputClassDir, { recursive: true });
+      return;
+    }
+
+    var classFile = this.getClassFile(outputClassDir, classFileBaseName);
+    if(!classFile){
+      vscode.window.showErrorMessage(`Couldn't file ${classFileBaseName} under ${outputClassDir}`);
+      fs.rmdirSync(outputClassDir, { recursive: true });
+      return;
+    }
+    const classBytes = fs.readFileSync(classFile, {encoding: 'base64'});
+    fs.rmdirSync(outputClassDir, { recursive: true });
+    var relativeClassPath = require('path').relative(outputClassDir, classFile).replace(/\\/g, "/");
+    var clazzName = relativeClassPath.substring(0, relativeClassPath.search('.class')).replace(/\//g, ".");
+    var post_body = 
+    {
+      "workflowArgs":
+      {
+        "operation": "importJava",
+        "clazzName": clazzName, 
+        "clazzPath": relativeClassPath,
+        "clazzBytes": classBytes,
+        "debugPort": "8000",
+        "debugTransport": "dt_socket",
+        "host": "localhost"
+      }
+    };
+
+    var result = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: "Importing Java Class... ",
+      cancellable: true
+      }, 
+      async (progress, cancellationToken) => {
+        var result = await this.postRequest(JSON.stringify(post_body));
+        var uploadFailure = result["payload"]["uploadFailure"];
+        var hotswapFailure = result["payload"]["hotswapFailure"];
+        if(uploadFailure){
+          return `Java class upload failed: ${uploadFailure}`; 
+        }
+        else if(hotswapFailure){
+          progress.report({  message: `Please wait for the Tomcat app restart (HotSwap failed with error: ${hotswapFailure}). See the README for more info on that` });
+          await sleep(20000);
+          function sleep(ms) {
+            return new Promise((resolve) => {
+              setTimeout(resolve, ms);
+            });
+          }
+          var version = await this.getWorkflowVersion(url, username, password);
+          if(version != "undefined"){
+            return "success";
+          }
+          else return "Timeout trying to get workflow version";
+        }
+        return "success";
+      });
+
+    if(result == "success"){
+      vscode.window.showInformationMessage(`Operation succeded!`);
+    }
+    else{
+      vscode.window.showErrorMessage(`${result}`);
+    }
+  }
+
   public async importFile(fileContent = null, resolveTokens = true) : Promise<[boolean, {}]>{
+    if(this.g_contextManager.getContextValue() == ContextValue.JavaFile){
+      this.importJava();
+      return;
+    }
+
     var withProgress = false;
     var processFileErrors = {};
     if(!fileContent || typeof fileContent === 'object'){
@@ -696,14 +856,15 @@ export class DevIIQCommands {
     };
     
     ruleName = ruleName ? ruleName:"all rules";
-    var result = await vscode.window.withProgress({
-      location: vscode.ProgressLocation.Notification,
-      title: `Retrieving information for ${ruleName}`,
-      cancellable: true
-      }, 
-      progress => {
-        return this.postRequest(JSON.stringify(post_body));
-      });
+    //var result = await vscode.window.withProgress({
+    //  location: vscode.ProgressLocation.Notification,
+    //  title: `Retrieving information for ${ruleName}`,
+    //  cancellable: true
+    //  }, 
+    //  progress => {
+    //    return this.postRequest(JSON.stringify(post_body));
+    //  });
+    var result = await this.postRequest(JSON.stringify(post_body));
 
     return result["payload"];
   }
@@ -1518,6 +1679,6 @@ export class DevIIQCommands {
       let doc = await vscode.workspace.openTextDocument(newFileName); 
       await vscode.window.showTextDocument(doc);
     }
-    
   }
+
 }

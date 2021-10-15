@@ -25,6 +25,7 @@
     <Transition to="Get Log File" when='"getLog".equals(operation);'/>
     <Transition to="Reload Log File" when='"reloadLog".equals(operation);'/>
     <Transition to="Get System Info" when='"getSysInfo".equals(operation);'/>
+    <Transition to="Import Java" when='"importJava".equals(operation);'/>
     <Transition to="Invalid operation"/>
   </Step>
   <Step icon="Default" name="Get Version" resultVariable="payload">
@@ -32,8 +33,8 @@
       <Source>
         import org.apache.log4j.Logger;
         Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
-        iidDevAccelLogger.debug("GetVersion is called");         
-        return "1.0.25";
+        iidDevAccelLogger.debug("GetVersion is called");
+        return "1.0.26";
       </Source>
     </Script>
     <Transition to="Stop"/>
@@ -51,7 +52,7 @@
           iidDevAccelLogger.debug("Started Importer"); 
           Importer importer = new Importer(context, new ImportMonitor()); 
           try { 
-            iidDevAccelLogger.debug("File content: " + resource); 
+            //iidDevAccelLogger.debug("File content: " + resource); 
             importer.importXml(resource); 
             context.commitTransaction(); 
           } 
@@ -481,6 +482,154 @@
 
           iidDevAccelLogger.debug("Successfully read a log4j file contents"); 
           return contents; 
+          ]]>
+      </Source>
+    </Script>
+    <Transition to="Stop"/>
+  </Step>
+  <Step icon="Default" name="Import Java" resultVariable="payload">
+    <Script>
+      <Source>
+        <![CDATA[ 
+          import sailpoint.object.*;
+          import java.util.*;
+          import java.io.*;
+          import java.nio.file.*;
+          import java.nio.charset.StandardCharsets;
+          import org.apache.log4j.Logger;
+          import org.apache.logging.log4j.LogManager;
+          import org.apache.logging.log4j.core.LoggerContext;
+          import sailpoint.tools.Util;
+          import sailpoint.Version;
+          import org.apache.commons.codec.binary.Base64;
+          import com.sun.jdi.Bootstrap;
+          import com.sun.jdi.ReferenceType;
+          import com.sun.jdi.VirtualMachine;
+          import com.sun.jdi.VirtualMachineManager;
+          import com.sun.jdi.connect.AttachingConnector;
+          import com.sun.jdi.connect.Connector.Argument;
+
+          Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
+          iidDevAccelLogger.debug("Importing Java File");
+
+          private startRedeployment(){
+            File webXML = new File(Util.getApplicationHome() + "WEB-INF/web.xml");
+            long timestamp = System.currentTimeMillis();
+            webXML.setLastModified(timestamp);
+          }
+          private VirtualMachine getVM(){
+            VirtualMachine vm = null;
+            try{
+              VirtualMachineManager virtualMachineManager = Bootstrap.virtualMachineManager();
+              List attachingConnectors = virtualMachineManager.attachingConnectors();
+              Iterator connectorIterator = attachingConnectors.iterator();
+
+              while(connectorIterator.hasNext()) {
+              iidDevAccelLogger.debug("connectorIterator.hasNext() succeeded");
+                AttachingConnector conn = (AttachingConnector)connectorIterator.next();
+                if (conn.transport().name().equals(debugTransport)) {
+                  iidDevAccelLogger.debug("conn.transport.name is " + debugTransport);
+                  Map args = conn.defaultArguments();
+                  Argument arg = args.get("port");
+                  arg.setValue(debugPort);
+                  args.put("port", arg);
+                  arg = args.get("hostname");
+                  arg.setValue(host);
+                  args.put("hostname", arg);
+                  iidDevAccelLogger.debug("before conn.attach");
+                  vm = conn.attach(args);
+                  iidDevAccelLogger.debug("after conn.attach");
+                }
+              }
+            }
+            catch(Exception e){
+              iidDevAccelLogger.debug("Virtual Machine connector attach failed: " + e.getMessage());
+            }
+            return vm;
+          }
+
+          private String uploadClass(byte[] classBytes){
+            String result = "success";
+            try
+            {
+              FileOutputStream fos = new FileOutputStream(file);
+              fos.write(classBytes);
+              fos.flush();
+              fos.close();
+            } catch (IOException e) {
+              result = e.getMessage();
+            }
+            return result;
+          }
+
+          private String isHotSwapNeeded(String className){
+            String result = "";
+            if(null == vm){
+              return "Failed to get hotswap environment";
+            }
+            List referenceTypes = vm.classesByName(className);
+            if (referenceTypes.size() > 0) {
+              result = "needed";
+            }
+            else{
+              result = "not needed";
+            }
+            return result;
+          }
+          private String doHotSwap(byte[] classBytes, String className){
+            if(null == vm){
+              return "Failed to get hotswap environment";
+            }
+
+            Map updatedMap = new HashMap();
+            List referenceTypes = vm.classesByName(className);
+            if (0 == referenceTypes.size()) {
+              return "Failed to find a loaded class in VM: " + className;
+            }
+            if(!vm.canRedefineClasses()) {
+              return "Can't redefine classes in this VM";
+            }
+
+            updatedMap.put(referenceTypes.get(0), classBytes);
+            try{
+              vm.redefineClasses(updatedMap);
+            }
+            catch(Exception e){
+              return e.getMessage();
+            }
+            return "success";
+          }
+
+          Map returnMap = new HashMap();
+          String fullPath = Util.getApplicationHome() + "WEB-INF/classes/" + clazzPath;
+          File file = new File(fullPath);
+          byte[] classBytes = Base64.decodeBase64(clazzBytes.getBytes(StandardCharsets.US_ASCII));
+          String uploadResult = uploadClass(classBytes);
+          if(!uploadResult.equals("success")){
+            returnMap.put("uploadFailure", uploadResult);
+            return returnMap;
+          }
+          VirtualMachine vm = getVM();
+          String hotSwapNeededResult = isHotSwapNeeded(clazzName);
+          if(hotSwapNeededResult.equals("needed")){
+            iidDevAccelLogger.debug("HotSwap is needed, that means that the class is already loaded");
+            String hotSwapResult = doHotSwap(classBytes, clazzName);
+            if(!hotSwapResult.equals("success")){
+              returnMap.put("hotswapFailure", hotSwapResult);
+              startRedeployment();
+            }
+          }
+          else if(hotSwapNeededResult.equals("Failed to get hotswap environment")){
+            //Something went wrong during determining if hot swap is needed, let's redeploy
+            returnMap.put("hotswapFailure", hotSwapNeededResult);
+            startRedeployment();
+          }
+          else{
+            iidDevAccelLogger.debug("HotSwap is not needed, we just uploaded the class file and you can use the new java class");
+          }
+          vm.dispose();
+          iidDevAccelLogger.debug("Successfully imported a java file: " + returnMap.toString());
+          return returnMap; 
           ]]>
       </Source>
     </Script>

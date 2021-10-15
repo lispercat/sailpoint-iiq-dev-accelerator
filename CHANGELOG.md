@@ -1,4 +1,8 @@
 # Change Log
+## [1.0.26]
+### Added
+ - Added compile/import feature for Java files 
+ 
 ## [1.0.25]
 ### Added
  - Enhanced context-based menu commands

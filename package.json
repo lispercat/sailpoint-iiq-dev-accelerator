@@ -3,7 +3,7 @@
     "displayName": "Sailpoint IIQ Development Accelerator",
     "description": "Provides commands to facilitate/accelerate coding/interacting with remote Sailpoint IIQ server",
     "icon": "images/icon.png",
-    "version": "1.0.25",
+    "version": "1.0.26",
     "engines": {
         "vscode": "^1.60.0"
     },
@@ -34,6 +34,7 @@
     ],
     "activationEvents": [
         "onLanguage:xml",
+        "onLanguage:java",
         "onCommand:iiq-dev-accelerator.importFile",
         "onCommand:iiq-dev-accelerator.runTask",
         "onCommand:iiq-dev-accelerator.runRule",
@@ -50,7 +51,8 @@
         "onCommand:iiq-dev-accelerator.compareLocalWithDeployed",
         "onCommand:iiq-dev-accelerator.deployOpenFiles",
         "onCommand:iiq-dev-accelerator.showSysInfo",
-        "onCommand:iiq-dev-accelerator.refreshObject"
+        "onCommand:iiq-dev-accelerator.refreshObject",
+        "onCommand:iiq-dev-accelerator.importJava"
     ],
     "main": "./out/extension.js",
     "contributes": {
@@ -91,6 +93,12 @@
                     "type": "boolean",
                     "description": "When set to true, you will not be asked during custom build to confirm the list of files to import",
                     "default": false,
+                    "scope": "application"
+                },
+                "iiq-dev-accelerator.iiq_lib_path": {
+                    "type": "string",
+                    "description": "Path to your IIQ libraries, usually resides under WEB-INF/lib path",
+                    "default": null,
                     "scope": "application"
                 }
             }
@@ -163,6 +171,10 @@
             {
                 "command": "iiq-dev-accelerator.refreshObject",
                 "title": "iiq: Refresh Current Object"
+            },
+            {
+                "command": "iiq-dev-accelerator.importJava",
+                "title": "iiq: Import Java Class"
             }
         ],
         "keybindings": [
@@ -257,6 +269,7 @@
     },
     "dependencies": {
         "base-64": "^1.0.0",
+        "compile-run": "^2.3.4",
         "node-fetch": "^2.6.5",
         "properties-reader": "^2.2.0",
         "tmp": "^0.2.1",

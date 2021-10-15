@@ -29,6 +29,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.deployOpenFiles', () => myModule.deployOpenFiles()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.showSysInfo', () => myModule.showSysInfo()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.refreshObject', () => myModule.refreshObject()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.importJava', () => myModule.importJava()));
 }
 
 export function deactivate() {}

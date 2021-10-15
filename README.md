@@ -68,6 +68,39 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
   * By default the BeanShell code will be highlighed like regular Java code
 * **Show System Information (About)**
   * Get some information about IIQ like version and Java properties
+* **Import Java File** (Experimental)
+  * A few stars need to align for a nice HotSwap (fast deployment) to happen:
+    * You need to have a JDK to be installed on your dev system and "javac" should be on the PATH (if you use SSB you probably already have it)
+    * You Java runtime (on IIQ side) should support HotSwap and be able to redefine classes (if not see below)
+      - Based on your class modification HotSwap of your JVM may fail for a few reasons:
+        - delete method not implemented (when you deleted a method)
+        - add method not implemented (when you added a method)
+        - schema change not implemented (when you added class/intance variables or changed constructor)
+      - All of those failures will trigger a Tomcat app redeployment (longer wait time) but next time when you just change say a method contents the HotSwap will work
+    * You Java libraries (on IIQ side) need to have correct com.sun.jdi.Bootstrap package. (the current WEB-INF/lib/tools.jar as of IIQ 8.1p2 is not good).
+      - To fix this on my side, I removed the tools.jar from /lib folder which allowed of automatic enablement of the same package that comes with Java (AdoptOpenJDK-11.0.11+9 at the moment)
+    * You need to have you IIQ sources organized using SSB folder structure, so when you build your project using "build clean war" (or alike) you'll have build/extract/WEB-INF/lib folder with IIQ libraries
+      - If you don't follow SSB structure, you can always specify the path to the /WEB-INF/lib in the plugin settings
+      - if you have IIQ libraries under your VSCode project, the plugin should be able to find it by **detecting a folder containing identityiq.jar**
+      - (The plugin needs the libraries to compile your Java file that you are about to deploy)
+    * Make sure that you **run your Tomcat JVM in debug mode**:
+      - It may vary based on your platform, but in a nutshell it comes down to providing following arguments to JVM: `-Xdebug -Xrunjdwp:transport=dt_socket,address=8000,server=y,suspend=n`
+    * Sometimes Tomcat stops after the identityiq app has been reloaded many times. I guess it has to do with some Tomcat memory leaks. Just restart Tomcat in those cases
+    * To get the best experience out of Java programming for IIQ feel free to install the **Language Support for Java(TM) by Red Hat**
+      - When you open a Java file it will create a Java project automatically for your workspace
+      - Once the project is created, add the IIQ libraries to the "Referenced Libraires" section of the "Java Projects", it will give your the right support for InelliSense for your Java files
+  * If those conditions listed above are not satisfied, the current solution will redeploy the IIQ Tomcat application (which of course take a couple of minutes)
+    - But it's still better than to do the same redeployment manually by compiling the file, copy *.class over to Tomcat's classes folder and restarting Tomcat
+    - Sometimes HotSwap will fail to work when you add new methods to your class and your current VirtualMachine doesn't support adding methods. In this case you'll need to wait for identityiq redeployment only when you add new methods. When you modify the existing methods HotSwap will be able to instantly update the class.
+
+## Shortcuts
+  * `Ctrl Alt s` - will execute either "Import File" or "Import Java File" based on your currently open file
+  * `Ctrl Alt x` - will do "Context-based Execution" which means that based on your currently open file it will execute one of the following:
+    - Run rule
+    - Run task
+    - Evaluate BeanShell selection
+    - Reload Logging Config
+    - Refresh Object
 
 ## Requirements
 
@@ -118,6 +151,12 @@ To specify the environment you may also add this to your settings.json:
 "iiq.dev-accelerator.deployCustomBuildQuietly": false 
 ```
 
+* (optional) `iiq.dev-accelerator.iiq_lib_path`: Used to compile your Java files when you import them. 
+  * When you use SSD build environment, usually the extracted libraries are located under build/extract/WEB-INF/lib so you don't need to worry about setting it, the plugin will automatically find it
+  * In the case when you don't use SSB environment, or those libraries are localted not under your VSCode workspace, you'll need to specify this parameter
+```json
+"iiq.dev-accelerator.iiq_lib_path": null 
+```
 
 ## Release Notes
 
