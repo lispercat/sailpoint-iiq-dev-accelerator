@@ -78,6 +78,7 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
         - schema change not implemented (when you added class/intance variables or changed constructor)
       - All of those failures will trigger a Tomcat app redeployment (longer wait time) but next time when you just change say a method contents the HotSwap will work
     * You Java libraries (on IIQ side) need to have correct com.sun.jdi.Bootstrap package. (the current WEB-INF/lib/tools.jar as of IIQ 8.1p2 is not good).
+      - In your log you may see an error like: "java.lang.NoClassDefFoundError: sun/misc/Service". This is becase in the tools.jar the Bootstrap package fails to resolve sun.misc.Service dependency
       - To fix this on my side, I removed the tools.jar from /lib folder which allowed of automatic enablement of the same package that comes with Java (AdoptOpenJDK-11.0.11+9 at the moment)
     * You need to have you IIQ sources organized using SSB folder structure, so when you build your project using "build clean war" (or alike) you'll have build/extract/WEB-INF/lib folder with IIQ libraries
       - If you don't follow SSB structure, you can always specify the path to the /WEB-INF/lib in the plugin settings

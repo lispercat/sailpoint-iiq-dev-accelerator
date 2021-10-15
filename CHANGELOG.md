@@ -1,4 +1,8 @@
 # Change Log
+## [1.0.27]
+### Fixed
+ - Show Java compilation errors and improve compilation process
+ 
 ## [1.0.26]
 ### Added
  - Added compile/import feature for Java files 

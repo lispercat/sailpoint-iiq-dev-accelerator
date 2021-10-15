@@ -7,9 +7,8 @@ import * as propertiesReader from 'properties-reader';
 import * as xml2js from 'xml2js';
 import * as tmp from 'tmp';
 import { URL } from 'url';
-import  {execute as compileJavaSource}  from 'compile-run/dist/lib/execute-command';
-import { Result } from 'compile-run';
-tmp.setGracefulCleanup()
+import { execSync } from 'child_process';
+import { Console } from 'console';
 
 enum ContextValue {
   NotIIQContext = "NotIIQContext",
@@ -72,7 +71,7 @@ export class DevIIQCommands {
   private g_workflowUpdated: boolean = false;
   private g_workflowUrl: string = "/rest/workflows/IIQDevAcceleratorWF/launch";
   private g_contextManager : ContextManager = new ContextManager("iiq.context");
-
+  private g_iiqOutput = vscode.window.createOutputChannel("iiq-output");
   constructor(){
     this.contextChange();
     vscode.window.onDidChangeActiveTextEditor((textEditor: vscode.TextEditor | undefined) => {
@@ -541,22 +540,38 @@ export class DevIIQCommands {
     var outputClassDir = tmp.dirSync().name.replace(/\\/g, "/"); 
     var javaFile = vscode.window.activeTextEditor.document.fileName.replace(/\\/g, "/");
     var classFileBaseName = require('path').basename(javaFile, '.java') + '.class';
-    var compilerPath = `javac`;  
-    var compilationResult: Result = await vscode.window.withProgress({
+    var compilerPath = `javac`;
+    var javaCompileOptions = `-source 1.8 -target 1.8`;  
+    const cmd = `${compilerPath} ${javaCompileOptions} -d ${outputClassDir} -cp ${classPath} ${javaFile}`;
+
+    const compileResult = await vscode.window.withProgress({
       location: vscode.ProgressLocation.Notification,
       title: `Compiling ${require('path').basename(javaFile)}`,
       cancellable: true
       }, 
-      progress => {
-        return compileJavaSource(compilerPath, ['-d', outputClassDir, '-cp', classPath, javaFile]);
-      });
+      async (progress) => {
+        const util = require('util');
+        const exec = util.promisify(require('child_process').exec);
 
-    if(compilationResult.exitCode !== 0){
-      vscode.window.showErrorMessage(`Couldn't compile ${require('path').basename(javaFile)}`);
+        var result = {};
+        try{
+          result["ok"] = await exec(cmd);
+        }
+        catch(error){
+          result["fail"] = error;
+        }
+        return result;
+      });
+    
+    this.g_iiqOutput.clear();
+    this.g_iiqOutput.hide();
+    if(compileResult["fail"]){
+      vscode.window.showErrorMessage(`Couldn't compile ${require('path').basename(javaFile)}. Please see the output`);
+      this.g_iiqOutput.append(compileResult["fail"].message);
+      this.g_iiqOutput.show();
       fs.rmdirSync(outputClassDir, { recursive: true });
       return;
     }
-
     var classFile = this.getClassFile(outputClassDir, classFileBaseName);
     if(!classFile){
       vscode.window.showErrorMessage(`Couldn't file ${classFileBaseName} under ${outputClassDir}`);
