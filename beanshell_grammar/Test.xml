@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="ObjectCounter">
+  <Description></Description>
+  <Signature>
+    <Inputs>
+      <Argument name="className"/>
+    </Inputs>
+  </Signature>
+<Source><![CDATA[
+import sailpoint.api.*;
+String theClass = "sailpoint.object." + className;
+int getCnt(){
+  Class cls = Class.forName(theClass);
+  int cnt = context.countObjects(cls, null);
+  return cnt;
+}
+int cnt = getCnt();
+return "the " + theClass + " has " + cnt + " objects" ;
+
+]]>
+
+</Source>
+</Rule>

@@ -1,0 +1,16 @@
+{
+  "name": "sailpoint-iiq-dev-accelerator-language-parser",
+  "version": "0.0.1",
+  "description": "The language parser for the plugin",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lispercat/sailpoint-iiq-dev-accelerator.git"
+  },
+  "author": "Andrei Stebakov",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues"
+  },
+  "homepage": "https://github.com/lispercat/sailpoint-iiq-dev-accelerator#readme",
+  "dependencies": {}
+}

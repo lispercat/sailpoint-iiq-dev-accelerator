@@ -7,8 +7,7 @@ import * as propertiesReader from 'properties-reader';
 import * as xml2js from 'xml2js';
 import * as tmp from 'tmp';
 import { URL } from 'url';
-import { execSync } from 'child_process';
-import { Console } from 'console';
+import * as path from 'path';
 
 enum ContextValue {
   NotIIQContext = "NotIIQContext",
@@ -72,6 +71,7 @@ export class DevIIQCommands {
   private g_workflowUrl: string = "/rest/workflows/IIQDevAcceleratorWF/launch";
   private g_contextManager : ContextManager = new ContextManager("iiq.context");
   private g_iiqOutput = vscode.window.createOutputChannel("iiq-output");
+  private g_fullWFPath = path.resolve(__dirname, "../iiq-wf/workflow.xml");
   constructor(){
     this.contextChange();
     vscode.window.onDidChangeActiveTextEditor((textEditor: vscode.TextEditor | undefined) => {
@@ -92,8 +92,8 @@ export class DevIIQCommands {
       return;
     }
 
-    var ext = require('path').extname(editor.document.fileName);
-    var baseName = require('path').basename(editor.document.fileName);
+    var ext = path.extname(editor.document.fileName);
+    var baseName = path.basename(editor.document.fileName);
     var selection = editor.selection;
     var script = editor.document.getText(selection);
     if(script && ext === '.xml'){
@@ -138,9 +138,7 @@ export class DevIIQCommands {
     }
     if(extVersion != wfVersion){
       const json = vscode.extensions.getExtension('AndreiStebakov.sailpoint-iiq-dev-accelerator').packageJSON;
-      const path = require("path");
-      const fullWFPath = path.resolve(__dirname, "../src/workflow.xml");
-      const fileContent = fs.readFileSync(fullWFPath, {encoding:'utf8', flag:'r'});
+      const fileContent = fs.readFileSync(this.g_fullWFPath, {encoding:'utf8', flag:'r'});
       var post_body = {
         "workflowArgs": {
           "operation": "Import",
@@ -211,7 +209,7 @@ export class DevIIQCommands {
     var searchFileName = '*.target.properties';
     const uris = await vscode.workspace.findFiles(`**/${searchFileName}`);
     uris.forEach((uri) => {
-      let [env, rest] = require('path').basename(uri.fsPath).split(".");
+      let [env, rest] = path.basename(uri.fsPath).split(".");
       result.push(env);
     });
     return result;
@@ -397,8 +395,7 @@ export class DevIIQCommands {
     }
     catch(error){
       const path = require("path");
-      const fullWFPath = path.resolve(__dirname, "../src/workflow.xml");
-      vscode.window.showErrorMessage(`Check if you manually imported the IIQ Dev Accelerator Workflow at ${fullWFPath}. Post request failed with ${error}`);
+      vscode.window.showErrorMessage(`Check if you manually imported the IIQ Dev Accelerator Workflow at ${this.g_fullWFPath}. Post request failed with ${error}`);
       result["fail"] = error;
     }
     
@@ -484,7 +481,7 @@ export class DevIIQCommands {
       console.log("now trying to go over files...");
       if(uris.length > 0){
         var iiqJar = uris[0].fsPath;
-        return require('path').dirname(iiqJar).replace(/\\/g, "/");
+        return path.dirname(iiqJar).replace(/\\/g, "/");
       }
     }
     return null;
@@ -539,14 +536,14 @@ export class DevIIQCommands {
     var classPath = await this.getIIQClassPath();
     var outputClassDir = tmp.dirSync().name.replace(/\\/g, "/"); 
     var javaFile = vscode.window.activeTextEditor.document.fileName.replace(/\\/g, "/");
-    var classFileBaseName = require('path').basename(javaFile, '.java') + '.class';
+    var classFileBaseName = path.basename(javaFile, '.java') + '.class';
     var compilerPath = `javac`;
     var javaCompileOptions = `-source 1.8 -target 1.8`;  
     const cmd = `${compilerPath} ${javaCompileOptions} -d ${outputClassDir} -cp ${classPath} ${javaFile}`;
 
     const compileResult = await vscode.window.withProgress({
       location: vscode.ProgressLocation.Notification,
-      title: `Compiling ${require('path').basename(javaFile)}`,
+      title: `Compiling ${path.basename(javaFile)}`,
       cancellable: true
       }, 
       async (progress) => {
@@ -566,7 +563,7 @@ export class DevIIQCommands {
     this.g_iiqOutput.clear();
     this.g_iiqOutput.hide();
     if(compileResult["fail"]){
-      vscode.window.showErrorMessage(`Couldn't compile ${require('path').basename(javaFile)}. Please see the output`);
+      vscode.window.showErrorMessage(`Couldn't compile ${path.basename(javaFile)}. Please see the output`);
       this.g_iiqOutput.append(compileResult["fail"].message);
       this.g_iiqOutput.show();
       fs.rmdirSync(outputClassDir, { recursive: true });
@@ -580,7 +577,7 @@ export class DevIIQCommands {
     }
     const classBytes = fs.readFileSync(classFile, {encoding: 'base64'});
     fs.rmdirSync(outputClassDir, { recursive: true });
-    var relativeClassPath = require('path').relative(outputClassDir, classFile).replace(/\\/g, "/");
+    var relativeClassPath = path.relative(outputClassDir, classFile).replace(/\\/g, "/");
     var clazzName = relativeClassPath.substring(0, relativeClassPath.search('.class')).replace(/\//g, ".");
     var post_body = 
     {
@@ -643,7 +640,7 @@ export class DevIIQCommands {
     var processFileErrors = {};
     if(!fileContent || typeof fileContent === 'object'){
       if(!vscode.window.activeTextEditor || 
-        require('path').extname(vscode.window.activeTextEditor.document.fileName) != '.xml'){
+        path.extname(vscode.window.activeTextEditor.document.fileName) != '.xml'){
         vscode.window.showInformationMessage(`Please open an xml document to import`); 
         return [false, processFileErrors];
       }  
@@ -764,7 +761,7 @@ export class DevIIQCommands {
   private async getArgumentsFromBuffer(){
     var retArgs = null;
     var editor = vscode.window.activeTextEditor;
-    if(!editor || require('path').extname(editor.document.fileName) != '.xml'){
+    if(!editor || path.extname(editor.document.fileName) != '.xml'){
       vscode.window.showInformationMessage(`Please open rule or rule argument file`); 
       return null;
     }
@@ -1400,7 +1397,7 @@ export class DevIIQCommands {
     const all = unstaged.concat(staged);
     //const all = Array.from(new Set([...unstaged, ...staged]));
     var filesToDeploy = all.filter(res => res.letter !== "D").
-                            filter(res => require('path').extname(res.resourceUri.fsPath) === '.xml').
+                            filter(res => path.extname(res.resourceUri.fsPath) === '.xml').
                             map(res => res.resourceUri.fsPath);
     filesToDeploy = Array.from(new Set(filesToDeploy));
     if(filesToDeploy.length === 0){
@@ -1533,7 +1530,7 @@ export class DevIIQCommands {
   public async compareLocalWithDeployed(){
     var editor = vscode.window.activeTextEditor;
     if(!editor || !editor.document || 
-      require('path').extname(editor.document.fileName) != '.xml')  {
+      path.extname(editor.document.fileName) != '.xml')  {
       vscode.window.showWarningMessage(`Please make sure that your currently open document is a of xml type`); 
       return;
     }  
@@ -1578,7 +1575,7 @@ export class DevIIQCommands {
     var document = vscode.window.activeTextEditor.document;
     const firstImportedName = document.fileName;
 
-    if(require('path').extname(document.fileName) === '.xml'){
+    if(path.extname(document.fileName) === '.xml'){
       res.push(document.fileName);
     }
 
@@ -1591,7 +1588,7 @@ export class DevIIQCommands {
         break;
       }
 
-      if(require('path').extname(document.fileName) === '.xml'){
+      if(path.extname(document.fileName) === '.xml'){
         res.push(document.fileName);
       }
     }while(true)
