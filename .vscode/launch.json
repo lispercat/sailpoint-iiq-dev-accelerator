@@ -18,6 +18,14 @@
 			"preLaunchTask": "${defaultBuildTask}"
 		},
 		{
+			"type": "node",
+			"request": "attach",
+			"name": "Attach to Server",
+			"port": 6009,
+			"restart": true,
+			"outFiles": ["${workspaceRoot}/server/out/**/*.js"]
+		},
+		{
 			"name": "Extension Tests",
 			"type": "extensionHost",
 			"request": "launch",
@@ -29,6 +37,24 @@
 				"${workspaceFolder}/out/test/**/*.js"
 			],
 			"preLaunchTask": "${defaultBuildTask}"
+		},
+		{
+			"name": "Debug ANTLR4 grammar",
+			"type": "antlr-debug",
+			"request": "launch",
+			"input": "beanshell_grammar/Test.xml",
+			"grammar": "beanshell_grammar/SPBSParser.g4",
+			"actionFile": "",
+			"startRule": "xml_document",
+			"printParseTree": true,
+			"visualParseTree": true
+		}
+	],
+	"compounds": [
+		{
+			"name": "Client + Server",
+			"configurations": ["Run Extension", "Attach to Server"]
 		}
 	]
+
 }

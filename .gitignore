@@ -4,4 +4,6 @@ src/scratch.js
 *.vsix
 *.cmd
 *.bat
-out/**
+out
+beanshell_grammar/.antlr
+
