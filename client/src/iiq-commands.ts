@@ -8,6 +8,7 @@ import * as xml2js from 'xml2js';
 import * as tmp from 'tmp';
 import { URL } from 'url';
 import * as path from 'path';
+import { WorkspaceFolder } from 'vscode-languageclient';
 
 enum ContextValue {
   NotIIQContext = "NotIIQContext",
@@ -63,7 +64,7 @@ class ContextManager {
   }
 }
 
-export class DevIIQCommands {
+export class IIQCommands {
   private g_props: { [key: string]: any } = {"filePath": null, "props": null, "mtime": null};
   private g_statusBarEnvItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
   private g_IIQClasses = null;
@@ -71,7 +72,9 @@ export class DevIIQCommands {
   private g_workflowUrl: string = "/rest/workflows/IIQDevAcceleratorWF/launch";
   private g_contextManager : ContextManager = new ContextManager("iiq.context");
   private g_iiqOutput = vscode.window.createOutputChannel("iiq-output");
-  private g_fullWFPath = path.resolve(__dirname, "../iiq-wf/workflow.xml");
+  private g_fullWFPath = path.resolve(__dirname, "../../iiq-wf/workflow.xml");
+  private g_workspaceFolder = null;
+
   constructor(){
     this.contextChange();
     vscode.window.onDidChangeActiveTextEditor((textEditor: vscode.TextEditor | undefined) => {
@@ -92,8 +95,9 @@ export class DevIIQCommands {
       return;
     }
 
-    var ext = path.extname(editor.document.fileName);
-    var baseName = path.basename(editor.document.fileName);
+    var fullFileName = editor.document.fileName;
+    var ext = path.extname(fullFileName);
+    var baseName = path.basename(fullFileName);
     var selection = editor.selection;
     var script = editor.document.getText(selection);
     if(script && ext === '.xml'){
@@ -111,7 +115,7 @@ export class DevIIQCommands {
         if(parsedXml){
           var theClass = Object.keys(parsedXml)[0];
           var objName = parsedXml[theClass]["ATTR"]["name"];
-          var isProjectObject: boolean = await this.isProjectFile(baseName);
+          var isProjectObject: boolean = this.isProjectFile(fullFileName);
           this.g_contextManager.set(null, theClass, objName, isProjectObject);
         }
       } 
@@ -215,6 +219,30 @@ export class DevIIQCommands {
     return result;
   }
 
+  public async isCorrectSSBWorkspaceFolder() :Promise<boolean>{
+    if(vscode.workspace.workspaceFolders.length > 1){
+      var error = "Your workspace contains more than one folders (the first will be used for now for Sailpoint IIQ)";
+      console.warn(error);
+      this.g_iiqOutput.append(error + "\r\n");
+      this.g_iiqOutput.append("Folders are:\r\n");
+      vscode.workspace.workspaceFolders.forEach((folder) =>{
+        this.g_iiqOutput.append(folder.uri.fsPath + "\r\n");
+      })
+      this.g_iiqOutput.show();
+    }
+    this.g_workspaceFolder = vscode.workspace.workspaceFolders[0].uri.fsPath.replace(/\\/g, "/");
+    const xmlObjects = await vscode.workspace.findFiles("config/**/*.xml");
+    if(xmlObjects.length < 1){
+      var error = `Can't find any IIQ objects (xml files) under ${this.g_workspaceFolder}/config. This is not SSB project`;
+      console.error(error);
+      this.g_iiqOutput.append(error + "\r\n");
+      this.g_iiqOutput.show();
+      return false;
+    }
+
+    return true;
+  }
+ 
   public async updateStatusBarIfEnvironmentIsSet(){
     var environment: string = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('environment');
     if(!environment){
@@ -474,15 +502,11 @@ export class DevIIQCommands {
   }
 
   private async findIIQLibFolder(){
-    var folders  = vscode.workspace.workspaceFolders;
-    for(var i = 0; i < folders.length; i++){
-      //const uris = await vscode.workspace.findFiles(`**/WEB-INF/lib/identityiq.jar`);
-      const uris = await vscode.workspace.findFiles(`**/identityiq.jar`);
-      console.log("now trying to go over files...");
-      if(uris.length > 0){
-        var iiqJar = uris[0].fsPath;
-        return path.dirname(iiqJar).replace(/\\/g, "/");
-      }
+    const uris = await vscode.workspace.findFiles(`**/identityiq.jar`);
+    console.log("now trying to go over files...");
+    if(uris.length > 0){
+      var iiqJar = uris[0].fsPath;
+      return path.dirname(iiqJar).replace(/\\/g, "/");
     }
     return null;
   }
@@ -1058,15 +1082,12 @@ export class DevIIQCommands {
 
     //Priority #3
     if(foundLogFileName){
-      var folders  = vscode.workspace.workspaceFolders;
-      for(var i = 0; i < folders.length; i++){
-        const uris = await vscode.workspace.findFiles(`**/${searchFileName}`, `${folders[i].uri.fsPath}/**`);
-        console.log("now trying to go over files...");
-        uris.forEach((uri) => {
-          console.log(`Trying to read ${uri.fsPath} file`);
-          logContent = fs.readFileSync(uri.fsPath, {encoding:'utf8', flag:'r'}); 
-        });
-      }
+      const uris = await vscode.workspace.findFiles(`**/${searchFileName}`);
+      console.log("now trying to go over log config files...");
+      uris.forEach((uri) => {
+        console.log(`Trying to read ${uri.fsPath} file`);
+        logContent = fs.readFileSync(uri.fsPath, {encoding:'utf8', flag:'r'}); 
+      });
     }
 
     var post_body = 
@@ -1377,19 +1398,9 @@ export class DevIIQCommands {
       return;
     }
     
-    const rootPaths = vscode.workspace.workspaceFolders;
-    var repository = null;
-    for(var i=0; i < rootPaths.length; i++){
-      var dir = rootPaths[i].uri.fsPath;
-      repository = gitAPI.repositories.filter(r => r.rootUri.fsPath.startsWith(dir))[0];
-      if(undefined != repository){
-        break;
-      }
-      else{
-        vscode.window.showErrorMessage(`Couldn't find a git repository at ${dir} try to open VSCode with a different folder`);
-      }
-    }
+    var repository = gitAPI.repositories.filter(r => r.rootUri.fsPath.startsWith(this.g_workspaceFolder))[0];
     if(undefined == repository){
+      vscode.window.showErrorMessage(`Couldn't find a git repository at ${this.g_workspaceFolder} try to open VSCode with a different folder`);
       return;
     }
     const unstaged = repository._repository.workingTreeGroup.resourceStates;
@@ -1643,14 +1654,9 @@ export class DevIIQCommands {
     }
   }
 
-  private async isProjectFile(searchFileName){
-    var folders  = vscode.workspace.workspaceFolders;
-    for(var i = 0; i < folders.length; i++){
-      const uris = await vscode.workspace.findFiles(`**/${searchFileName}`, `${folders[i].uri.fsPath}/**`);
-      console.log("now trying to go over files...");
-      if(uris.length > 0){
-        return true;
-      }
+  private isProjectFile(searchFileName: string){
+    if(searchFileName.includes(this.g_workspaceFolder)){
+      return true;
     }
     return false;
   }

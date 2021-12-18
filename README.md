@@ -3,8 +3,9 @@
 This is the README for "Sailpoint IIQ Development Accelerator" VSCode extension.
 The main goal to accelerate and facilitate development by directly interacting with the target IIQ server via VSCode commands.
 To use the extension, you need to:
-* **Import in Sailpoint IIQ** the ["IIQDevAcceleratorWF" workflow](https://raw.githubusercontent.com/lispercat/sailpoint-iiq-dev-accelerator/master/src/workflow.xml) 
-* (Optional) update the configuration of the extension with the name of your target IIQ environment (sandbox, dev, uat etc.).
+* **Import in Sailpoint IIQ** the ["IIQDevAcceleratorWF" workflow](https://raw.githubusercontent.com/lispercat/sailpoint-iiq-dev-accelerator/master/iiq-wf/workflow.xml) 
+  * (Optional) update the configuration of the extension with the name of your target IIQ environment (sandbox, dev, uat etc.).
+* Go to File->Open Folder... and open the SSB root folder (the one with with your **build.properties** and **your-target-environment**.target.properties files along with **config** folder)
 
 ![Example of how to evalue a snippet of BeanShell script, import and run a rule with parameters](https://raw.githubusercontent.com/lispercat/sailpoint-iiq-dev-accelerator/master/images/EvalAndRunRule.gif)
 
@@ -153,7 +154,7 @@ To specify the environment you may also add this to your settings.json:
 ```
 
 * (optional) `iiq.dev-accelerator.iiq_lib_path`: Used to compile your Java files when you import them. 
-  * When you use SSD build environment, usually the extracted libraries are located under build/extract/WEB-INF/lib so you don't need to worry about setting it, the plugin will automatically find it
+  * When you use SSB build environment, usually the extracted libraries are located under build/extract/WEB-INF/lib so you don't need to worry about setting it, the plugin will automatically find it
   * In the case when you don't use SSB environment, or those libraries are localted not under your VSCode workspace, you'll need to specify this parameter
 ```json
 "iiq.dev-accelerator.iiq_lib_path": null 

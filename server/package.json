@@ -12,5 +12,6 @@
     "url": "https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues"
   },
   "homepage": "https://github.com/lispercat/sailpoint-iiq-dev-accelerator#readme",
-  "dependencies": {}
+  "dependencies": {},
+  "devDependencies": {}
 }

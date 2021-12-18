@@ -1,4 +1,8 @@
 # Change Log
+## [1.0.28]
+### Fixed
+ - Added some basic LSP functionality, some error highlighting
+
 ## [1.0.27]
 ### Fixed
  - Show Java compilation errors and improve compilation process

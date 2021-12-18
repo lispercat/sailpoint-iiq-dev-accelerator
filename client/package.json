@@ -2,16 +2,16 @@
   "name": "sailpoint-iiq-dev-accelerator-client",
   "version": "0.0.1",
   "description": "Client for the plugin",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "repository": {
     "type": "git",
-    "url": "sailpoint-iiq-dev-accelerator"
+    "url": "git+https://github.com/lispercat/sailpoint-iiq-dev-accelerator.git"
   },
   "author": "Andrei Stebakov",
   "license": "MIT",
-  "devDependencies": {},
-  "dependencies": {}
+  "bugs": {
+    "url": "https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues"
+  },
+  "homepage": "https://github.com/lispercat/sailpoint-iiq-dev-accelerator#readme",
+  "dependencies": {},
+  "devDependencies": {}
 }

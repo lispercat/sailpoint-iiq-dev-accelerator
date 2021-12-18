@@ -9,9 +9,19 @@
   </Signature>
 <Source><![CDATA[
 import sailpoint.api.*;
-String theClass = "sailpoint.object." + className;
-int getCnt(){
+
+private static String theClass = "sailpoint.object." + className;
+
+public static int getCnt(){
+
+  import sailpoint.api.*;
   Class cls = Class.forName(theClass);
+  if (cls == void){
+    return null;
+  }
+  if (cls == null){
+    return null;
+  }
   int cnt = context.countObjects(cls, null);
   return cnt;
 }
@@ -19,6 +29,5 @@ int cnt = getCnt();
 return "the " + theClass + " has " + cnt + " objects" ;
 
 ]]>
-
 </Source>
 </Rule>
