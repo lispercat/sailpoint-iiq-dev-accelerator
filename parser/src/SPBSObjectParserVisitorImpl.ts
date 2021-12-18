@@ -1,0 +1,27 @@
+import { SPBSParserVisitor } from "./SPBSParserVisitor";
+import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor'
+import { VariableDeclaratorIdContext, Xml_elementContext } from "./SPBSParser";
+import { ErrorNode } from "antlr4ts/tree/ErrorNode";
+
+export class SPBSObjectParserVisitorImpl extends AbstractParseTreeVisitor<{}> implements SPBSParserVisitor<{}> {
+
+  constructor(){
+    super();
+  }
+
+  defaultResult() {
+    return {};
+  }
+  aggregateResult(aggregate: {}, nextResult: {}) {
+    return {...aggregate, ...nextResult};
+  }
+	visitVariableDeclaratorId  (ctx:  VariableDeclaratorIdContext ) : {} {
+    const arr = ctx.children ?? [];
+    return arr.map((el) => el.text);
+  }
+
+	visitXml_element(ctx: Xml_elementContext) :{} {
+    console.log(`VisitXMLElement: ${ctx.children}`);
+    return [];
+  }
+}

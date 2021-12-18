@@ -16,7 +16,7 @@
   ],
   "references": [
     { "path": "./client" },
-    { "path": "./server" },
-    { "path": "./parser" }
+    { "path": "./parser" },
+    { "path": "./server" }
   ]
 }

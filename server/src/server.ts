@@ -9,27 +9,86 @@ import {
   InitializeResult,
   CompletionItem,
   CompletionItemKind,
-  TextDocumentPositionParams
+  TextDocumentPositionParams,
+  ExecuteCommandParams,
+  WorkspaceFolder
 } from 'vscode-languageserver';
 
 import { createConnection } from 'vscode-languageserver/node';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { Console } from 'console';
 import {SPBSLexer} from '../../parser/out/SPBSLexer';
 import {SPBSParser} from '../../parser/out/SPBSParser';
+import {SPBSParserVisitorImpl} from '../../parser/out/SPBSParserVisitorImpl';
 import {CharStreams, CommonTokenStream} from 'antlr4ts';
+import {ParserErrorListenerImpl} from "../../parser/out/ParserErrorListenerImpl";
+import {LexerErrorListenerImpl} from "../../parser/out/LexerErrorListenerImpl";
+import {SPBSParserListenerImpl} from "../../parser/out/SPBSParserListenerImpl";
+import {SPBSObjectParserVisitorImpl} from '../../parser/out/SPBSObjectParserVisitorImpl';
+import * as proto from 'vscode-languageserver-protocol';
+import { URL } from 'url';
+import { unescape } from 'querystring';
+import * as fs from 'fs';
+const glob = require('glob');
 
-// Create a connection for the server, using Node's IPC as a transport.
-// Also include all preview / proposed LSP features.
 let connection: ProposedFeatures.Connection = createConnection(ProposedFeatures.all);
-
 let documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
-
 let hasConfigurationCapability: boolean = false;
 let hasWorkspaceFolderCapability: boolean = false;
 let hasDiagnosticRelatedInformationCapability: boolean = false;
-connection.onInitialize((params: InitializeParams) => {
+let workspaceFolder: WorkspaceFolder | null = null;
+let currentDocUri: string = null;
+type IIQDictionary = {[name: string]: IIQObjectInfo};
+let IIQObjects: IIQDictionary = {};
+documents.listen(connection);
+connection.listen();
+enum IIQObjectType{
+  Rule = "Rule",
+  Task = "Task"
+};
+
+interface IIQObjectInfo{
+   type: IIQObjectType;
+   path: string;
+   name: string;
+};
+const delay = ms => new Promise(res => setTimeout(res, ms));
+async function parseIIQObject(path: string): Promise<IIQObjectInfo>{
+  let text = fs.readFileSync(path,'utf8');
+  let name = path;
+  let type = IIQObjectType.Rule;
+  const inputStream = CharStreams.fromString(text);
+  const lexer = new SPBSLexer(inputStream);
+  const tokenStream = new CommonTokenStream(lexer);
+  const parser = new SPBSParser(tokenStream);
+  parser.removeErrorListeners();
+  let tree = parser.xml_document();
+  const visitor = new SPBSObjectParserVisitorImpl();
+  let res: {} = visitor.visit(tree);
+  return {type: res["type"], path: path, name: res["name"]};
+}
+
+async function collectIIQObjectsInfo(folder: WorkspaceFolder){
+  IIQObjects = {};
+  var unsescapedUri = unescape(workspaceFolder.uri)
+  var folderName = new URL(unsescapedUri).pathname.replace(/^\//g, "");
+  connection.console.log(folderName);
+  var files: string[] = glob.sync(`${folderName}/config/**/*.xml`);
+  if(files.length == 0){
+    connection.console.log("no files");
+    return;
+  }
+  files.forEach(async path => {
+    connection.console.log(path);
+    var obj: IIQObjectInfo = await parseIIQObject(path);
+    IIQObjects[obj.type + ":" + obj.name] = obj;
+  });
+
+}
+
+connection.onInitialize(async (params: InitializeParams) => {
   let capabilities = params.capabilities;
+  workspaceFolder = params.workspaceFolders != null ? params.workspaceFolders[0] : null;
+  connection.console.log(`workspaceFolder: ${workspaceFolder.name} ${workspaceFolder.uri}` );
 
   hasConfigurationCapability = !!(
     capabilities.workspace && !!capabilities.workspace.configuration
@@ -42,6 +101,8 @@ connection.onInitialize((params: InitializeParams) => {
     capabilities.textDocument.publishDiagnostics &&
     capabilities.textDocument.publishDiagnostics.relatedInformation
   );
+
+  await collectIIQObjectsInfo(workspaceFolder);
 
   const result: InitializeResult = {
     capabilities: {
@@ -63,7 +124,6 @@ connection.onInitialize((params: InitializeParams) => {
 
 connection.onInitialized(() => {
   if (hasConfigurationCapability) {
-    // Register for all configuration changes.
     connection.client.register(DidChangeConfigurationNotification.type, undefined);
   }
   if (hasWorkspaceFolderCapability) {
@@ -71,7 +131,10 @@ connection.onInitialized(() => {
       connection.console.log('Workspace folder change event received.');
     });
   }
+  connection.console.log("Sending notification that the server is ready");
+  connection.sendNotification("ServerReady");
 });
+
 
 interface LanguageServerSettings {
   maxNumberOfProblems: number;
@@ -111,178 +174,25 @@ function getDocumentSettings(resource: string): Thenable<LanguageServerSettings>
   return result;
 }
 
-// Only keep settings for open documents
+documents.onDidOpen((event) => {
+	connection.console.log(`Document opened: ${event.document.uri}`);
+  currentDocUri = event.document.uri;
+});
+
 documents.onDidClose(e => {
   documentSettings.delete(e.document.uri);
+  currentDocUri = null;
 });
 
 documents.onDidChangeContent(change => {
   validateTextDocument(change.document);
 });
 
-type MatchingBracket = {[key: string]: string};
-interface WrongCharacter {
-  char: string;
-  pos: number;
-  reason: string
-}
-
-enum IgnoreMode{
-  off,
-  comment_oneline,
-  comment_multiline,
-  double_quote,
-  single_quote
-}
-
-function getIgnoreMode(text: string, i: number, ignoreMode: IgnoreMode): {newIgnoreMode: IgnoreMode, newPos: number}{
-  if(ignoreMode === IgnoreMode.off)
-  {
-    if(text[i] === '/' && i < text.length - 1 && text[i + 1] === '*'){
-      ignoreMode = IgnoreMode.comment_multiline;
-      i++;
-    } 
-    else if(text[i] === '/' && i < text.length - 1 && text[i + 1] === '/'){
-      ignoreMode = IgnoreMode.comment_oneline;
-      i++;
-    }
-    else if(text[i] === '"'){
-      ignoreMode = IgnoreMode.double_quote;
-    }
-    else if(text[i] === "'"){
-      ignoreMode = IgnoreMode.single_quote;
-    }
-  }
-  else{
-    switch(ignoreMode){
-      case IgnoreMode.comment_multiline:
-        if(text[i]  === '*' && i < text.length - 1 && text[i + 1] === '/'){
-          ignoreMode = IgnoreMode.off;
-          i++;
-        } 
-        break;
-      case IgnoreMode.comment_oneline:
-        if(text[i] === '\n'){
-          ignoreMode = IgnoreMode.off;
-        } 
-        break;
-      case IgnoreMode.double_quote:
-        if(text[i] === '"'){
-          ignoreMode = IgnoreMode.off;
-        } 
-        break;
-      case IgnoreMode.single_quote:
-        if(text[i] === "'"){
-          ignoreMode = IgnoreMode.off;
-        } 
-        break;
-    }
-  }
-
-  return {newIgnoreMode: ignoreMode, newPos: i}
-}
-
-function reportWrongCharacter(text: string) : Array<WrongCharacter>{
-  let supportedBrackets: MatchingBracket = {'}': '{', ')': '(', ']': '['};
-  const forbiddenCharacters : string = "<>`";
-
-  let bracketStack: Array<WrongCharacter> = []
-  let openings  = Object.values(supportedBrackets);
-  let closings  = Object.keys(supportedBrackets);
-  let ignoreMode: IgnoreMode = IgnoreMode.off;
-  for(let i = 0; i < text.length; i++){
-    let c = text[i];
-    let newIgnoreData: {newIgnoreMode: IgnoreMode, newPos: number} = getIgnoreMode(text, i, ignoreMode);
-    ignoreMode = newIgnoreData.newIgnoreMode;
-    i = newIgnoreData.newPos;
-
-    if(ignoreMode !== IgnoreMode.off){
-      continue;
-    }
-
-    if(openings.includes(c)){
-      bracketStack.push(<WrongCharacter>{char: c, pos: i, reason: `unbalanced ${c}`});
-      continue;
-    }
-    if(forbiddenCharacters.includes(c)){
-      bracketStack.push(<WrongCharacter>{char: c, pos: i, reason: `forbidden character ${c}`});
-      continue;
-    }
-    if (closings.includes(c)){
-      let matchingOpening = supportedBrackets[c];
-      //let lastMatchingClosingIndex = bracketStack.map(el => el.char).indexOf(matchingOpening);
-      let lastBracket: string = bracketStack[bracketStack.length - 1].char;
-      if(lastBracket === matchingOpening){
-        bracketStack.pop();
-      }
-      else{
-        bracketStack.push(<WrongCharacter>{char: c, pos: i, reason: `unbalanced ${c}`})
-      }
-    }
-  }
-  return bracketStack;
-}
-
-async function validateTextDocument(textDocument: TextDocument): Promise<void> {
-  let settings = await getDocumentSettings(textDocument.uri);
-  let text = textDocument.getText();
-  const inputStream = CharStreams.fromString(text);
-  const lexer = new SPBSLexer(inputStream);
-  const tokenStream = new CommonTokenStream(lexer);
-  const parser = new SPBSParser(tokenStream);
-  let tree = parser.xml_document()
-
-  console.log(tree);
-}
-async function validateTextDocument_old(textDocument: TextDocument): Promise<void> {
-  let settings = await getDocumentSettings(textDocument.uri);
-
-  let text = textDocument.getText();
-  //let beanShellSource : string | null = await getBeanShellBlock(text);
-  //console.log(beanShellSource);
-
-  let pattern1 = /(?<=<Source>\s*<!\[CDATA\[\s*)[\w\/][\W\w]*?(?=\s*\]\]>\s*<\/Source>)/g;
-  let pattern2 = /(?<=<Source>\s*)[\w\/][\W\w]*?(?=\s*<\/Source>)/g;
-  let m: RegExpExecArray | null;
-
-  let problems = 0;
-  let diagnostics: Diagnostic[] = [];
-  let maxNumberOfProblems = null != settings.maxNumberOfProblems ? settings.maxNumberOfProblems: 10;
-  m = pattern1.exec(text);
-  m = m ? m:pattern2.exec(text);
-  if(!m || m.length > 1){
-    connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
-    return;
-  }
-
-  let beanShellSource = m[0];
-  let startBeanShell: number = m.index;
-  let endBeanShell: number = m.index + m[0].length;
-  let wrongCharacters: Array<WrongCharacter> = reportWrongCharacter(beanShellSource);
-  for(let err of wrongCharacters){
-    if(++problems > maxNumberOfProblems){
-      break;
-    }
-    let diagnostic: Diagnostic = {
-      severity: DiagnosticSeverity.Error,
-      range: {
-        start: textDocument.positionAt(startBeanShell + err.pos),
-        end: textDocument.positionAt(startBeanShell + err.pos)
-      },
-      message: err.reason
-    }
-    diagnostics.push(diagnostic);
-  }
-
-  connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
-}
-
 connection.onDidChangeWatchedFiles(_change => {
   connection.console.log('We received an file change event');
 });
 
-connection.onCompletion(
-	(_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
+connection.onCompletion((_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
 		return [
 			{
 				label: 'label1',
@@ -298,10 +208,7 @@ connection.onCompletion(
 	}
 );
 
-// This handler resolves additional information for the item selected in
-// the completion list.
-connection.onCompletionResolve(
-	(item: CompletionItem): CompletionItem => {
+connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 		if (item.data === 'test1') {
 			item.detail = 'Completion1';
 			item.documentation = 'Completion1 documentation';
@@ -313,5 +220,52 @@ connection.onCompletionResolve(
 	}
 );
 
-documents.listen(connection);
-connection.listen();
+connection.onExecuteCommand((params: ExecuteCommandParams) => {
+	return undefined;
+});
+
+
+/* Implementation of server functionality */
+async function validateTextDocument(textDocument: TextDocument): Promise<void> {
+  connection.console.log(`Validating doc: ${textDocument.uri}`)
+  if(!textDocument.uri.includes(workspaceFolder.uri)){
+    connection.console.log(`Skipping validation of ${textDocument.uri} since it's not part of the workspace folder ${workspaceFolder}`);
+    return null;
+  }
+
+  let settings = await getDocumentSettings(textDocument.uri);
+  let text = textDocument.getText();
+  const inputStream = CharStreams.fromString(text);
+  const lexer = new SPBSLexer(inputStream);
+  const tokenStream = new CommonTokenStream(lexer);
+  const parser = new SPBSParser(tokenStream);
+  let nodeErrors: object[] = [];
+  let lexerErrors: object[] = [];
+  let parserErrors: object[] = [];
+  lexer.addErrorListener(new LexerErrorListenerImpl(lexerErrors));
+  parser.addErrorListener(new ParserErrorListenerImpl(parserErrors));
+  parser.addParseListener(new SPBSParserListenerImpl(nodeErrors));
+  let tree = parser.xml_document();
+  const visitor = new SPBSParserVisitorImpl(100);
+  let res = visitor.visit(tree);
+  let allErrors: object[] = nodeErrors.concat(parserErrors).concat(lexerErrors);
+ 
+  let diagnostics: Diagnostic[] = [];
+  for(let err of allErrors){
+    let line = err["line"] - 1;
+    let start = err["start"];
+    let end = err["end"];
+    let msg = err["msg"];
+
+    let diagnostic: Diagnostic = {
+      severity: DiagnosticSeverity.Error,
+      range: {
+        start: proto.Position.create(line, start),
+        end: proto.Position.create(line, end)
+      },
+      message: msg
+    }
+    diagnostics.push(diagnostic);
+  }
+  connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
+}

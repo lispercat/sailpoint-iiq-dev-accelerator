@@ -3,7 +3,7 @@
     "displayName": "Sailpoint IIQ Development Accelerator",
     "description": "Provides commands to facilitate/accelerate coding/interacting with remote Sailpoint IIQ server",
     "icon": "images/icon.png",
-    "version": "1.0.27",
+    "version": "1.0.28",
     "engines": {
         "vscode": "^1.60.0"
     },
@@ -33,30 +33,24 @@
         "Other"
     ],
     "activationEvents": [
-        "onLanguage:xml",
-        "onLanguage:java",
-        "onCommand:iiq-dev-accelerator.importFile",
-        "onCommand:iiq-dev-accelerator.runTask",
-        "onCommand:iiq-dev-accelerator.runRule",
-        "onCommand:iiq-dev-accelerator.evalBS",
-        "onCommand:iiq-dev-accelerator.runTaskWithAttr",
-        "onCommand:iiq-dev-accelerator.getLog",
-        "onCommand:iiq-dev-accelerator.reloadLog",
-        "onCommand:iiq-dev-accelerator.getObject",
-        "onCommand:iiq-dev-accelerator.deleteObject",
-        "onCommand:iiq-dev-accelerator.switchEnv",
-        "onCommand:iiq-dev-accelerator.runContext",
-        "onCommand:iiq-dev-accelerator.deployChange",
-        "onCommand:iiq-dev-accelerator.deployCustomBuild",
-        "onCommand:iiq-dev-accelerator.compareLocalWithDeployed",
-        "onCommand:iiq-dev-accelerator.deployOpenFiles",
-        "onCommand:iiq-dev-accelerator.showSysInfo",
-        "onCommand:iiq-dev-accelerator.refreshObject",
-        "onCommand:iiq-dev-accelerator.importJava"
+        "workspaceContains:config/**/*.xml"
     ],
     "main": "./client/out/extension.js",
     "contributes": {
         "configuration": {
+            "languages": [
+                {
+                    "id": "beanshell",
+                    "aliases": [
+                        "beanshell",
+                        "BEANSHELL"
+                    ],
+                    "extensions": [
+                        ".xml"
+                    ],
+                    "configuration": "./antlr.configuration.json"
+                }
+            ],
             "title": "Sailpoint IIQ Development Accelerator",
             "properties": {
                 "iiq-dev-accelerator.environment": {
@@ -258,7 +252,7 @@
         "watch": "tsc -b -w",
         "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
         "test": "sh ./scripts/e2e.sh",
-        "antlr4ts": "del-cli parser/src && antlr4ts -visitor -o parser/src -Xexact-output-dir beanshell_grammar/SPBSLexer.g4 beanshell_grammar/SPBSParser.g4"
+        "antlr4ts": "del-cli parser/src/SPBS* !parser/src/*Impl.ts && antlr4ts -visitor -o parser/src -Xexact-output-dir beanshell_grammar/SPBSLexer.g4 beanshell_grammar/SPBSParser.g4"
     },
     "devDependencies": {
         "@types/glob": "^7.1.4",

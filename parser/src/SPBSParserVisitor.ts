@@ -3,242 +3,111 @@
 
 import { ParseTreeVisitor } from "antlr4ts/tree/ParseTreeVisitor";
 
-import { LiteralContext } from "./SPBSParser";
-import { PrimitiveTypeContext } from "./SPBSParser";
-import { NumericTypeContext } from "./SPBSParser";
-import { IntegralTypeContext } from "./SPBSParser";
-import { FloatingPointTypeContext } from "./SPBSParser";
-import { ReferenceTypeContext } from "./SPBSParser";
-import { ClassOrInterfaceTypeContext } from "./SPBSParser";
-import { ClassTypeContext } from "./SPBSParser";
-import { ClassType_lf_classOrInterfaceTypeContext } from "./SPBSParser";
-import { ClassType_lfno_classOrInterfaceTypeContext } from "./SPBSParser";
-import { InterfaceTypeContext } from "./SPBSParser";
-import { InterfaceType_lf_classOrInterfaceTypeContext } from "./SPBSParser";
-import { InterfaceType_lfno_classOrInterfaceTypeContext } from "./SPBSParser";
-import { TypeVariableContext } from "./SPBSParser";
-import { ArrayTypeContext } from "./SPBSParser";
-import { DimsContext } from "./SPBSParser";
-import { TypeParameterContext } from "./SPBSParser";
-import { TypeParameterModifierContext } from "./SPBSParser";
-import { TypeBoundContext } from "./SPBSParser";
-import { AdditionalBoundContext } from "./SPBSParser";
-import { TypeArgumentsContext } from "./SPBSParser";
-import { TypeArgumentListContext } from "./SPBSParser";
-import { TypeArgumentContext } from "./SPBSParser";
-import { WildcardContext } from "./SPBSParser";
-import { WildcardBoundsContext } from "./SPBSParser";
-import { PackageNameContext } from "./SPBSParser";
-import { TypeNameContext } from "./SPBSParser";
-import { PackageOrTypeNameContext } from "./SPBSParser";
-import { ExpressionNameContext } from "./SPBSParser";
-import { MethodNameContext } from "./SPBSParser";
-import { AmbiguousNameContext } from "./SPBSParser";
 import { BsCompilationUnitContext } from "./SPBSParser";
 import { PackageDeclarationContext } from "./SPBSParser";
-import { PackageModifierContext } from "./SPBSParser";
 import { ImportDeclarationContext } from "./SPBSParser";
-import { SingleTypeImportDeclarationContext } from "./SPBSParser";
-import { TypeImportOnDemandDeclarationContext } from "./SPBSParser";
-import { SingleStaticImportDeclarationContext } from "./SPBSParser";
-import { StaticImportOnDemandDeclarationContext } from "./SPBSParser";
 import { TypeDeclarationContext } from "./SPBSParser";
+import { ModifierContext } from "./SPBSParser";
+import { ClassOrInterfaceModifierContext } from "./SPBSParser";
+import { VariableModifierContext } from "./SPBSParser";
 import { ClassDeclarationContext } from "./SPBSParser";
-import { NormalClassDeclarationContext } from "./SPBSParser";
-import { ClassModifierContext } from "./SPBSParser";
 import { TypeParametersContext } from "./SPBSParser";
-import { TypeParameterListContext } from "./SPBSParser";
-import { SuperclassContext } from "./SPBSParser";
-import { SuperinterfacesContext } from "./SPBSParser";
-import { InterfaceTypeListContext } from "./SPBSParser";
+import { TypeParameterContext } from "./SPBSParser";
+import { TypeBoundContext } from "./SPBSParser";
+import { EnumDeclarationContext } from "./SPBSParser";
+import { EnumConstantsContext } from "./SPBSParser";
+import { EnumConstantContext } from "./SPBSParser";
+import { EnumBodyDeclarationsContext } from "./SPBSParser";
+import { InterfaceDeclarationContext } from "./SPBSParser";
 import { ClassBodyContext } from "./SPBSParser";
+import { InterfaceBodyContext } from "./SPBSParser";
 import { ClassBodyDeclarationContext } from "./SPBSParser";
-import { ClassMemberDeclarationContext } from "./SPBSParser";
+import { MemberDeclarationContext } from "./SPBSParser";
+import { MethodDeclarationContext } from "./SPBSParser";
+import { MethodBodyContext } from "./SPBSParser";
+import { TypeTypeOrVoidContext } from "./SPBSParser";
+import { GenericMethodDeclarationContext } from "./SPBSParser";
+import { GenericConstructorDeclarationContext } from "./SPBSParser";
+import { ConstructorDeclarationContext } from "./SPBSParser";
 import { FieldDeclarationContext } from "./SPBSParser";
-import { FieldModifierContext } from "./SPBSParser";
-import { VariableDeclaratorListContext } from "./SPBSParser";
+import { InterfaceBodyDeclarationContext } from "./SPBSParser";
+import { InterfaceMemberDeclarationContext } from "./SPBSParser";
+import { ConstDeclarationContext } from "./SPBSParser";
+import { ConstantDeclaratorContext } from "./SPBSParser";
+import { InterfaceMethodDeclarationContext } from "./SPBSParser";
+import { InterfaceMethodModifierContext } from "./SPBSParser";
+import { GenericInterfaceMethodDeclarationContext } from "./SPBSParser";
+import { VariableDeclaratorsContext } from "./SPBSParser";
 import { VariableDeclaratorContext } from "./SPBSParser";
 import { VariableDeclaratorIdContext } from "./SPBSParser";
 import { VariableInitializerContext } from "./SPBSParser";
-import { UnannTypeContext } from "./SPBSParser";
-import { UnannPrimitiveTypeContext } from "./SPBSParser";
-import { UnannReferenceTypeContext } from "./SPBSParser";
-import { UnannClassOrInterfaceTypeContext } from "./SPBSParser";
-import { UnannClassTypeContext } from "./SPBSParser";
-import { UnannClassType_lf_unannClassOrInterfaceTypeContext } from "./SPBSParser";
-import { UnannClassType_lfno_unannClassOrInterfaceTypeContext } from "./SPBSParser";
-import { UnannInterfaceTypeContext } from "./SPBSParser";
-import { UnannInterfaceType_lf_unannClassOrInterfaceTypeContext } from "./SPBSParser";
-import { UnannInterfaceType_lfno_unannClassOrInterfaceTypeContext } from "./SPBSParser";
-import { UnannTypeVariableContext } from "./SPBSParser";
-import { UnannArrayTypeContext } from "./SPBSParser";
-import { MethodDeclarationContext } from "./SPBSParser";
-import { MethodModifierContext } from "./SPBSParser";
-import { MethodHeaderContext } from "./SPBSParser";
-import { ResultContext } from "./SPBSParser";
-import { MethodDeclaratorContext } from "./SPBSParser";
-import { FormalParameterListContext } from "./SPBSParser";
+import { ArrayInitializerContext } from "./SPBSParser";
+import { ClassOrInterfaceTypeContext } from "./SPBSParser";
+import { TypeArgumentContext } from "./SPBSParser";
+import { QualifiedNameListContext } from "./SPBSParser";
 import { FormalParametersContext } from "./SPBSParser";
+import { FormalParameterListContext } from "./SPBSParser";
 import { FormalParameterContext } from "./SPBSParser";
-import { VariableModifierContext } from "./SPBSParser";
 import { LastFormalParameterContext } from "./SPBSParser";
-import { ReceiverParameterContext } from "./SPBSParser";
-import { Throws_Context } from "./SPBSParser";
-import { ExceptionTypeListContext } from "./SPBSParser";
-import { ExceptionTypeContext } from "./SPBSParser";
-import { MethodBodyContext } from "./SPBSParser";
-import { InstanceInitializerContext } from "./SPBSParser";
-import { StaticInitializerContext } from "./SPBSParser";
-import { ConstructorDeclarationContext } from "./SPBSParser";
-import { ConstructorModifierContext } from "./SPBSParser";
-import { ConstructorDeclaratorContext } from "./SPBSParser";
-import { SimpleTypeNameContext } from "./SPBSParser";
-import { ConstructorBodyContext } from "./SPBSParser";
-import { ExplicitConstructorInvocationContext } from "./SPBSParser";
-import { EnumDeclarationContext } from "./SPBSParser";
-import { EnumBodyContext } from "./SPBSParser";
-import { EnumConstantListContext } from "./SPBSParser";
-import { EnumConstantContext } from "./SPBSParser";
-import { EnumConstantModifierContext } from "./SPBSParser";
-import { EnumBodyDeclarationsContext } from "./SPBSParser";
-import { InterfaceDeclarationContext } from "./SPBSParser";
-import { NormalInterfaceDeclarationContext } from "./SPBSParser";
-import { InterfaceModifierContext } from "./SPBSParser";
-import { ExtendsInterfacesContext } from "./SPBSParser";
-import { InterfaceBodyContext } from "./SPBSParser";
-import { InterfaceMemberDeclarationContext } from "./SPBSParser";
-import { ConstantDeclarationContext } from "./SPBSParser";
-import { ConstantModifierContext } from "./SPBSParser";
-import { InterfaceMethodDeclarationContext } from "./SPBSParser";
-import { InterfaceMethodModifierContext } from "./SPBSParser";
-import { AnnotationTypeDeclarationContext } from "./SPBSParser";
-import { AnnotationTypeBodyContext } from "./SPBSParser";
-import { AnnotationTypeMemberDeclarationContext } from "./SPBSParser";
-import { AnnotationTypeElementDeclarationContext } from "./SPBSParser";
-import { AnnotationTypeElementModifierContext } from "./SPBSParser";
-import { DefaultValueContext } from "./SPBSParser";
+import { QualifiedNameContext } from "./SPBSParser";
+import { LiteralContext } from "./SPBSParser";
+import { IntegerLiteralContext } from "./SPBSParser";
+import { FloatLiteralContext } from "./SPBSParser";
+import { AltAnnotationQualifiedNameContext } from "./SPBSParser";
 import { AnnotationContext } from "./SPBSParser";
-import { NormalAnnotationContext } from "./SPBSParser";
-import { ElementValuePairListContext } from "./SPBSParser";
+import { ElementValuePairsContext } from "./SPBSParser";
 import { ElementValuePairContext } from "./SPBSParser";
 import { ElementValueContext } from "./SPBSParser";
 import { ElementValueArrayInitializerContext } from "./SPBSParser";
-import { ElementValueListContext } from "./SPBSParser";
-import { MarkerAnnotationContext } from "./SPBSParser";
-import { SingleElementAnnotationContext } from "./SPBSParser";
-import { ArrayInitializerContext } from "./SPBSParser";
-import { VariableInitializerListContext } from "./SPBSParser";
+import { AnnotationTypeDeclarationContext } from "./SPBSParser";
+import { AnnotationTypeBodyContext } from "./SPBSParser";
+import { AnnotationTypeElementDeclarationContext } from "./SPBSParser";
+import { AnnotationTypeElementRestContext } from "./SPBSParser";
+import { AnnotationMethodOrConstantRestContext } from "./SPBSParser";
+import { AnnotationMethodRestContext } from "./SPBSParser";
+import { AnnotationConstantRestContext } from "./SPBSParser";
+import { DefaultValueContext } from "./SPBSParser";
 import { BlockContext } from "./SPBSParser";
-import { BlockStatementsContext } from "./SPBSParser";
 import { BlockStatementContext } from "./SPBSParser";
-import { LocalVariableDeclarationStatementContext } from "./SPBSParser";
 import { LocalVariableDeclarationContext } from "./SPBSParser";
+import { LocalTypeDeclarationContext } from "./SPBSParser";
 import { StatementContext } from "./SPBSParser";
-import { StatementNoShortIfContext } from "./SPBSParser";
-import { StatementWithoutTrailingSubstatementContext } from "./SPBSParser";
-import { EmptyStatementContext } from "./SPBSParser";
-import { LabeledStatementContext } from "./SPBSParser";
-import { LabeledStatementNoShortIfContext } from "./SPBSParser";
-import { ExpressionStatementContext } from "./SPBSParser";
-import { StatementExpressionContext } from "./SPBSParser";
-import { IfThenStatementContext } from "./SPBSParser";
-import { IfThenElseStatementContext } from "./SPBSParser";
-import { IfThenElseStatementNoShortIfContext } from "./SPBSParser";
-import { AssertStatementContext } from "./SPBSParser";
-import { SwitchStatementContext } from "./SPBSParser";
-import { SwitchBlockContext } from "./SPBSParser";
-import { SwitchBlockStatementGroupContext } from "./SPBSParser";
-import { SwitchLabelsContext } from "./SPBSParser";
-import { SwitchLabelContext } from "./SPBSParser";
-import { EnumConstantNameContext } from "./SPBSParser";
-import { WhileStatementContext } from "./SPBSParser";
-import { WhileStatementNoShortIfContext } from "./SPBSParser";
-import { DoStatementContext } from "./SPBSParser";
-import { ForStatementContext } from "./SPBSParser";
-import { ForStatementNoShortIfContext } from "./SPBSParser";
-import { BasicForStatementContext } from "./SPBSParser";
-import { BasicForStatementNoShortIfContext } from "./SPBSParser";
-import { ForInitContext } from "./SPBSParser";
-import { ForUpdateContext } from "./SPBSParser";
-import { StatementExpressionListContext } from "./SPBSParser";
-import { EnhancedForStatementContext } from "./SPBSParser";
-import { EnhancedForStatementNoShortIfContext } from "./SPBSParser";
-import { BreakStatementContext } from "./SPBSParser";
-import { ContinueStatementContext } from "./SPBSParser";
-import { ReturnStatementContext } from "./SPBSParser";
-import { ThrowStatementContext } from "./SPBSParser";
-import { SynchronizedStatementContext } from "./SPBSParser";
-import { TryStatementContext } from "./SPBSParser";
-import { CatchesContext } from "./SPBSParser";
 import { CatchClauseContext } from "./SPBSParser";
-import { CatchFormalParameterContext } from "./SPBSParser";
 import { CatchTypeContext } from "./SPBSParser";
-import { Finally_Context } from "./SPBSParser";
-import { TryWithResourcesStatementContext } from "./SPBSParser";
+import { FinallyBlockContext } from "./SPBSParser";
 import { ResourceSpecificationContext } from "./SPBSParser";
-import { ResourceListContext } from "./SPBSParser";
+import { ResourcesContext } from "./SPBSParser";
 import { ResourceContext } from "./SPBSParser";
-import { PrimaryContext } from "./SPBSParser";
-import { PrimaryNoNewArrayContext } from "./SPBSParser";
-import { PrimaryNoNewArray_lf_arrayAccessContext } from "./SPBSParser";
-import { PrimaryNoNewArray_lfno_arrayAccessContext } from "./SPBSParser";
-import { PrimaryNoNewArray_lf_primaryContext } from "./SPBSParser";
-import { PrimaryNoNewArray_lf_primary_lf_arrayAccess_lf_primaryContext } from "./SPBSParser";
-import { PrimaryNoNewArray_lf_primary_lfno_arrayAccess_lf_primaryContext } from "./SPBSParser";
-import { PrimaryNoNewArray_lfno_primaryContext } from "./SPBSParser";
-import { PrimaryNoNewArray_lfno_primary_lf_arrayAccess_lfno_primaryContext } from "./SPBSParser";
-import { PrimaryNoNewArray_lfno_primary_lfno_arrayAccess_lfno_primaryContext } from "./SPBSParser";
-import { ClassInstanceCreationExpressionContext } from "./SPBSParser";
-import { ClassInstanceCreationExpression_lf_primaryContext } from "./SPBSParser";
-import { ClassInstanceCreationExpression_lfno_primaryContext } from "./SPBSParser";
-import { TypeArgumentsOrDiamondContext } from "./SPBSParser";
-import { FieldAccessContext } from "./SPBSParser";
-import { FieldAccess_lf_primaryContext } from "./SPBSParser";
-import { FieldAccess_lfno_primaryContext } from "./SPBSParser";
-import { ArrayAccessContext } from "./SPBSParser";
-import { ArrayAccess_lf_primaryContext } from "./SPBSParser";
-import { ArrayAccess_lfno_primaryContext } from "./SPBSParser";
-import { MethodInvocationContext } from "./SPBSParser";
-import { MethodInvocation_lf_primaryContext } from "./SPBSParser";
-import { MethodInvocation_lfno_primaryContext } from "./SPBSParser";
-import { ArgumentListContext } from "./SPBSParser";
-import { MethodReferenceContext } from "./SPBSParser";
-import { MethodReference_lf_primaryContext } from "./SPBSParser";
-import { MethodReference_lfno_primaryContext } from "./SPBSParser";
-import { ArrayCreationExpressionContext } from "./SPBSParser";
-import { DimExprsContext } from "./SPBSParser";
-import { DimExprContext } from "./SPBSParser";
-import { ConstantExpressionContext } from "./SPBSParser";
+import { SwitchBlockStatementGroupContext } from "./SPBSParser";
+import { SwitchLabelContext } from "./SPBSParser";
+import { ForControlContext } from "./SPBSParser";
+import { ForInitContext } from "./SPBSParser";
+import { EnhancedForControlContext } from "./SPBSParser";
+import { ParExpressionContext } from "./SPBSParser";
+import { ExpressionListContext } from "./SPBSParser";
+import { MethodCallContext } from "./SPBSParser";
 import { ExpressionContext } from "./SPBSParser";
 import { LambdaExpressionContext } from "./SPBSParser";
 import { LambdaParametersContext } from "./SPBSParser";
-import { InferredFormalParameterListContext } from "./SPBSParser";
 import { LambdaBodyContext } from "./SPBSParser";
-import { AssignmentExpressionContext } from "./SPBSParser";
-import { AssignmentContext } from "./SPBSParser";
-import { LeftHandSideContext } from "./SPBSParser";
-import { AssignmentOperatorContext } from "./SPBSParser";
-import { ConditionalExpressionContext } from "./SPBSParser";
-import { ConditionalOrExpressionContext } from "./SPBSParser";
-import { ConditionalAndExpressionContext } from "./SPBSParser";
-import { InclusiveOrExpressionContext } from "./SPBSParser";
-import { ExclusiveOrExpressionContext } from "./SPBSParser";
-import { AndExpressionContext } from "./SPBSParser";
-import { EqualityExpressionContext } from "./SPBSParser";
-import { RelationalExpressionContext } from "./SPBSParser";
-import { ShiftExpressionContext } from "./SPBSParser";
-import { AdditiveExpressionContext } from "./SPBSParser";
-import { MultiplicativeExpressionContext } from "./SPBSParser";
-import { UnaryExpressionContext } from "./SPBSParser";
-import { PreIncrementExpressionContext } from "./SPBSParser";
-import { PreDecrementExpressionContext } from "./SPBSParser";
-import { UnaryExpressionNotPlusMinusContext } from "./SPBSParser";
-import { PostfixExpressionContext } from "./SPBSParser";
-import { PostIncrementExpressionContext } from "./SPBSParser";
-import { PostIncrementExpression_lf_postfixExpressionContext } from "./SPBSParser";
-import { PostDecrementExpressionContext } from "./SPBSParser";
-import { PostDecrementExpression_lf_postfixExpressionContext } from "./SPBSParser";
-import { CastExpressionContext } from "./SPBSParser";
+import { PrimaryContext } from "./SPBSParser";
+import { ClassTypeContext } from "./SPBSParser";
+import { CreatorContext } from "./SPBSParser";
+import { CreatedNameContext } from "./SPBSParser";
+import { InnerCreatorContext } from "./SPBSParser";
+import { ArrayCreatorRestContext } from "./SPBSParser";
+import { ClassCreatorRestContext } from "./SPBSParser";
+import { ExplicitGenericInvocationContext } from "./SPBSParser";
+import { TypeArgumentsOrDiamondContext } from "./SPBSParser";
+import { NonWildcardTypeArgumentsOrDiamondContext } from "./SPBSParser";
+import { NonWildcardTypeArgumentsContext } from "./SPBSParser";
+import { TypeListContext } from "./SPBSParser";
+import { TypeTypeContext } from "./SPBSParser";
+import { PrimitiveTypeContext } from "./SPBSParser";
+import { TypeArgumentsContext } from "./SPBSParser";
+import { SuperSuffixContext } from "./SPBSParser";
+import { ExplicitGenericInvocationSuffixContext } from "./SPBSParser";
+import { ArgumentsContext } from "./SPBSParser";
 import { Xml_documentContext } from "./SPBSParser";
 import { Xml_prologContext } from "./SPBSParser";
 import { Xml_contentContext } from "./SPBSParser";
@@ -258,223 +127,6 @@ import { Xml_miscContext } from "./SPBSParser";
  */
 export interface SPBSParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	/**
-	 * Visit a parse tree produced by `SPBSParser.literal`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitLiteral?: (ctx: LiteralContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.primitiveType`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitPrimitiveType?: (ctx: PrimitiveTypeContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.numericType`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitNumericType?: (ctx: NumericTypeContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.integralType`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitIntegralType?: (ctx: IntegralTypeContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.floatingPointType`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitFloatingPointType?: (ctx: FloatingPointTypeContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.referenceType`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitReferenceType?: (ctx: ReferenceTypeContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.classOrInterfaceType`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitClassOrInterfaceType?: (ctx: ClassOrInterfaceTypeContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.classType`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitClassType?: (ctx: ClassTypeContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.classType_lf_classOrInterfaceType`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitClassType_lf_classOrInterfaceType?: (ctx: ClassType_lf_classOrInterfaceTypeContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.classType_lfno_classOrInterfaceType`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitClassType_lfno_classOrInterfaceType?: (ctx: ClassType_lfno_classOrInterfaceTypeContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.interfaceType`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitInterfaceType?: (ctx: InterfaceTypeContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.interfaceType_lf_classOrInterfaceType`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitInterfaceType_lf_classOrInterfaceType?: (ctx: InterfaceType_lf_classOrInterfaceTypeContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.interfaceType_lfno_classOrInterfaceType`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitInterfaceType_lfno_classOrInterfaceType?: (ctx: InterfaceType_lfno_classOrInterfaceTypeContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.typeVariable`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitTypeVariable?: (ctx: TypeVariableContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.arrayType`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitArrayType?: (ctx: ArrayTypeContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.dims`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitDims?: (ctx: DimsContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.typeParameter`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitTypeParameter?: (ctx: TypeParameterContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.typeParameterModifier`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitTypeParameterModifier?: (ctx: TypeParameterModifierContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.typeBound`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitTypeBound?: (ctx: TypeBoundContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.additionalBound`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitAdditionalBound?: (ctx: AdditionalBoundContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.typeArguments`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitTypeArguments?: (ctx: TypeArgumentsContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.typeArgumentList`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitTypeArgumentList?: (ctx: TypeArgumentListContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.typeArgument`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitTypeArgument?: (ctx: TypeArgumentContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.wildcard`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitWildcard?: (ctx: WildcardContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.wildcardBounds`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitWildcardBounds?: (ctx: WildcardBoundsContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.packageName`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitPackageName?: (ctx: PackageNameContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.typeName`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitTypeName?: (ctx: TypeNameContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.packageOrTypeName`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitPackageOrTypeName?: (ctx: PackageOrTypeNameContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.expressionName`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitExpressionName?: (ctx: ExpressionNameContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.methodName`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitMethodName?: (ctx: MethodNameContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.ambiguousName`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitAmbiguousName?: (ctx: AmbiguousNameContext) => Result;
-
-	/**
 	 * Visit a parse tree produced by `SPBSParser.bsCompilationUnit`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -489,46 +141,11 @@ export interface SPBSParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitPackageDeclaration?: (ctx: PackageDeclarationContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.packageModifier`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitPackageModifier?: (ctx: PackageModifierContext) => Result;
-
-	/**
 	 * Visit a parse tree produced by `SPBSParser.importDeclaration`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	visitImportDeclaration?: (ctx: ImportDeclarationContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.singleTypeImportDeclaration`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitSingleTypeImportDeclaration?: (ctx: SingleTypeImportDeclarationContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.typeImportOnDemandDeclaration`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitTypeImportOnDemandDeclaration?: (ctx: TypeImportOnDemandDeclarationContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.singleStaticImportDeclaration`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitSingleStaticImportDeclaration?: (ctx: SingleStaticImportDeclarationContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.staticImportOnDemandDeclaration`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitStaticImportOnDemandDeclaration?: (ctx: StaticImportOnDemandDeclarationContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `SPBSParser.typeDeclaration`.
@@ -538,25 +155,32 @@ export interface SPBSParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitTypeDeclaration?: (ctx: TypeDeclarationContext) => Result;
 
 	/**
+	 * Visit a parse tree produced by `SPBSParser.modifier`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitModifier?: (ctx: ModifierContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SPBSParser.classOrInterfaceModifier`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitClassOrInterfaceModifier?: (ctx: ClassOrInterfaceModifierContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SPBSParser.variableModifier`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitVariableModifier?: (ctx: VariableModifierContext) => Result;
+
+	/**
 	 * Visit a parse tree produced by `SPBSParser.classDeclaration`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	visitClassDeclaration?: (ctx: ClassDeclarationContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.normalClassDeclaration`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitNormalClassDeclaration?: (ctx: NormalClassDeclarationContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.classModifier`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitClassModifier?: (ctx: ClassModifierContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `SPBSParser.typeParameters`.
@@ -566,32 +190,53 @@ export interface SPBSParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitTypeParameters?: (ctx: TypeParametersContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.typeParameterList`.
+	 * Visit a parse tree produced by `SPBSParser.typeParameter`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitTypeParameterList?: (ctx: TypeParameterListContext) => Result;
+	visitTypeParameter?: (ctx: TypeParameterContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.superclass`.
+	 * Visit a parse tree produced by `SPBSParser.typeBound`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitSuperclass?: (ctx: SuperclassContext) => Result;
+	visitTypeBound?: (ctx: TypeBoundContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.superinterfaces`.
+	 * Visit a parse tree produced by `SPBSParser.enumDeclaration`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitSuperinterfaces?: (ctx: SuperinterfacesContext) => Result;
+	visitEnumDeclaration?: (ctx: EnumDeclarationContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.interfaceTypeList`.
+	 * Visit a parse tree produced by `SPBSParser.enumConstants`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitInterfaceTypeList?: (ctx: InterfaceTypeListContext) => Result;
+	visitEnumConstants?: (ctx: EnumConstantsContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SPBSParser.enumConstant`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitEnumConstant?: (ctx: EnumConstantContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SPBSParser.enumBodyDeclarations`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitEnumBodyDeclarations?: (ctx: EnumBodyDeclarationsContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SPBSParser.interfaceDeclaration`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitInterfaceDeclaration?: (ctx: InterfaceDeclarationContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `SPBSParser.classBody`.
@@ -601,6 +246,13 @@ export interface SPBSParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitClassBody?: (ctx: ClassBodyContext) => Result;
 
 	/**
+	 * Visit a parse tree produced by `SPBSParser.interfaceBody`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitInterfaceBody?: (ctx: InterfaceBodyContext) => Result;
+
+	/**
 	 * Visit a parse tree produced by `SPBSParser.classBodyDeclaration`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -608,11 +260,53 @@ export interface SPBSParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitClassBodyDeclaration?: (ctx: ClassBodyDeclarationContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.classMemberDeclaration`.
+	 * Visit a parse tree produced by `SPBSParser.memberDeclaration`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitClassMemberDeclaration?: (ctx: ClassMemberDeclarationContext) => Result;
+	visitMemberDeclaration?: (ctx: MemberDeclarationContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SPBSParser.methodDeclaration`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitMethodDeclaration?: (ctx: MethodDeclarationContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SPBSParser.methodBody`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitMethodBody?: (ctx: MethodBodyContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SPBSParser.typeTypeOrVoid`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitTypeTypeOrVoid?: (ctx: TypeTypeOrVoidContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SPBSParser.genericMethodDeclaration`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitGenericMethodDeclaration?: (ctx: GenericMethodDeclarationContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SPBSParser.genericConstructorDeclaration`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitGenericConstructorDeclaration?: (ctx: GenericConstructorDeclarationContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SPBSParser.constructorDeclaration`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitConstructorDeclaration?: (ctx: ConstructorDeclarationContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `SPBSParser.fieldDeclaration`.
@@ -622,18 +316,60 @@ export interface SPBSParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitFieldDeclaration?: (ctx: FieldDeclarationContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.fieldModifier`.
+	 * Visit a parse tree produced by `SPBSParser.interfaceBodyDeclaration`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitFieldModifier?: (ctx: FieldModifierContext) => Result;
+	visitInterfaceBodyDeclaration?: (ctx: InterfaceBodyDeclarationContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.variableDeclaratorList`.
+	 * Visit a parse tree produced by `SPBSParser.interfaceMemberDeclaration`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitVariableDeclaratorList?: (ctx: VariableDeclaratorListContext) => Result;
+	visitInterfaceMemberDeclaration?: (ctx: InterfaceMemberDeclarationContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SPBSParser.constDeclaration`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitConstDeclaration?: (ctx: ConstDeclarationContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SPBSParser.constantDeclarator`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitConstantDeclarator?: (ctx: ConstantDeclaratorContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SPBSParser.interfaceMethodDeclaration`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitInterfaceMethodDeclaration?: (ctx: InterfaceMethodDeclarationContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SPBSParser.interfaceMethodModifier`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitInterfaceMethodModifier?: (ctx: InterfaceMethodModifierContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SPBSParser.genericInterfaceMethodDeclaration`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitGenericInterfaceMethodDeclaration?: (ctx: GenericInterfaceMethodDeclarationContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SPBSParser.variableDeclarators`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitVariableDeclarators?: (ctx: VariableDeclaratorsContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `SPBSParser.variableDeclarator`.
@@ -657,130 +393,32 @@ export interface SPBSParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitVariableInitializer?: (ctx: VariableInitializerContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.unannType`.
+	 * Visit a parse tree produced by `SPBSParser.arrayInitializer`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitUnannType?: (ctx: UnannTypeContext) => Result;
+	visitArrayInitializer?: (ctx: ArrayInitializerContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.unannPrimitiveType`.
+	 * Visit a parse tree produced by `SPBSParser.classOrInterfaceType`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitUnannPrimitiveType?: (ctx: UnannPrimitiveTypeContext) => Result;
+	visitClassOrInterfaceType?: (ctx: ClassOrInterfaceTypeContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.unannReferenceType`.
+	 * Visit a parse tree produced by `SPBSParser.typeArgument`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitUnannReferenceType?: (ctx: UnannReferenceTypeContext) => Result;
+	visitTypeArgument?: (ctx: TypeArgumentContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.unannClassOrInterfaceType`.
+	 * Visit a parse tree produced by `SPBSParser.qualifiedNameList`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitUnannClassOrInterfaceType?: (ctx: UnannClassOrInterfaceTypeContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.unannClassType`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitUnannClassType?: (ctx: UnannClassTypeContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.unannClassType_lf_unannClassOrInterfaceType`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitUnannClassType_lf_unannClassOrInterfaceType?: (ctx: UnannClassType_lf_unannClassOrInterfaceTypeContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.unannClassType_lfno_unannClassOrInterfaceType`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitUnannClassType_lfno_unannClassOrInterfaceType?: (ctx: UnannClassType_lfno_unannClassOrInterfaceTypeContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.unannInterfaceType`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitUnannInterfaceType?: (ctx: UnannInterfaceTypeContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.unannInterfaceType_lf_unannClassOrInterfaceType`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitUnannInterfaceType_lf_unannClassOrInterfaceType?: (ctx: UnannInterfaceType_lf_unannClassOrInterfaceTypeContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.unannInterfaceType_lfno_unannClassOrInterfaceType`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitUnannInterfaceType_lfno_unannClassOrInterfaceType?: (ctx: UnannInterfaceType_lfno_unannClassOrInterfaceTypeContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.unannTypeVariable`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitUnannTypeVariable?: (ctx: UnannTypeVariableContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.unannArrayType`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitUnannArrayType?: (ctx: UnannArrayTypeContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.methodDeclaration`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitMethodDeclaration?: (ctx: MethodDeclarationContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.methodModifier`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitMethodModifier?: (ctx: MethodModifierContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.methodHeader`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitMethodHeader?: (ctx: MethodHeaderContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.result`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitResult?: (ctx: ResultContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.methodDeclarator`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitMethodDeclarator?: (ctx: MethodDeclaratorContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.formalParameterList`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitFormalParameterList?: (ctx: FormalParameterListContext) => Result;
+	visitQualifiedNameList?: (ctx: QualifiedNameListContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `SPBSParser.formalParameters`.
@@ -790,18 +428,18 @@ export interface SPBSParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitFormalParameters?: (ctx: FormalParametersContext) => Result;
 
 	/**
+	 * Visit a parse tree produced by `SPBSParser.formalParameterList`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitFormalParameterList?: (ctx: FormalParameterListContext) => Result;
+
+	/**
 	 * Visit a parse tree produced by `SPBSParser.formalParameter`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	visitFormalParameter?: (ctx: FormalParameterContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.variableModifier`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitVariableModifier?: (ctx: VariableModifierContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `SPBSParser.lastFormalParameter`.
@@ -811,249 +449,39 @@ export interface SPBSParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitLastFormalParameter?: (ctx: LastFormalParameterContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.receiverParameter`.
+	 * Visit a parse tree produced by `SPBSParser.qualifiedName`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitReceiverParameter?: (ctx: ReceiverParameterContext) => Result;
+	visitQualifiedName?: (ctx: QualifiedNameContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.throws_`.
+	 * Visit a parse tree produced by `SPBSParser.literal`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitThrows_?: (ctx: Throws_Context) => Result;
+	visitLiteral?: (ctx: LiteralContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.exceptionTypeList`.
+	 * Visit a parse tree produced by `SPBSParser.integerLiteral`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitExceptionTypeList?: (ctx: ExceptionTypeListContext) => Result;
+	visitIntegerLiteral?: (ctx: IntegerLiteralContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.exceptionType`.
+	 * Visit a parse tree produced by `SPBSParser.floatLiteral`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitExceptionType?: (ctx: ExceptionTypeContext) => Result;
+	visitFloatLiteral?: (ctx: FloatLiteralContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.methodBody`.
+	 * Visit a parse tree produced by `SPBSParser.altAnnotationQualifiedName`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitMethodBody?: (ctx: MethodBodyContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.instanceInitializer`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitInstanceInitializer?: (ctx: InstanceInitializerContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.staticInitializer`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitStaticInitializer?: (ctx: StaticInitializerContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.constructorDeclaration`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitConstructorDeclaration?: (ctx: ConstructorDeclarationContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.constructorModifier`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitConstructorModifier?: (ctx: ConstructorModifierContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.constructorDeclarator`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitConstructorDeclarator?: (ctx: ConstructorDeclaratorContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.simpleTypeName`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitSimpleTypeName?: (ctx: SimpleTypeNameContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.constructorBody`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitConstructorBody?: (ctx: ConstructorBodyContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.explicitConstructorInvocation`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitExplicitConstructorInvocation?: (ctx: ExplicitConstructorInvocationContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.enumDeclaration`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitEnumDeclaration?: (ctx: EnumDeclarationContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.enumBody`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitEnumBody?: (ctx: EnumBodyContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.enumConstantList`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitEnumConstantList?: (ctx: EnumConstantListContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.enumConstant`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitEnumConstant?: (ctx: EnumConstantContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.enumConstantModifier`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitEnumConstantModifier?: (ctx: EnumConstantModifierContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.enumBodyDeclarations`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitEnumBodyDeclarations?: (ctx: EnumBodyDeclarationsContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.interfaceDeclaration`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitInterfaceDeclaration?: (ctx: InterfaceDeclarationContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.normalInterfaceDeclaration`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitNormalInterfaceDeclaration?: (ctx: NormalInterfaceDeclarationContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.interfaceModifier`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitInterfaceModifier?: (ctx: InterfaceModifierContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.extendsInterfaces`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitExtendsInterfaces?: (ctx: ExtendsInterfacesContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.interfaceBody`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitInterfaceBody?: (ctx: InterfaceBodyContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.interfaceMemberDeclaration`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitInterfaceMemberDeclaration?: (ctx: InterfaceMemberDeclarationContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.constantDeclaration`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitConstantDeclaration?: (ctx: ConstantDeclarationContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.constantModifier`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitConstantModifier?: (ctx: ConstantModifierContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.interfaceMethodDeclaration`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitInterfaceMethodDeclaration?: (ctx: InterfaceMethodDeclarationContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.interfaceMethodModifier`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitInterfaceMethodModifier?: (ctx: InterfaceMethodModifierContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.annotationTypeDeclaration`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitAnnotationTypeDeclaration?: (ctx: AnnotationTypeDeclarationContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.annotationTypeBody`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitAnnotationTypeBody?: (ctx: AnnotationTypeBodyContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.annotationTypeMemberDeclaration`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitAnnotationTypeMemberDeclaration?: (ctx: AnnotationTypeMemberDeclarationContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.annotationTypeElementDeclaration`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitAnnotationTypeElementDeclaration?: (ctx: AnnotationTypeElementDeclarationContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.annotationTypeElementModifier`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitAnnotationTypeElementModifier?: (ctx: AnnotationTypeElementModifierContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.defaultValue`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitDefaultValue?: (ctx: DefaultValueContext) => Result;
+	visitAltAnnotationQualifiedName?: (ctx: AltAnnotationQualifiedNameContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `SPBSParser.annotation`.
@@ -1063,18 +491,11 @@ export interface SPBSParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitAnnotation?: (ctx: AnnotationContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.normalAnnotation`.
+	 * Visit a parse tree produced by `SPBSParser.elementValuePairs`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitNormalAnnotation?: (ctx: NormalAnnotationContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.elementValuePairList`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitElementValuePairList?: (ctx: ElementValuePairListContext) => Result;
+	visitElementValuePairs?: (ctx: ElementValuePairsContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `SPBSParser.elementValuePair`.
@@ -1098,39 +519,60 @@ export interface SPBSParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitElementValueArrayInitializer?: (ctx: ElementValueArrayInitializerContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.elementValueList`.
+	 * Visit a parse tree produced by `SPBSParser.annotationTypeDeclaration`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitElementValueList?: (ctx: ElementValueListContext) => Result;
+	visitAnnotationTypeDeclaration?: (ctx: AnnotationTypeDeclarationContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.markerAnnotation`.
+	 * Visit a parse tree produced by `SPBSParser.annotationTypeBody`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitMarkerAnnotation?: (ctx: MarkerAnnotationContext) => Result;
+	visitAnnotationTypeBody?: (ctx: AnnotationTypeBodyContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.singleElementAnnotation`.
+	 * Visit a parse tree produced by `SPBSParser.annotationTypeElementDeclaration`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitSingleElementAnnotation?: (ctx: SingleElementAnnotationContext) => Result;
+	visitAnnotationTypeElementDeclaration?: (ctx: AnnotationTypeElementDeclarationContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.arrayInitializer`.
+	 * Visit a parse tree produced by `SPBSParser.annotationTypeElementRest`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitArrayInitializer?: (ctx: ArrayInitializerContext) => Result;
+	visitAnnotationTypeElementRest?: (ctx: AnnotationTypeElementRestContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.variableInitializerList`.
+	 * Visit a parse tree produced by `SPBSParser.annotationMethodOrConstantRest`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitVariableInitializerList?: (ctx: VariableInitializerListContext) => Result;
+	visitAnnotationMethodOrConstantRest?: (ctx: AnnotationMethodOrConstantRestContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SPBSParser.annotationMethodRest`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitAnnotationMethodRest?: (ctx: AnnotationMethodRestContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SPBSParser.annotationConstantRest`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitAnnotationConstantRest?: (ctx: AnnotationConstantRestContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SPBSParser.defaultValue`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitDefaultValue?: (ctx: DefaultValueContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `SPBSParser.block`.
@@ -1140,25 +582,11 @@ export interface SPBSParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitBlock?: (ctx: BlockContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.blockStatements`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitBlockStatements?: (ctx: BlockStatementsContext) => Result;
-
-	/**
 	 * Visit a parse tree produced by `SPBSParser.blockStatement`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	visitBlockStatement?: (ctx: BlockStatementContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.localVariableDeclarationStatement`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitLocalVariableDeclarationStatement?: (ctx: LocalVariableDeclarationStatementContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `SPBSParser.localVariableDeclaration`.
@@ -1168,263 +596,18 @@ export interface SPBSParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitLocalVariableDeclaration?: (ctx: LocalVariableDeclarationContext) => Result;
 
 	/**
+	 * Visit a parse tree produced by `SPBSParser.localTypeDeclaration`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitLocalTypeDeclaration?: (ctx: LocalTypeDeclarationContext) => Result;
+
+	/**
 	 * Visit a parse tree produced by `SPBSParser.statement`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	visitStatement?: (ctx: StatementContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.statementNoShortIf`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitStatementNoShortIf?: (ctx: StatementNoShortIfContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.statementWithoutTrailingSubstatement`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitStatementWithoutTrailingSubstatement?: (ctx: StatementWithoutTrailingSubstatementContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.emptyStatement`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitEmptyStatement?: (ctx: EmptyStatementContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.labeledStatement`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitLabeledStatement?: (ctx: LabeledStatementContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.labeledStatementNoShortIf`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitLabeledStatementNoShortIf?: (ctx: LabeledStatementNoShortIfContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.expressionStatement`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitExpressionStatement?: (ctx: ExpressionStatementContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.statementExpression`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitStatementExpression?: (ctx: StatementExpressionContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.ifThenStatement`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitIfThenStatement?: (ctx: IfThenStatementContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.ifThenElseStatement`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitIfThenElseStatement?: (ctx: IfThenElseStatementContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.ifThenElseStatementNoShortIf`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitIfThenElseStatementNoShortIf?: (ctx: IfThenElseStatementNoShortIfContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.assertStatement`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitAssertStatement?: (ctx: AssertStatementContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.switchStatement`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitSwitchStatement?: (ctx: SwitchStatementContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.switchBlock`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitSwitchBlock?: (ctx: SwitchBlockContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.switchBlockStatementGroup`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitSwitchBlockStatementGroup?: (ctx: SwitchBlockStatementGroupContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.switchLabels`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitSwitchLabels?: (ctx: SwitchLabelsContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.switchLabel`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitSwitchLabel?: (ctx: SwitchLabelContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.enumConstantName`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitEnumConstantName?: (ctx: EnumConstantNameContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.whileStatement`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitWhileStatement?: (ctx: WhileStatementContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.whileStatementNoShortIf`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitWhileStatementNoShortIf?: (ctx: WhileStatementNoShortIfContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.doStatement`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitDoStatement?: (ctx: DoStatementContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.forStatement`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitForStatement?: (ctx: ForStatementContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.forStatementNoShortIf`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitForStatementNoShortIf?: (ctx: ForStatementNoShortIfContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.basicForStatement`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitBasicForStatement?: (ctx: BasicForStatementContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.basicForStatementNoShortIf`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitBasicForStatementNoShortIf?: (ctx: BasicForStatementNoShortIfContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.forInit`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitForInit?: (ctx: ForInitContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.forUpdate`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitForUpdate?: (ctx: ForUpdateContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.statementExpressionList`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitStatementExpressionList?: (ctx: StatementExpressionListContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.enhancedForStatement`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitEnhancedForStatement?: (ctx: EnhancedForStatementContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.enhancedForStatementNoShortIf`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitEnhancedForStatementNoShortIf?: (ctx: EnhancedForStatementNoShortIfContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.breakStatement`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitBreakStatement?: (ctx: BreakStatementContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.continueStatement`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitContinueStatement?: (ctx: ContinueStatementContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.returnStatement`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitReturnStatement?: (ctx: ReturnStatementContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.throwStatement`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitThrowStatement?: (ctx: ThrowStatementContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.synchronizedStatement`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitSynchronizedStatement?: (ctx: SynchronizedStatementContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.tryStatement`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitTryStatement?: (ctx: TryStatementContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.catches`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitCatches?: (ctx: CatchesContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `SPBSParser.catchClause`.
@@ -1434,13 +617,6 @@ export interface SPBSParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitCatchClause?: (ctx: CatchClauseContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.catchFormalParameter`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitCatchFormalParameter?: (ctx: CatchFormalParameterContext) => Result;
-
-	/**
 	 * Visit a parse tree produced by `SPBSParser.catchType`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -1448,18 +624,11 @@ export interface SPBSParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitCatchType?: (ctx: CatchTypeContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.finally_`.
+	 * Visit a parse tree produced by `SPBSParser.finallyBlock`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitFinally_?: (ctx: Finally_Context) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.tryWithResourcesStatement`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitTryWithResourcesStatement?: (ctx: TryWithResourcesStatementContext) => Result;
+	visitFinallyBlock?: (ctx: FinallyBlockContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `SPBSParser.resourceSpecification`.
@@ -1469,11 +638,11 @@ export interface SPBSParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitResourceSpecification?: (ctx: ResourceSpecificationContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.resourceList`.
+	 * Visit a parse tree produced by `SPBSParser.resources`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitResourceList?: (ctx: ResourceListContext) => Result;
+	visitResources?: (ctx: ResourcesContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `SPBSParser.resource`.
@@ -1483,221 +652,60 @@ export interface SPBSParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitResource?: (ctx: ResourceContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.primary`.
+	 * Visit a parse tree produced by `SPBSParser.switchBlockStatementGroup`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitPrimary?: (ctx: PrimaryContext) => Result;
+	visitSwitchBlockStatementGroup?: (ctx: SwitchBlockStatementGroupContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.primaryNoNewArray`.
+	 * Visit a parse tree produced by `SPBSParser.switchLabel`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitPrimaryNoNewArray?: (ctx: PrimaryNoNewArrayContext) => Result;
+	visitSwitchLabel?: (ctx: SwitchLabelContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.primaryNoNewArray_lf_arrayAccess`.
+	 * Visit a parse tree produced by `SPBSParser.forControl`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitPrimaryNoNewArray_lf_arrayAccess?: (ctx: PrimaryNoNewArray_lf_arrayAccessContext) => Result;
+	visitForControl?: (ctx: ForControlContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.primaryNoNewArray_lfno_arrayAccess`.
+	 * Visit a parse tree produced by `SPBSParser.forInit`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitPrimaryNoNewArray_lfno_arrayAccess?: (ctx: PrimaryNoNewArray_lfno_arrayAccessContext) => Result;
+	visitForInit?: (ctx: ForInitContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.primaryNoNewArray_lf_primary`.
+	 * Visit a parse tree produced by `SPBSParser.enhancedForControl`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitPrimaryNoNewArray_lf_primary?: (ctx: PrimaryNoNewArray_lf_primaryContext) => Result;
+	visitEnhancedForControl?: (ctx: EnhancedForControlContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.primaryNoNewArray_lf_primary_lf_arrayAccess_lf_primary`.
+	 * Visit a parse tree produced by `SPBSParser.parExpression`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitPrimaryNoNewArray_lf_primary_lf_arrayAccess_lf_primary?: (ctx: PrimaryNoNewArray_lf_primary_lf_arrayAccess_lf_primaryContext) => Result;
+	visitParExpression?: (ctx: ParExpressionContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.primaryNoNewArray_lf_primary_lfno_arrayAccess_lf_primary`.
+	 * Visit a parse tree produced by `SPBSParser.expressionList`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitPrimaryNoNewArray_lf_primary_lfno_arrayAccess_lf_primary?: (ctx: PrimaryNoNewArray_lf_primary_lfno_arrayAccess_lf_primaryContext) => Result;
+	visitExpressionList?: (ctx: ExpressionListContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.primaryNoNewArray_lfno_primary`.
+	 * Visit a parse tree produced by `SPBSParser.methodCall`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitPrimaryNoNewArray_lfno_primary?: (ctx: PrimaryNoNewArray_lfno_primaryContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.primaryNoNewArray_lfno_primary_lf_arrayAccess_lfno_primary`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitPrimaryNoNewArray_lfno_primary_lf_arrayAccess_lfno_primary?: (ctx: PrimaryNoNewArray_lfno_primary_lf_arrayAccess_lfno_primaryContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.primaryNoNewArray_lfno_primary_lfno_arrayAccess_lfno_primary`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitPrimaryNoNewArray_lfno_primary_lfno_arrayAccess_lfno_primary?: (ctx: PrimaryNoNewArray_lfno_primary_lfno_arrayAccess_lfno_primaryContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.classInstanceCreationExpression`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitClassInstanceCreationExpression?: (ctx: ClassInstanceCreationExpressionContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.classInstanceCreationExpression_lf_primary`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitClassInstanceCreationExpression_lf_primary?: (ctx: ClassInstanceCreationExpression_lf_primaryContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.classInstanceCreationExpression_lfno_primary`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitClassInstanceCreationExpression_lfno_primary?: (ctx: ClassInstanceCreationExpression_lfno_primaryContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.typeArgumentsOrDiamond`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitTypeArgumentsOrDiamond?: (ctx: TypeArgumentsOrDiamondContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.fieldAccess`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitFieldAccess?: (ctx: FieldAccessContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.fieldAccess_lf_primary`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitFieldAccess_lf_primary?: (ctx: FieldAccess_lf_primaryContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.fieldAccess_lfno_primary`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitFieldAccess_lfno_primary?: (ctx: FieldAccess_lfno_primaryContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.arrayAccess`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitArrayAccess?: (ctx: ArrayAccessContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.arrayAccess_lf_primary`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitArrayAccess_lf_primary?: (ctx: ArrayAccess_lf_primaryContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.arrayAccess_lfno_primary`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitArrayAccess_lfno_primary?: (ctx: ArrayAccess_lfno_primaryContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.methodInvocation`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitMethodInvocation?: (ctx: MethodInvocationContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.methodInvocation_lf_primary`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitMethodInvocation_lf_primary?: (ctx: MethodInvocation_lf_primaryContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.methodInvocation_lfno_primary`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitMethodInvocation_lfno_primary?: (ctx: MethodInvocation_lfno_primaryContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.argumentList`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitArgumentList?: (ctx: ArgumentListContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.methodReference`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitMethodReference?: (ctx: MethodReferenceContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.methodReference_lf_primary`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitMethodReference_lf_primary?: (ctx: MethodReference_lf_primaryContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.methodReference_lfno_primary`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitMethodReference_lfno_primary?: (ctx: MethodReference_lfno_primaryContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.arrayCreationExpression`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitArrayCreationExpression?: (ctx: ArrayCreationExpressionContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.dimExprs`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitDimExprs?: (ctx: DimExprsContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.dimExpr`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitDimExpr?: (ctx: DimExprContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.constantExpression`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitConstantExpression?: (ctx: ConstantExpressionContext) => Result;
+	visitMethodCall?: (ctx: MethodCallContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `SPBSParser.expression`.
@@ -1721,13 +729,6 @@ export interface SPBSParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitLambdaParameters?: (ctx: LambdaParametersContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.inferredFormalParameterList`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitInferredFormalParameterList?: (ctx: InferredFormalParameterListContext) => Result;
-
-	/**
 	 * Visit a parse tree produced by `SPBSParser.lambdaBody`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -1735,179 +736,130 @@ export interface SPBSParserVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitLambdaBody?: (ctx: LambdaBodyContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.assignmentExpression`.
+	 * Visit a parse tree produced by `SPBSParser.primary`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitAssignmentExpression?: (ctx: AssignmentExpressionContext) => Result;
+	visitPrimary?: (ctx: PrimaryContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.assignment`.
+	 * Visit a parse tree produced by `SPBSParser.classType`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitAssignment?: (ctx: AssignmentContext) => Result;
+	visitClassType?: (ctx: ClassTypeContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.leftHandSide`.
+	 * Visit a parse tree produced by `SPBSParser.creator`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitLeftHandSide?: (ctx: LeftHandSideContext) => Result;
+	visitCreator?: (ctx: CreatorContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.assignmentOperator`.
+	 * Visit a parse tree produced by `SPBSParser.createdName`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitAssignmentOperator?: (ctx: AssignmentOperatorContext) => Result;
+	visitCreatedName?: (ctx: CreatedNameContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.conditionalExpression`.
+	 * Visit a parse tree produced by `SPBSParser.innerCreator`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitConditionalExpression?: (ctx: ConditionalExpressionContext) => Result;
+	visitInnerCreator?: (ctx: InnerCreatorContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.conditionalOrExpression`.
+	 * Visit a parse tree produced by `SPBSParser.arrayCreatorRest`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitConditionalOrExpression?: (ctx: ConditionalOrExpressionContext) => Result;
+	visitArrayCreatorRest?: (ctx: ArrayCreatorRestContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.conditionalAndExpression`.
+	 * Visit a parse tree produced by `SPBSParser.classCreatorRest`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitConditionalAndExpression?: (ctx: ConditionalAndExpressionContext) => Result;
+	visitClassCreatorRest?: (ctx: ClassCreatorRestContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.inclusiveOrExpression`.
+	 * Visit a parse tree produced by `SPBSParser.explicitGenericInvocation`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitInclusiveOrExpression?: (ctx: InclusiveOrExpressionContext) => Result;
+	visitExplicitGenericInvocation?: (ctx: ExplicitGenericInvocationContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.exclusiveOrExpression`.
+	 * Visit a parse tree produced by `SPBSParser.typeArgumentsOrDiamond`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitExclusiveOrExpression?: (ctx: ExclusiveOrExpressionContext) => Result;
+	visitTypeArgumentsOrDiamond?: (ctx: TypeArgumentsOrDiamondContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.andExpression`.
+	 * Visit a parse tree produced by `SPBSParser.nonWildcardTypeArgumentsOrDiamond`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitAndExpression?: (ctx: AndExpressionContext) => Result;
+	visitNonWildcardTypeArgumentsOrDiamond?: (ctx: NonWildcardTypeArgumentsOrDiamondContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.equalityExpression`.
+	 * Visit a parse tree produced by `SPBSParser.nonWildcardTypeArguments`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitEqualityExpression?: (ctx: EqualityExpressionContext) => Result;
+	visitNonWildcardTypeArguments?: (ctx: NonWildcardTypeArgumentsContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.relationalExpression`.
+	 * Visit a parse tree produced by `SPBSParser.typeList`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitRelationalExpression?: (ctx: RelationalExpressionContext) => Result;
+	visitTypeList?: (ctx: TypeListContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.shiftExpression`.
+	 * Visit a parse tree produced by `SPBSParser.typeType`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitShiftExpression?: (ctx: ShiftExpressionContext) => Result;
+	visitTypeType?: (ctx: TypeTypeContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.additiveExpression`.
+	 * Visit a parse tree produced by `SPBSParser.primitiveType`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitAdditiveExpression?: (ctx: AdditiveExpressionContext) => Result;
+	visitPrimitiveType?: (ctx: PrimitiveTypeContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.multiplicativeExpression`.
+	 * Visit a parse tree produced by `SPBSParser.typeArguments`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitMultiplicativeExpression?: (ctx: MultiplicativeExpressionContext) => Result;
+	visitTypeArguments?: (ctx: TypeArgumentsContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.unaryExpression`.
+	 * Visit a parse tree produced by `SPBSParser.superSuffix`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitUnaryExpression?: (ctx: UnaryExpressionContext) => Result;
+	visitSuperSuffix?: (ctx: SuperSuffixContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.preIncrementExpression`.
+	 * Visit a parse tree produced by `SPBSParser.explicitGenericInvocationSuffix`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitPreIncrementExpression?: (ctx: PreIncrementExpressionContext) => Result;
+	visitExplicitGenericInvocationSuffix?: (ctx: ExplicitGenericInvocationSuffixContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by `SPBSParser.preDecrementExpression`.
+	 * Visit a parse tree produced by `SPBSParser.arguments`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitPreDecrementExpression?: (ctx: PreDecrementExpressionContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.unaryExpressionNotPlusMinus`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitUnaryExpressionNotPlusMinus?: (ctx: UnaryExpressionNotPlusMinusContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.postfixExpression`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitPostfixExpression?: (ctx: PostfixExpressionContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.postIncrementExpression`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitPostIncrementExpression?: (ctx: PostIncrementExpressionContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.postIncrementExpression_lf_postfixExpression`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitPostIncrementExpression_lf_postfixExpression?: (ctx: PostIncrementExpression_lf_postfixExpressionContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.postDecrementExpression`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitPostDecrementExpression?: (ctx: PostDecrementExpressionContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.postDecrementExpression_lf_postfixExpression`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitPostDecrementExpression_lf_postfixExpression?: (ctx: PostDecrementExpression_lf_postfixExpressionContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SPBSParser.castExpression`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitCastExpression?: (ctx: CastExpressionContext) => Result;
+	visitArguments?: (ctx: ArgumentsContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `SPBSParser.xml_document`.

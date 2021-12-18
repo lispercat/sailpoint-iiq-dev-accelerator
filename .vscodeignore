@@ -1,12 +1,8 @@
 .vscode/**
-**/*.ts
-**/*.map
+**/src/**
+scripts
 .gitignore
-**/tsconfig.json
-**/tsconfig.base.json
-contributing.md
-.travis.yml
-client/node_modules/**
-src/scratch.js
+**/tsconfig.*
+**/scratch.*
 beanshell_grammar
 publish.cmd

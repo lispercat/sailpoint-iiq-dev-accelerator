@@ -3,8 +3,9 @@ import * as path from 'path';
 import { LanguageClient } from 'vscode-languageclient/node'
 import { ServerOptions } from 'vscode-languageclient/node'
 import { TransportKind } from 'vscode-languageclient/node'
-import { LanguageClientOptions} from 'vscode-languageclient';
-import {DevIIQCommands} from "./commands";
+import { CancellationToken, ExecuteCommandParams, ExecuteCommandRequest, LanguageClientOptions, NotificationType} from 'vscode-languageclient';
+import {IIQCommands} from "./iiq-commands";
+export const EXECUTE_WORKSPACE_COMMAND = 'execute.workspaceCommand';
 
 let languageClient: LanguageClient;
 async function startLanguageClient(ctx: vscode.ExtensionContext){
@@ -26,7 +27,8 @@ async function startLanguageClient(ctx: vscode.ExtensionContext){
 
   // Options to control the language client
   let clientOptions: LanguageClientOptions = {
-    documentSelector: [{ scheme: 'file', language: 'xml' }],
+    documentSelector: [{ scheme: 'file', language: 'xml',  }],
+    //workspaceFolder: vscode.workspace.workspaceFolders[0];
   };
 
   languageClient = new LanguageClient(
@@ -35,18 +37,45 @@ async function startLanguageClient(ctx: vscode.ExtensionContext){
     serverOptions,
     clientOptions
   );
+
+  ctx.subscriptions.push(vscode.commands.registerCommand(EXECUTE_WORKSPACE_COMMAND, (command, ...rest) => {
+    let token: vscode.CancellationToken;
+    let commandArgs: any[] = rest;
+    if (rest && rest.length && CancellationToken.is(rest[rest.length - 1])) {
+      token = rest[rest.length - 1];
+      commandArgs = rest.slice(0, rest.length - 1);
+    }
+    const params: ExecuteCommandParams = {
+      command,
+      arguments: commandArgs
+    };
+    if (token) {
+      return languageClient.sendRequest(ExecuteCommandRequest.type, params, token);
+    } else {
+      return languageClient.sendRequest(ExecuteCommandRequest.type, params);
+    }
+  }));
+  languageClient.onReady().then(() => {
+    //activationProgressNotification.showProgress();
+    languageClient.onNotification("ServerReady", () => {
+      console.log("The language server is ready");
+    });
+  });
   languageClient.start();
 }
 
 export async function activate(ctx: vscode.ExtensionContext) {
-	
-	console.log('Congratulations, your extension "sailpoint-iiq-dev-accelerator" is now active!');
+  
+  console.log('Congratulations, your extension "sailpoint-iiq-dev-accelerator" is now active!');
 
-	var myModule: DevIIQCommands = new DevIIQCommands();
+  var myModule: IIQCommands = new IIQCommands();
 
   let statusBarEnvItem = myModule.getStatusBar();
   statusBarEnvItem.command = 'iiq-dev-accelerator.switchEnv';
   ctx.subscriptions.push(statusBarEnvItem);
+  if(!await myModule.isCorrectSSBWorkspaceFolder()){
+    return false;
+  }
 
   await myModule.updateStatusBarIfEnvironmentIsSet();
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.importFile', () => myModule.importFile()));
@@ -67,6 +96,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.showSysInfo', () => myModule.showSysInfo()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.refreshObject', () => myModule.refreshObject()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.importJava', () => myModule.importJava()));
+  
   await startLanguageClient(ctx);
 }
 
