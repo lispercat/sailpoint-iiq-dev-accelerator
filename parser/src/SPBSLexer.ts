@@ -31,7 +31,7 @@ export class SPBSLexer extends Lexer {
 	public static readonly SLASH = 13;
 	public static readonly EQUALS = 14;
 	public static readonly STRING = 15;
-	public static readonly Name = 16;
+	public static readonly XMLName = 16;
 	public static readonly S = 17;
 	public static readonly PI = 18;
 	public static readonly BS_ELEMENT_END = 19;
@@ -165,25 +165,26 @@ export class SPBSLexer extends Lexer {
 	public static readonly ruleNames: string[] = [
 		"COMMENT", "BS_ELEMENT_START", "DTD", "EntityRef", "CharRef", "SEA_WS", 
 		"OPEN", "XMLDeclOpen", "SPECIAL_OPEN", "TEXT", "CLOSE", "SPECIAL_CLOSE", 
-		"SLASH_CLOSE", "SLASH", "EQUALS", "STRING", "Name", "S", "HEXDIGIT", "DIGIT", 
-		"NameChar", "NameStartChar", "PI", "IGNORE", "BS_ELEMENT_END", "CDATA_START", 
-		"CDATA_END", "ABSTRACT", "ASSERT", "BOOLEAN", "BREAK", "BYTE", "CASE", 
-		"CATCH", "CHAR", "CLASS", "CONST", "CONTINUE", "DEFAULT", "DO", "DOUBLE", 
-		"ELSE", "ENUM", "EXTENDS", "FINAL", "FINALLY", "FLOAT", "FOR", "IF", "GOTO", 
-		"IMPLEMENTS", "IMPORT", "INSTANCEOF", "INT", "INTERFACE", "LONG", "NATIVE", 
-		"NEW", "PACKAGE", "PRIVATE", "PROTECTED", "PUBLIC", "RETURN", "SHORT", 
-		"STATIC", "STRICTFP", "SUPER", "SWITCH", "SYNCHRONIZED", "THIS", "THROW", 
-		"THROWS", "TRANSIENT", "TRY", "VOID", "VOLATILE", "WHILE", "DECIMAL_LITERAL", 
-		"HEX_LITERAL", "OCT_LITERAL", "BINARY_LITERAL", "FLOAT_LITERAL", "HEX_FLOAT_LITERAL", 
-		"BOOL_LITERAL", "CHAR_LITERAL", "STRING_LITERAL", "NULL_LITERAL", "LPAREN", 
-		"RPAREN", "LBRACE", "RBRACE", "LBRACK", "RBRACK", "SEMI", "COMMA", "DOT", 
-		"ASSIGN", "GT", "LT", "BANG", "TILDE", "QUESTION", "COLON", "EQUAL", "LE", 
-		"GE", "NOTEQUAL", "AND", "OR", "INC", "DEC", "ADD", "SUB", "MUL", "DIV", 
-		"BITAND", "BITOR", "CARET", "MOD", "ADD_ASSIGN", "SUB_ASSIGN", "MUL_ASSIGN", 
-		"DIV_ASSIGN", "AND_ASSIGN", "OR_ASSIGN", "XOR_ASSIGN", "MOD_ASSIGN", "LSHIFT_ASSIGN", 
-		"RSHIFT_ASSIGN", "URSHIFT_ASSIGN", "ARROW", "COLONCOLON", "AT", "ELLIPSIS", 
-		"WS", "JAVA_COMMENT", "LINE_COMMENT", "IDENTIFIER", "ExponentPart", "EscapeSequence", 
-		"HexDigits", "HexDigit", "Digits", "LetterOrDigit", "Letter",
+		"SLASH_CLOSE", "SLASH", "EQUALS", "STRING", "XMLName", "S", "HEXDIGIT", 
+		"DIGIT", "NameChar", "NameStartChar", "PI", "IGNORE", "BS_ELEMENT_END", 
+		"CDATA_START", "CDATA_END", "ABSTRACT", "ASSERT", "BOOLEAN", "BREAK", 
+		"BYTE", "CASE", "CATCH", "CHAR", "CLASS", "CONST", "CONTINUE", "DEFAULT", 
+		"DO", "DOUBLE", "ELSE", "ENUM", "EXTENDS", "FINAL", "FINALLY", "FLOAT", 
+		"FOR", "IF", "GOTO", "IMPLEMENTS", "IMPORT", "INSTANCEOF", "INT", "INTERFACE", 
+		"LONG", "NATIVE", "NEW", "PACKAGE", "PRIVATE", "PROTECTED", "PUBLIC", 
+		"RETURN", "SHORT", "STATIC", "STRICTFP", "SUPER", "SWITCH", "SYNCHRONIZED", 
+		"THIS", "THROW", "THROWS", "TRANSIENT", "TRY", "VOID", "VOLATILE", "WHILE", 
+		"DECIMAL_LITERAL", "HEX_LITERAL", "OCT_LITERAL", "BINARY_LITERAL", "FLOAT_LITERAL", 
+		"HEX_FLOAT_LITERAL", "BOOL_LITERAL", "CHAR_LITERAL", "STRING_LITERAL", 
+		"NULL_LITERAL", "LPAREN", "RPAREN", "LBRACE", "RBRACE", "LBRACK", "RBRACK", 
+		"SEMI", "COMMA", "DOT", "ASSIGN", "GT", "LT", "BANG", "TILDE", "QUESTION", 
+		"COLON", "EQUAL", "LE", "GE", "NOTEQUAL", "AND", "OR", "INC", "DEC", "ADD", 
+		"SUB", "MUL", "DIV", "BITAND", "BITOR", "CARET", "MOD", "ADD_ASSIGN", 
+		"SUB_ASSIGN", "MUL_ASSIGN", "DIV_ASSIGN", "AND_ASSIGN", "OR_ASSIGN", "XOR_ASSIGN", 
+		"MOD_ASSIGN", "LSHIFT_ASSIGN", "RSHIFT_ASSIGN", "URSHIFT_ASSIGN", "ARROW", 
+		"COLONCOLON", "AT", "ELLIPSIS", "WS", "JAVA_COMMENT", "LINE_COMMENT", 
+		"IDENTIFIER", "ExponentPart", "EscapeSequence", "HexDigits", "HexDigit", 
+		"Digits", "LetterOrDigit", "Letter",
 	];
 
 	private static readonly _LITERAL_NAMES: Array<string | undefined> = [
@@ -209,7 +210,7 @@ export class SPBSLexer extends Lexer {
 	private static readonly _SYMBOLIC_NAMES: Array<string | undefined> = [
 		undefined, "COMMENT", "BS_ELEMENT_START", "DTD", "EntityRef", "CharRef", 
 		"SEA_WS", "OPEN", "XMLDeclOpen", "TEXT", "CLOSE", "SPECIAL_CLOSE", "SLASH_CLOSE", 
-		"SLASH", "EQUALS", "STRING", "Name", "S", "PI", "BS_ELEMENT_END", "CDATA_START", 
+		"SLASH", "EQUALS", "STRING", "XMLName", "S", "PI", "BS_ELEMENT_END", "CDATA_START", 
 		"CDATA_END", "ABSTRACT", "ASSERT", "BOOLEAN", "BREAK", "BYTE", "CASE", 
 		"CATCH", "CHAR", "CLASS", "CONST", "CONTINUE", "DEFAULT", "DO", "DOUBLE", 
 		"ELSE", "ENUM", "EXTENDS", "FINAL", "FINALLY", "FLOAT", "FOR", "IF", "GOTO", 

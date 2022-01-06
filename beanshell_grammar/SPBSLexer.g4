@@ -38,7 +38,7 @@ BS_ELEMENT_START   :   '<' 'Source' '>' -> pushMode(INSIDE_BS) ;
  *  and Notation Declarations <!NOTATION ...>
  */
 DTD         :   '<!' .*? '>'            -> skip ;
-EntityRef   :   '&' Name ';' ;
+EntityRef   :   '&' XMLName ';' ;
 CharRef     :   '&#' DIGIT+ ';'
             |   '&#x' HEXDIGIT+ ';'
             ;
@@ -46,7 +46,7 @@ SEA_WS      :   (' '|'\t'|'\r'? '\n')+ ;
 
 OPEN        :   '<'                     -> pushMode(INSIDE) ;
 XMLDeclOpen :   '<?xml' S               -> pushMode(INSIDE) ;
-SPECIAL_OPEN:   '<?' Name               -> more, pushMode(PROC_INSTR) ;
+SPECIAL_OPEN:   '<?' XMLName         -> more, pushMode(PROC_INSTR) ;
 
 TEXT        :   ~[<&]+ ;        // match any 16 bit char other than < and &
 
@@ -61,7 +61,7 @@ EQUALS      :   '=' ;
 STRING      :   '"' ~[<"]* '"'
             |   '\'' ~[<']* '\''
             ;
-Name        :   NameStartChar NameChar* ;
+XMLName        :   NameStartChar NameChar* ;
 S           :   [ \t\r\n]               -> skip ;
 
 fragment

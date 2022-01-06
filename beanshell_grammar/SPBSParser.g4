@@ -630,15 +630,15 @@ xml_prolog      :   XMLDeclOpen xml_attribute* SPECIAL_CLOSE ;
 xml_content     :   xml_chardata?
                 ((xml_element | xml_reference |  PI | COMMENT ) xml_chardata?)* ;
 
-xml_element    :  OPEN Name xml_attribute* CLOSE xml_content OPEN SLASH Name  CLOSE 
-               |  OPEN Name xml_attribute* SLASH_CLOSE 
+xml_element    :  OPEN XMLName xml_attribute* CLOSE xml_content OPEN SLASH XMLName  CLOSE 
+               |  OPEN XMLName xml_attribute* SLASH_CLOSE 
                |  BS_ELEMENT_START CDATA_START bsCompilationUnit CDATA_END BS_ELEMENT_END 
                |  BS_ELEMENT_START bsCompilationUnit BS_ELEMENT_END 
                ;
 
 xml_reference   :   EntityRef | CharRef ;
 
-xml_attribute   :   Name EQUALS STRING ;
+xml_attribute   :   XMLName EQUALS STRING ;
 
 /** ``All text that is not markup constitutes the character data of
  *  the document.''

@@ -4,10 +4,12 @@ import { LanguageClient } from 'vscode-languageclient/node'
 import { ServerOptions } from 'vscode-languageclient/node'
 import { TransportKind } from 'vscode-languageclient/node'
 import { CancellationToken, ExecuteCommandParams, ExecuteCommandRequest, LanguageClientOptions, NotificationType} from 'vscode-languageclient';
-import {IIQCommands} from "./iiq-commands";
-export const EXECUTE_WORKSPACE_COMMAND = 'execute.workspaceCommand';
+import {Commands, IIQCommands} from "./iiq-commands";
+import { projectActivationProgress } from './IIQProjectActivationProgress';
 
 let languageClient: LanguageClient;
+let iiqCommands: IIQCommands = new IIQCommands();
+
 async function startLanguageClient(ctx: vscode.ExtensionContext){
   let serverModule = ctx.asAbsolutePath(
     path.join('server', 'out', 'server.js')
@@ -15,6 +17,7 @@ async function startLanguageClient(ctx: vscode.ExtensionContext){
   // The debug options for the server
   // --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
   let debugOptions = { execArgv: ['--nolazy', '--inspect=6009'] };
+
 
   let serverOptions: ServerOptions = {
     run: { module: serverModule, transport: TransportKind.ipc },
@@ -37,8 +40,13 @@ async function startLanguageClient(ctx: vscode.ExtensionContext){
     serverOptions,
     clientOptions
   );
+  ctx.subscriptions.push(vscode.commands.registerCommand(Commands.SHOW_LANGUAGE_SERVER_OUTPUT, () => {
+    languageClient.outputChannel.show();
+  }));
+  projectActivationProgress.showProgress();
+  iiqCommands.updateStatusBarIcon("Sailpoint IIQ is warming up... $(sync~spin)");
 
-  ctx.subscriptions.push(vscode.commands.registerCommand(EXECUTE_WORKSPACE_COMMAND, (command, ...rest) => {
+  ctx.subscriptions.push(vscode.commands.registerCommand(Commands.EXECUTE_WORKSPACE_COMMAND, (command, ...rest) => {
     let token: vscode.CancellationToken;
     let commandArgs: any[] = rest;
     if (rest && rest.length && CancellationToken.is(rest[rest.length - 1])) {
@@ -56,48 +64,57 @@ async function startLanguageClient(ctx: vscode.ExtensionContext){
     }
   }));
   languageClient.onReady().then(() => {
-    //activationProgressNotification.showProgress();
     languageClient.onNotification("ServerReady", () => {
       console.log("The language server is ready");
+      projectActivationProgress.hideProgress();
+      iiqCommands.updateStatusBarIcon("$(thumbsup) please set iiq env");
+      iiqCommands.updateStatusBarIfEnvironmentIsSet();
     });
   });
   languageClient.start();
+}
+
+async function shouldStartLSP(): Promise<boolean>{
+  var enableLSP: boolean = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('enableLSP');
+  if(enableLSP && await iiqCommands.isCorrectSSBWorkspaceFolder()){
+    return true;
+  }
+  return false;
 }
 
 export async function activate(ctx: vscode.ExtensionContext) {
   
   console.log('Congratulations, your extension "sailpoint-iiq-dev-accelerator" is now active!');
 
-  var myModule: IIQCommands = new IIQCommands();
-
-  let statusBarEnvItem = myModule.getStatusBar();
+  let statusBarEnvItem = iiqCommands.getStatusBar();
   statusBarEnvItem.command = 'iiq-dev-accelerator.switchEnv';
   ctx.subscriptions.push(statusBarEnvItem);
-  if(!await myModule.isCorrectSSBWorkspaceFolder()){
-    return false;
-  }
 
-  await myModule.updateStatusBarIfEnvironmentIsSet();
-  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.importFile', () => myModule.importFile()));
-  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.runTask', () => myModule.runTask()));
-  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.runTaskWithAttr', () => myModule.runTaskWithAttr()));
-  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.runRule', () => myModule.runRule()));
-  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.evalBS', () => myModule.evalBS()));
-  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.getLog', () => myModule.getLog()));
-  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.reloadLog', () => myModule.reloadLog()));
-  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.getObject', () => myModule.getObject()));
-  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.deleteObject', () => myModule.deleteObject()));
-  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.switchEnv', () => myModule.switchEnv()));
-  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.runContext', () => myModule.runContext()));
-  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.deployChange', () => myModule.deployChange()));
-  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.deployCustomBuild', () => myModule.deployCustomBuild()));
-  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.compareLocalWithDeployed', () => myModule.compareLocalWithDeployed()));
-  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.deployOpenFiles', () => myModule.deployOpenFiles()));
-  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.showSysInfo', () => myModule.showSysInfo()));
-  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.refreshObject', () => myModule.refreshObject()));
-  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.importJava', () => myModule.importJava()));
-  
-  await startLanguageClient(ctx);
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.importFile', () => iiqCommands.importFile()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.runTask', () => iiqCommands.runTask()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.runTaskWithAttr', () => iiqCommands.runTaskWithAttr()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.runRule', () => iiqCommands.runRule()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.evalBS', () => iiqCommands.evalBS()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.getLog', () => iiqCommands.getLog()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.reloadLog', () => iiqCommands.reloadLog()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.getObject', () => iiqCommands.getObject()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.deleteObject', () => iiqCommands.deleteObject()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.switchEnv', () => iiqCommands.switchEnv()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.runContext', () => iiqCommands.runContext()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.deployChange', () => iiqCommands.deployChange()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.deployCustomBuild', () => iiqCommands.deployCustomBuild()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.compareLocalWithDeployed', () => iiqCommands.compareLocalWithDeployed()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.deployOpenFiles', () => iiqCommands.deployOpenFiles()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.showSysInfo', () => iiqCommands.showSysInfo()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.refreshObject', () => iiqCommands.refreshObject()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.importJava', () => iiqCommands.importJava()));
+ 
+  if(await shouldStartLSP()){
+    await startLanguageClient(ctx);
+  }
+  else{
+    iiqCommands.updateStatusBarIfEnvironmentIsSet();
+  }
 }
 
 export function deactivate() {
