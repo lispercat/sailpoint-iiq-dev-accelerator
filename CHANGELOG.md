@@ -1,4 +1,8 @@
 # Change Log
+## [1.0.29]
+### Fixed
+ - Disable LSP by default
+
 ## [1.0.28]
 ### Fixed
  - Fixed a bug with caching tokens from both target and secret properties files

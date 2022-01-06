@@ -3,7 +3,7 @@
     "displayName": "Sailpoint IIQ Development Accelerator",
     "description": "Provides commands to facilitate/accelerate coding/interacting with remote Sailpoint IIQ server",
     "icon": "images/icon.png",
-    "version": "1.0.28",
+    "version": "1.0.29",
     "engines": {
         "vscode": "^1.60.0"
     },
@@ -34,6 +34,7 @@
     ],
     "activationEvents": [
         "workspaceContains:config/**/*.xml",
+        "onLanguage:xml",
         "onCommand:iiq-dev-accelerator.importFile",
         "onCommand:iiq-dev-accelerator.runTask",
         "onCommand:iiq-dev-accelerator.runRule",
@@ -122,7 +123,7 @@
                 "iiq-dev-accelerator.enableLSP": {
                     "type": "boolean",
                     "description": "When set to true, the language server protocol will be enabled",
-                    "default": true,
+                    "default": false,
                     "scope": "application"
                 }
             }
