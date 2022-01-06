@@ -43,7 +43,7 @@ export class SPBSParser extends Parser {
 	public static readonly SLASH = 13;
 	public static readonly EQUALS = 14;
 	public static readonly STRING = 15;
-	public static readonly Name = 16;
+	public static readonly XMLName = 16;
 	public static readonly S = 17;
 	public static readonly PI = 18;
 	public static readonly BS_ELEMENT_END = 19;
@@ -328,7 +328,7 @@ export class SPBSParser extends Parser {
 	private static readonly _SYMBOLIC_NAMES: Array<string | undefined> = [
 		undefined, "COMMENT", "BS_ELEMENT_START", "DTD", "EntityRef", "CharRef", 
 		"SEA_WS", "OPEN", "XMLDeclOpen", "TEXT", "CLOSE", "SPECIAL_CLOSE", "SLASH_CLOSE", 
-		"SLASH", "EQUALS", "STRING", "Name", "S", "PI", "BS_ELEMENT_END", "CDATA_START", 
+		"SLASH", "EQUALS", "STRING", "XMLName", "S", "PI", "BS_ELEMENT_END", "CDATA_START", 
 		"CDATA_END", "ABSTRACT", "ASSERT", "BOOLEAN", "BREAK", "BYTE", "CASE", 
 		"CATCH", "CHAR", "CLASS", "CONST", "CONTINUE", "DEFAULT", "DO", "DOUBLE", 
 		"ELSE", "ENUM", "EXTENDS", "FINAL", "FINALLY", "FLOAT", "FOR", "IF", "GOTO", 
@@ -7129,7 +7129,7 @@ export class SPBSParser extends Parser {
 			this.state = 1481;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			while (_la === SPBSParser.Name) {
+			while (_la === SPBSParser.XMLName) {
 				{
 				{
 				this.state = 1478;
@@ -7264,11 +7264,11 @@ export class SPBSParser extends Parser {
 				this.state = 1503;
 				this.match(SPBSParser.OPEN);
 				this.state = 1504;
-				this.match(SPBSParser.Name);
+				this.match(SPBSParser.XMLName);
 				this.state = 1508;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				while (_la === SPBSParser.Name) {
+				while (_la === SPBSParser.XMLName) {
 					{
 					{
 					this.state = 1505;
@@ -7288,7 +7288,7 @@ export class SPBSParser extends Parser {
 				this.state = 1514;
 				this.match(SPBSParser.SLASH);
 				this.state = 1515;
-				this.match(SPBSParser.Name);
+				this.match(SPBSParser.XMLName);
 				this.state = 1516;
 				this.match(SPBSParser.CLOSE);
 				}
@@ -7300,11 +7300,11 @@ export class SPBSParser extends Parser {
 				this.state = 1518;
 				this.match(SPBSParser.OPEN);
 				this.state = 1519;
-				this.match(SPBSParser.Name);
+				this.match(SPBSParser.XMLName);
 				this.state = 1523;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				while (_la === SPBSParser.Name) {
+				while (_la === SPBSParser.XMLName) {
 					{
 					{
 					this.state = 1520;
@@ -7407,7 +7407,7 @@ export class SPBSParser extends Parser {
 			this.enterOuterAlt(_localctx, 1);
 			{
 			this.state = 1541;
-			this.match(SPBSParser.Name);
+			this.match(SPBSParser.XMLName);
 			this.state = 1542;
 			this.match(SPBSParser.EQUALS);
 			this.state = 1543;
@@ -13250,13 +13250,13 @@ export class Xml_elementContext extends ParserRuleContext {
 			return this.getToken(SPBSParser.OPEN, i);
 		}
 	}
-	public Name(): TerminalNode[];
-	public Name(i: number): TerminalNode;
-	public Name(i?: number): TerminalNode | TerminalNode[] {
+	public XMLName(): TerminalNode[];
+	public XMLName(i: number): TerminalNode;
+	public XMLName(i?: number): TerminalNode | TerminalNode[] {
 		if (i === undefined) {
-			return this.getTokens(SPBSParser.Name);
+			return this.getTokens(SPBSParser.XMLName);
 		} else {
-			return this.getToken(SPBSParser.Name, i);
+			return this.getToken(SPBSParser.XMLName, i);
 		}
 	}
 	public CLOSE(): TerminalNode[];
@@ -13349,7 +13349,7 @@ export class Xml_referenceContext extends ParserRuleContext {
 
 
 export class Xml_attributeContext extends ParserRuleContext {
-	public Name(): TerminalNode { return this.getToken(SPBSParser.Name, 0); }
+	public XMLName(): TerminalNode { return this.getToken(SPBSParser.XMLName, 0); }
 	public EQUALS(): TerminalNode { return this.getToken(SPBSParser.EQUALS, 0); }
 	public STRING(): TerminalNode { return this.getToken(SPBSParser.STRING, 0); }
 	constructor(parent: ParserRuleContext | undefined, invokingState: number) {

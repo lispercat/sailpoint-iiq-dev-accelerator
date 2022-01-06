@@ -23,51 +23,53 @@ import {CharStreams, CommonTokenStream} from 'antlr4ts';
 import {ParserErrorListenerImpl} from "../../parser/out/ParserErrorListenerImpl";
 import {LexerErrorListenerImpl} from "../../parser/out/LexerErrorListenerImpl";
 import {SPBSParserListenerImpl} from "../../parser/out/SPBSParserListenerImpl";
-import {SPBSObjectParserVisitorImpl} from '../../parser/out/SPBSObjectParserVisitorImpl';
+import { IIQObjectInfo, IIQDictionary, IIQObjectType, IIQObjectInfoImpl } from './common-types'; 
 import * as proto from 'vscode-languageserver-protocol';
 import { URL } from 'url';
 import { unescape } from 'querystring';
 import * as fs from 'fs';
 const glob = require('glob');
+import { URI } from 'vscode-uri';
+
 
 let connection: ProposedFeatures.Connection = createConnection(ProposedFeatures.all);
 let documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 let hasConfigurationCapability: boolean = false;
-let hasWorkspaceFolderCapability: boolean = false;
+let hasWorkspaceFolderCapability: boolean = true;
 let hasDiagnosticRelatedInformationCapability: boolean = false;
 let workspaceFolder: WorkspaceFolder | null = null;
 let currentDocUri: string = null;
-type IIQDictionary = {[name: string]: IIQObjectInfo};
 let IIQObjects: IIQDictionary = {};
+
 documents.listen(connection);
 connection.listen();
-enum IIQObjectType{
-  Rule = "Rule",
-  Task = "Task"
-};
 
-interface IIQObjectInfo{
-   type: IIQObjectType;
-   path: string;
-   name: string;
-};
-const delay = ms => new Promise(res => setTimeout(res, ms));
-async function parseIIQObject(path: string): Promise<IIQObjectInfo>{
+function uriToPath(lspUri: string): string {
+  let uri: URI = URI.parse(lspUri);
+  return uri.fsPath.replace(/\\/g, "/");
+}
+
+async function parseIIQObject(path: string): Promise<IIQObjectInfo | null>{
   let text = fs.readFileSync(path,'utf8');
-  let name = path;
-  let type = IIQObjectType.Rule;
+  //For now only collect rules
+  if(text.search(/<Rule\s+.*?>/gi) == -1){
+    return null;
+  }
+  connection.console.log(path);
   const inputStream = CharStreams.fromString(text);
   const lexer = new SPBSLexer(inputStream);
   const tokenStream = new CommonTokenStream(lexer);
   const parser = new SPBSParser(tokenStream);
   parser.removeErrorListeners();
+  let data: IIQObjectInfo = new IIQObjectInfoImpl(path);
+  parser.addParseListener(new SPBSParserListenerImpl([], data));
   let tree = parser.xml_document();
-  const visitor = new SPBSObjectParserVisitorImpl();
-  let res: {} = visitor.visit(tree);
-  return {type: res["type"], path: path, name: res["name"]};
+  return data;
 }
 
 async function collectIIQObjectsInfo(folder: WorkspaceFolder){
+  await new Promise(f => setTimeout(f, 5000));
+
   IIQObjects = {};
   var unsescapedUri = unescape(workspaceFolder.uri)
   var folderName = new URL(unsescapedUri).pathname.replace(/^\//g, "");
@@ -77,10 +79,12 @@ async function collectIIQObjectsInfo(folder: WorkspaceFolder){
     connection.console.log("no files");
     return;
   }
+  
   files.forEach(async path => {
-    connection.console.log(path);
-    var obj: IIQObjectInfo = await parseIIQObject(path);
-    IIQObjects[obj.type + ":" + obj.name] = obj;
+    let obj: IIQObjectInfoImpl = await parseIIQObject(path);
+    if(null !== obj){
+      IIQObjects[path] = obj;
+    }
   });
 
 }
@@ -93,6 +97,7 @@ connection.onInitialize(async (params: InitializeParams) => {
   hasConfigurationCapability = !!(
     capabilities.workspace && !!capabilities.workspace.configuration
   );
+  
   hasWorkspaceFolderCapability = !!(
     capabilities.workspace && !!capabilities.workspace.workspaceFolders
   );
@@ -102,6 +107,7 @@ connection.onInitialize(async (params: InitializeParams) => {
     capabilities.textDocument.publishDiagnostics.relatedInformation
   );
 
+  connection.console.log(`HasWorkspaceFolderCaps: ${hasWorkspaceFolderCapability}` );
   await collectIIQObjectsInfo(workspaceFolder);
 
   const result: InitializeResult = {
@@ -109,27 +115,32 @@ connection.onInitialize(async (params: InitializeParams) => {
       textDocumentSync: TextDocumentSyncKind.Incremental,
       completionProvider: {
         resolveProvider: true
+      },
+
+      workspace: {
+        workspaceFolders: {
+          supported: true
+        },
+        fileOperations: {
+          didCreate: { 
+            filters: [{ scheme: 'file', pattern: { glob: '**/*.xml' } }] 
+          },
+          didRename: {
+            filters: [{ scheme: 'file', pattern: { glob: '**/*.xml' } }]
+          },
+          didDelete: {
+            filters: [{ scheme: 'file', pattern: { glob: '**/*.xml'} }]
+          }
+        }
       }
     }
   };
-  if (hasWorkspaceFolderCapability) {
-    result.capabilities.workspace = {
-      workspaceFolders: {
-        supported: true
-      }
-    };
-  }
   return result;
 });
 
 connection.onInitialized(() => {
   if (hasConfigurationCapability) {
     connection.client.register(DidChangeConfigurationNotification.type, undefined);
-  }
-  if (hasWorkspaceFolderCapability) {
-    connection.workspace.onDidChangeWorkspaceFolders(_event => {
-      connection.console.log('Workspace folder change event received.');
-    });
   }
   connection.console.log("Sending notification that the server is ready");
   connection.sendNotification("ServerReady");
@@ -146,6 +157,33 @@ let globalSettings: LanguageServerSettings = defaultSettings;
 // Cache the settings of all open documents
 let documentSettings: Map<string, Thenable<LanguageServerSettings>> = new Map();
 
+// connection.workspace.onDidChangeWorkspaceFolders(_event => {
+//   connection.console.log('Workspace folder change event received.');
+// });
+
+connection.workspace.onDidCreateFiles( _event =>{
+  _event.files.forEach(async file => {
+    connection.console.log(`Create file: ${file.uri}`)
+    let filePath: string = uriToPath(file.uri);
+    IIQObjects[filePath] = await parseIIQObject(filePath);
+  })
+})
+connection.workspace.onDidRenameFiles( _event =>{
+  _event.files.forEach(async file => {
+    connection.console.log(`Rename file: from  ${file.oldUri} to ${file.newUri}`)
+    let oldFilePath: string = uriToPath(file.oldUri);
+    let newFilePath: string = uriToPath(file.newUri);
+    delete IIQObjects[oldFilePath];
+    IIQObjects[newFilePath] = await parseIIQObject(newFilePath);
+  })
+})
+connection.workspace.onDidDeleteFiles( _event =>{
+  _event.files.forEach(async file => {
+    connection.console.log(`Delete file: ${file.uri}`)
+    let filePath: string = uriToPath(file.uri);
+    delete IIQObjects[filePath];
+  })
+})
 connection.onDidChangeConfiguration(change => {
   if (hasConfigurationCapability) {
     documentSettings.clear();
@@ -190,6 +228,9 @@ documents.onDidChangeContent(change => {
 
 connection.onDidChangeWatchedFiles(_change => {
   connection.console.log('We received an file change event');
+  _change.changes.forEach(change => {
+    connection.console.log(`Change: ${change.type} ${change.type}`)
+  })
 });
 
 connection.onCompletion((_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
@@ -227,6 +268,7 @@ connection.onExecuteCommand((params: ExecuteCommandParams) => {
 
 /* Implementation of server functionality */
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
+  //await collectIIQObjectsInfo(workspaceFolder);
   connection.console.log(`Validating doc: ${textDocument.uri}`)
   if(!textDocument.uri.includes(workspaceFolder.uri)){
     connection.console.log(`Skipping validation of ${textDocument.uri} since it's not part of the workspace folder ${workspaceFolder}`);
@@ -244,14 +286,22 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   let parserErrors: object[] = [];
   lexer.addErrorListener(new LexerErrorListenerImpl(lexerErrors));
   parser.addErrorListener(new ParserErrorListenerImpl(parserErrors));
-  parser.addParseListener(new SPBSParserListenerImpl(nodeErrors));
+
+  let uri: URI = URI.parse(textDocument.uri);
+  let filePath: string = uri.fsPath.replace(/\\/g, "/");
+  let data: IIQObjectInfo = new IIQObjectInfoImpl(filePath);
+  parser.addParseListener(new SPBSParserListenerImpl(nodeErrors, data));
   let tree = parser.xml_document();
+  //Update the IIQObjects dictionary
+  delete IIQObjects[filePath];
+  IIQObjects[filePath] = data;
+
   const visitor = new SPBSParserVisitorImpl(100);
   let res = visitor.visit(tree);
   let allErrors: object[] = nodeErrors.concat(parserErrors).concat(lexerErrors);
  
   let diagnostics: Diagnostic[] = [];
-  for(let err of allErrors){
+  allErrors.forEach(err => {
     let line = err["line"] - 1;
     let start = err["start"];
     let end = err["end"];
@@ -266,6 +316,6 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
       message: msg
     }
     diagnostics.push(diagnostic);
-  }
+  })
   connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
 }

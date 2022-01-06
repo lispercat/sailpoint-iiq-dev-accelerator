@@ -1,7 +1,9 @@
 # Change Log
 ## [1.0.28]
 ### Fixed
- - Added some basic LSP functionality, some error highlighting
+ - Fixed a bug with caching tokens from both target and secret properties files
+### Added
+ - Added some basic LSP functionality, some error highlighting (now disabled by default since still in development)
 
 ## [1.0.27]
 ### Fixed

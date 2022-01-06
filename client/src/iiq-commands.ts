@@ -8,7 +8,18 @@ import * as xml2js from 'xml2js';
 import * as tmp from 'tmp';
 import { URL } from 'url';
 import * as path from 'path';
-import { WorkspaceFolder } from 'vscode-languageclient';
+
+export namespace Commands{
+  export const SHOW_LANGUAGE_SERVER_OUTPUT = 'show.language.server.output';
+  export const EXECUTE_WORKSPACE_COMMAND = 'execute.workspaceCommand';
+}
+
+interface PropFileInfo{
+   mtime: Date;
+   props: {};
+};
+
+type IIQProperties = {[name: string]: PropFileInfo};
 
 enum ContextValue {
   NotIIQContext = "NotIIQContext",
@@ -29,9 +40,7 @@ class ContextManager {
 
   constructor(name: string) {
     this._name = name;
-  }
-
-  public set(contextValue: ContextValue, objClass? :string, objName?: string, isProjectObject?: boolean): void {
+  } public set(contextValue: ContextValue, objClass? :string, objName?: string, isProjectObject?: boolean): void {
     //try to deduce contextValue when only objClass and objNames are set
     if(null == contextValue && objClass){
       switch(objClass){
@@ -65,7 +74,7 @@ class ContextManager {
 }
 
 export class IIQCommands {
-  private g_props: { [key: string]: any } = {"filePath": null, "props": null, "mtime": null};
+  private g_props: IIQProperties = {};
   private g_statusBarEnvItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
   private g_IIQClasses = null;
   private g_workflowUpdated: boolean = false;
@@ -114,7 +123,15 @@ export class IIQCommands {
         var parsedXml = this.parseCurrentXmlFile();
         if(parsedXml){
           var theClass = Object.keys(parsedXml)[0];
-          var objName = parsedXml[theClass]["ATTR"]["name"];
+          if("sailpoint" == theClass){
+            parsedXml = parsedXml["sailpoint"];
+            theClass = Object.keys(parsedXml)[0];
+            parsedXml = parsedXml[theClass][0];
+          }
+          else{
+            parsedXml = parsedXml[theClass];
+          }
+          var objName = parsedXml["ATTR"]["name"];
           var isProjectObject: boolean = this.isProjectFile(fullFileName);
           this.g_contextManager.set(null, theClass, objName, isProjectObject);
         }
@@ -164,13 +181,18 @@ export class IIQCommands {
     return this.g_statusBarEnvItem;
   }
 
-  public async updateStatusBar(currEnv: string){
+  public updateStatusBar(currEnv: string){
     this.g_statusBarEnvItem.text = "IIQ: " + currEnv;
     if(currEnv){
       this.g_statusBarEnvItem.show();
     }else{
       this.g_statusBarEnvItem.hide();
     }
+  }
+
+  public updateStatusBarIcon(icon: string){
+    this.g_statusBarEnvItem.text = icon;
+    this.g_statusBarEnvItem.show();
   }
 
   private parseCurrentXmlFile(text:string | null = null){
@@ -193,19 +215,6 @@ export class IIQCommands {
   }
 
 
-  private canUseCachedProp(){
-    if(!this.g_props["filePath"]){
-      return false;
-    }
-    const mtime = fs.statSync(this.g_props["filePath"]).mtime;
-    if(mtime.getTime() != this.g_props["mtime"].getTime()){
-      return false;
-    }
-    if(!this.g_props["props"]){
-      return false;
-    }
-    return true;
-  }
 
   private async listEnvironments(): Promise<string[]>{
     var result:string[] = [];
@@ -243,12 +252,12 @@ export class IIQCommands {
     return true;
   }
  
-  public async updateStatusBarIfEnvironmentIsSet(){
+  public updateStatusBarIfEnvironmentIsSet(){
     var environment: string = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('environment');
     if(!environment){
       return;
     }
-    await this.updateStatusBar(environment);
+    this.updateStatusBar(environment);
   }
 
   private async getEnvironment(){
@@ -271,28 +280,49 @@ export class IIQCommands {
     return environment;
   }
 
-  public async getFileProperties(fileName){
-    const uris = await vscode.workspace.findFiles(`**/${fileName}`);
+  private canUseCachedProp(filePath: string){
+    if(!this.g_props[filePath]){
+      return false;
+    }
+    let props: PropFileInfo = this.g_props[filePath];
+    
+    if(!props["props"]){
+      return false;
+    }
+
+    const mtime = fs.statSync(filePath).mtime;
+    if(mtime.getTime() != props["mtime"].getTime()){
+      return false;
+    }
+    return true;
+  }
+
+  public async getFileProperties(propName){
+    const uris = await vscode.workspace.findFiles(`**/${propName}`);
     if(0 == uris.length){
       return null;
     }
     var uri = uris[0];
-    console.log(`Trying to read ${uri.fsPath} file`);
-    this.g_props["filePath"] = uri.fsPath.toString();
-    this.g_props["mtime"] = fs.statSync(this.g_props["filePath"]).mtime;
-    var properties = propertiesReader(this.g_props["filePath"]).getAllProperties();
+    var filePath: string = uri.fsPath; 
+    console.log(`Trying to read ${filePath} file`);
+
+    if(this.canUseCachedProp(filePath)){
+      return this.g_props[filePath]["props"];
+    }
+
+    this.g_props[filePath] = {"mtime": null, "props": {}};
+    this.g_props[filePath]["mtime"] = fs.statSync(filePath).mtime;
+    var properties = propertiesReader(filePath).getAllProperties();
     for(var key in properties){
       var val: string = properties[key].toString();
       properties[key] = val.replace(/\\\\/g, "\\");
     };
 
-    return properties;
+    this.g_props[filePath]["props"] = properties;
+    return this.g_props[filePath]["props"];
   }
 
   public async loadTargetProps(){
-    if(this.canUseCachedProp()){
-      return this.g_props["props"];
-    }
     var environment = await this.getEnvironment();
     if(!environment){
       return null;
@@ -304,8 +334,7 @@ export class IIQCommands {
     }
     var secretProps =  await this.getFileProperties(`${environment}.target.secret.properties`);
     var allProps = Object.assign({}, mainProps, secretProps);
-    this.g_props["props"] = allProps;
-    return this.g_props["props"];
+    return allProps;
   }
 
   public processFileContent(fileContent, props){
@@ -1345,7 +1374,7 @@ export class IIQCommands {
     environment = await vscode.workspace.getConfiguration('iiq-dev-accelerator').get('environment');
 
     //reset old environment's settings
-    this.g_props["props"] = null;
+    this.g_props = {};
     var url = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('iiq_url');
     var username = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('username');
     var password = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('password');
