@@ -1,4 +1,12 @@
 # Change Log
+## [1.0.31]
+### Fixed
+ - Fixed properties-reader weird dependency issue (properties-reader didn't pull the src folder)
+
+## [1.0.30]
+### Fixed
+ - Rollback to version 1.0.27 to temporary fix dependency issue
+
 ## [1.0.29]
 ### Fixed
  - Disable LSP by default

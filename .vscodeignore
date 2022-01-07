@@ -1,5 +1,7 @@
 .vscode/**
-**/src/**
+client/src/**
+server/src/**
+parser/src/**
 scripts
 .gitignore
 **/tsconfig.*
