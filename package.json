@@ -3,7 +3,7 @@
     "displayName": "Sailpoint IIQ Development Accelerator",
     "description": "Provides commands to facilitate/accelerate coding/interacting with remote Sailpoint IIQ server",
     "icon": "images/icon.png",
-    "version": "1.0.31",
+    "version": "1.0.32",
     "engines": {
         "vscode": "^1.60.0"
     },
@@ -33,7 +33,7 @@
         "Other"
     ],
     "activationEvents": [
-        "workspaceContains:config/**/*.xml",
+        "workspaceContains:**/config/**/*.xml",
         "onLanguage:xml",
         "onCommand:iiq-dev-accelerator.importFile",
         "onCommand:iiq-dev-accelerator.runTask",
@@ -120,9 +120,15 @@
                     "default": 100,
                     "scope": "resource"
                 },
-                "iiq-dev-accelerator.enableLSP": {
+                "iiq-dev-accelerator.enableLSP": { 
                     "type": "boolean",
                     "description": "When set to true, the language server protocol will be enabled",
+                    "default": false,
+                    "scope": "application"
+                },
+                "iiq-dev-accelerator.disableTLSValidation": { 
+                    "type": "boolean",
+                    "description": "This option is quite insecure since it sets process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0 which allows you to connect to your server ignoring certificate issues",
                     "default": false,
                     "scope": "application"
                 }
@@ -296,6 +302,7 @@
     "dependencies": {
         "antlr4ts": "^0.5.0-alpha.4",
         "base-64": "^1.0.0",
+        "fast-glob": "^3.2.8",
         "node-fetch": "^2.6.5",
         "properties-reader": "^2.2.0",
         "tmp": "^0.2.1",

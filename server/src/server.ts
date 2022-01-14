@@ -11,7 +11,6 @@ import {
   CompletionItemKind,
   TextDocumentPositionParams,
   ExecuteCommandParams,
-  WorkspaceFolder
 } from 'vscode-languageserver';
 
 import { createConnection } from 'vscode-languageserver/node';
@@ -23,13 +22,11 @@ import {CharStreams, CommonTokenStream} from 'antlr4ts';
 import {ParserErrorListenerImpl} from "../../parser/out/ParserErrorListenerImpl";
 import {LexerErrorListenerImpl} from "../../parser/out/LexerErrorListenerImpl";
 import {SPBSParserListenerImpl} from "../../parser/out/SPBSParserListenerImpl";
-import { IIQObjectInfo, IIQDictionary, IIQObjectType, IIQObjectInfoImpl } from './common-types'; 
+import { IIQObjectInfo, IIQDictionary, IIQObjectInfoImpl } from './common-types'; 
 import * as proto from 'vscode-languageserver-protocol';
-import { URL } from 'url';
-import { unescape } from 'querystring';
 import * as fs from 'fs';
-const glob = require('glob');
 import { URI } from 'vscode-uri';
+const fg = require('fast-glob');
 
 
 let connection: ProposedFeatures.Connection = createConnection(ProposedFeatures.all);
@@ -37,7 +34,7 @@ let documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 let hasConfigurationCapability: boolean = false;
 let hasWorkspaceFolderCapability: boolean = true;
 let hasDiagnosticRelatedInformationCapability: boolean = false;
-let workspaceFolder: WorkspaceFolder | null = null;
+let baseSSBFolder: string = null;
 let currentDocUri: string = null;
 let IIQObjects: IIQDictionary = {};
 
@@ -67,14 +64,11 @@ async function parseIIQObject(path: string): Promise<IIQObjectInfo | null>{
   return data;
 }
 
-async function collectIIQObjectsInfo(folder: WorkspaceFolder){
+async function collectIIQObjectsInfo(folder: string){
   await new Promise(f => setTimeout(f, 5000));
 
   IIQObjects = {};
-  var unsescapedUri = unescape(workspaceFolder.uri)
-  var folderName = new URL(unsescapedUri).pathname.replace(/^\//g, "");
-  connection.console.log(folderName);
-  var files: string[] = glob.sync(`${folderName}/config/**/*.xml`);
+  var files: string[] = fg.sync(`${baseSSBFolder}/config/**/*.xml`);
   if(files.length == 0){
     connection.console.log("no files");
     return;
@@ -91,8 +85,8 @@ async function collectIIQObjectsInfo(folder: WorkspaceFolder){
 
 connection.onInitialize(async (params: InitializeParams) => {
   let capabilities = params.capabilities;
-  workspaceFolder = params.workspaceFolders != null ? params.workspaceFolders[0] : null;
-  connection.console.log(`workspaceFolder: ${workspaceFolder.name} ${workspaceFolder.uri}` );
+  baseSSBFolder = params.initializationOptions["baseSSBFolder"];
+  connection.console.log(`Server got base SSB folder : ${baseSSBFolder}`);
 
   hasConfigurationCapability = !!(
     capabilities.workspace && !!capabilities.workspace.configuration
@@ -108,7 +102,7 @@ connection.onInitialize(async (params: InitializeParams) => {
   );
 
   connection.console.log(`HasWorkspaceFolderCaps: ${hasWorkspaceFolderCapability}` );
-  await collectIIQObjectsInfo(workspaceFolder);
+  //await collectIIQObjectsInfo(baseSSBFolder);
 
   const result: InitializeResult = {
     capabilities: {
@@ -188,10 +182,10 @@ connection.onDidChangeConfiguration(change => {
   if (hasConfigurationCapability) {
     documentSettings.clear();
   } else {
-    globalSettings = <LanguageServerSettings>(
-      (change.settings.languageServerIIQ || defaultSettings)
-    );
+    //globalSettings = <LanguageServerSettings>((change.settings.languageServerIIQ || defaultSettings));
+    globalSettings = defaultSettings
   }
+  connection.console.log(`new configuration: ${change.settings.toString()}`)
 
   // Revalidate all open text documents
   documents.all().forEach(validateTextDocument);
@@ -268,10 +262,11 @@ connection.onExecuteCommand((params: ExecuteCommandParams) => {
 
 /* Implementation of server functionality */
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
-  //await collectIIQObjectsInfo(workspaceFolder);
-  connection.console.log(`Validating doc: ${textDocument.uri}`)
-  if(!textDocument.uri.includes(workspaceFolder.uri)){
-    connection.console.log(`Skipping validation of ${textDocument.uri} since it's not part of the workspace folder ${workspaceFolder}`);
+  let uri: URI = URI.parse(textDocument.uri);
+  let filePath: string = uri.fsPath.replace(/\\/g, "/");
+  connection.console.log(`Validating doc: ${filePath}`)
+  if(!filePath.includes(baseSSBFolder)){
+    connection.console.log(`Skipping validation of ${textDocument.uri} since it's not part of the SSB folder ${baseSSBFolder}`);
     return null;
   }
 
@@ -287,8 +282,6 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   lexer.addErrorListener(new LexerErrorListenerImpl(lexerErrors));
   parser.addErrorListener(new ParserErrorListenerImpl(parserErrors));
 
-  let uri: URI = URI.parse(textDocument.uri);
-  let filePath: string = uri.fsPath.replace(/\\/g, "/");
   let data: IIQObjectInfo = new IIQObjectInfoImpl(filePath);
   parser.addParseListener(new SPBSParserListenerImpl(nodeErrors, data));
   let tree = parser.xml_document();

@@ -8,6 +8,7 @@ import * as xml2js from 'xml2js';
 import * as tmp from 'tmp';
 import { URL } from 'url';
 import * as path from 'path';
+const fg = require('fast-glob');
 
 export namespace Commands{
   export const SHOW_LANGUAGE_SERVER_OUTPUT = 'show.language.server.output';
@@ -37,13 +38,36 @@ class ContextManager {
   private _lastValue: ContextValue;
   private _objClass: string;
   private _objName: string;
+  private _bsSource: string;
 
   constructor(name: string) {
     this._name = name;
-  } public set(contextValue: ContextValue, objClass? :string, objName?: string, isProjectObject?: boolean): void {
+  } 
+
+  public set(contextValue: ContextValue, parsedXml?: any, isProjectObject?: boolean): void {
+    //reset objClass and objName
+    this._objClass = null;
+    this._objName = null;
+
+    if(null != parsedXml){
+      //objClass may be inside <Rule> or outer <sailpoint> tag
+      var objClass = Object.keys(parsedXml)[0];
+      if("sailpoint" == objClass){
+        parsedXml = parsedXml["sailpoint"];
+        objClass = Object.keys(parsedXml)[0];
+        parsedXml = parsedXml[objClass][0];
+      }
+      else{
+        parsedXml = parsedXml[objClass];
+      }
+      this._objClass = objClass;
+      this._objName = parsedXml["ATTR"]["name"];
+      this._bsSource = parsedXml["Source"][0];
+    }
+
     //try to deduce contextValue when only objClass and objNames are set
-    if(null == contextValue && objClass){
-      switch(objClass){
+    if(null == contextValue && this._objClass){
+      switch(this._objClass){
         case "Rule":
           contextValue = ContextValue.Rule;
           break;
@@ -54,14 +78,13 @@ class ContextManager {
           contextValue = isProjectObject ? ContextValue.ProjectXMLObject : ContextValue.TempXMLObject;
       }
     }
-    else if(null == contextValue && !objClass){
+    else if(null == contextValue && !this._objClass){
       throw new Error('Either context or objClass need to be initialized');
     }
     this._lastValue = contextValue;
-    this._objClass = objClass;
-    this._objName = objName;
     vscode.commands.executeCommand('setContext', this._name, this._lastValue);
   }
+
   public getContextValue() : ContextValue{
     return this._lastValue;
   }
@@ -70,6 +93,9 @@ class ContextManager {
   }
   public getObjName(): string{
     return this._objName;
+  }
+  public getBSSource(): string{
+    return this._bsSource;
   }
 }
 
@@ -82,8 +108,24 @@ export class IIQCommands {
   private g_contextManager : ContextManager = new ContextManager("iiq.context");
   private g_iiqOutput = vscode.window.createOutputChannel("iiq-output");
   private g_fullWFPath = path.resolve(__dirname, "../../iiq-wf/workflow.xml");
-  private g_workspaceFolder = null;
+  private g_workspaceFolder: string = null;
+  private g_baseSSBFolder: string = null;
 
+  private initVariables(){
+    this.g_workspaceFolder = vscode.workspace.workspaceFolders[0].uri.fsPath.replace(/\\/g, "/");
+    //const buildProps = await vscode.workspace.findFiles("**/build.properties");
+    var files: string[] = fg.sync(`${this.g_workspaceFolder}/**/build.properties`);
+    if(1 == files.length){
+      const baseSSBFolder = require("path").dirname(files[0]);
+      
+      var xml_files: string[] = fg.sync(`${baseSSBFolder}/config/**/*.xml`);
+      var lib_files: string[] = fg.sync(`${baseSSBFolder}/lib/*.jar`);
+      var scripts_files: string[] = fg.sync(`${baseSSBFolder}/scripts/*.xml`);
+      if(xml_files.length > 0 && lib_files.length > 0 && scripts_files.length > 0){
+        this.g_baseSSBFolder = baseSSBFolder;
+      }
+    }
+  }
   constructor(){
     this.contextChange();
     vscode.window.onDidChangeActiveTextEditor((textEditor: vscode.TextEditor | undefined) => {
@@ -95,6 +137,11 @@ export class IIQCommands {
 		vscode.window.onDidChangeTextEditorSelection((e: vscode.TextEditorSelectionChangeEvent) => {
 			this.contextChange();
 		});
+    this.initVariables();
+  }
+  
+  public getContextManager(): ContextManager{
+    return this.g_contextManager;
   }
 
   private async contextChange(){
@@ -121,20 +168,7 @@ export class IIQCommands {
     else if(ext === '.xml'){
       try {
         var parsedXml = this.parseCurrentXmlFile();
-        if(parsedXml){
-          var theClass = Object.keys(parsedXml)[0];
-          if("sailpoint" == theClass){
-            parsedXml = parsedXml["sailpoint"];
-            theClass = Object.keys(parsedXml)[0];
-            parsedXml = parsedXml[theClass][0];
-          }
-          else{
-            parsedXml = parsedXml[theClass];
-          }
-          var objName = parsedXml["ATTR"]["name"];
-          var isProjectObject: boolean = this.isProjectFile(fullFileName);
-          this.g_contextManager.set(null, theClass, objName, isProjectObject);
-        }
+        this.g_contextManager.set(null, parsedXml, this.isProjectFile(fullFileName));
       } 
       catch (error) {
         vscode.window.showErrorMessage(`Error parsing ${editor.document.fileName}`);
@@ -228,28 +262,8 @@ export class IIQCommands {
     return result;
   }
 
-  public async isCorrectSSBWorkspaceFolder() :Promise<boolean>{
-    if(vscode.workspace.workspaceFolders.length > 1){
-      var error = "Your workspace contains more than one folders (the first will be used for now for Sailpoint IIQ)";
-      console.warn(error);
-      this.g_iiqOutput.append(error + "\r\n");
-      this.g_iiqOutput.append("Folders are:\r\n");
-      vscode.workspace.workspaceFolders.forEach((folder) =>{
-        this.g_iiqOutput.append(folder.uri.fsPath + "\r\n");
-      })
-      this.g_iiqOutput.show();
-    }
-    this.g_workspaceFolder = vscode.workspace.workspaceFolders[0].uri.fsPath.replace(/\\/g, "/");
-    const xmlObjects = await vscode.workspace.findFiles("config/**/*.xml");
-    if(xmlObjects.length < 1){
-      var error = `Can't find any IIQ objects (xml files) under ${this.g_workspaceFolder}/config. This is not SSB project`;
-      console.error(error);
-      this.g_iiqOutput.append(error + "\r\n");
-      this.g_iiqOutput.show();
-      return false;
-    }
-
-    return true;
+  public getBaseSSBFolder() : string|null{
+    return this.g_baseSSBFolder;
   }
  
   public updateStatusBarIfEnvironmentIsSet(){
@@ -420,7 +434,11 @@ export class IIQCommands {
   private async postRequestInternal(post_body, url, username, password){
     var result = {};
     const headers = new Headers();
-    //process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0;
+    
+    if(vscode.workspace.getConfiguration('iiq-dev-accelerator').get('disableTLSValidation')){
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+    }
+
     headers.append('Content-Type', 'application/json');
     headers.append('Authorization', 'Basic ' + base64.encode(username + ":" + password));
     const parsedUrl = new URL(url);
@@ -544,8 +562,7 @@ export class IIQCommands {
     if (!path) {
       return 'You must enter some input';
     }
-    const glob = require('glob');
-    var result = glob.sync(path + '/identityiq.jar');
+    var result = fg.sync(path + '/identityiq.jar');
     if(result.length == 0){
       return `Couldn't find *.jar files under the folder ${path}`
     }
@@ -553,8 +570,7 @@ export class IIQCommands {
   }
 
   private getClassFile(path, file) : string{
-    const glob = require('glob');
-    var result = glob.sync(`${path}/**/${file}`);
+    var result = fg.sync(`${path}/**/${file}`);
     if(result.length == 0){
       return null;
     }
@@ -1427,7 +1443,7 @@ export class IIQCommands {
       return;
     }
     
-    var repository = gitAPI.repositories.filter(r => r.rootUri.fsPath.startsWith(this.g_workspaceFolder))[0];
+    var repository = gitAPI.repositories.filter(r => r.rootUri.fsPath.replace(/\\/g, "/").startsWith(this.g_workspaceFolder))[0];
     if(undefined == repository){
       vscode.window.showErrorMessage(`Couldn't find a git repository at ${this.g_workspaceFolder} try to open VSCode with a different folder`);
       return;
@@ -1477,12 +1493,10 @@ export class IIQCommands {
   }
 
   public async buildDeployment(environment){
-    const buildProps = await vscode.workspace.findFiles("**/build.properties");
-    if(1 != buildProps.length){
-      vscode.window.showWarningMessage(`Couldn't find build.properties.`);
+    if(null == this.g_baseSSBFolder){
+      vscode.window.showWarningMessage(`Couldn't find build.properties. Check that you use proper SSB folder structure under your workspace`);
       return false;
     }
-    const buildBaseDir = require("path").dirname(buildProps[0].fsPath);
     const util = require('util');
     const exec = util.promisify(require('child_process').exec);
     
@@ -1494,7 +1508,7 @@ export class IIQCommands {
       }, 
       async (progress) => {
         const {stdout, stderr} = await exec(`${buildCmd}`, 
-                                      {cwd: `${buildBaseDir}`, 
+                                      {cwd: `${this.g_baseSSBFolder}`, 
                                         env: {"SPTARGET": environment}}); 
         if (stderr) {
           vscode.window.showWarningMessage(`Build failed. ${stderr}`);

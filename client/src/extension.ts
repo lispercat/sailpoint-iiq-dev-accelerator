@@ -6,6 +6,7 @@ import { TransportKind } from 'vscode-languageclient/node'
 import { CancellationToken, ExecuteCommandParams, ExecuteCommandRequest, LanguageClientOptions, NotificationType} from 'vscode-languageclient';
 import {Commands, IIQCommands} from "./iiq-commands";
 import { projectActivationProgress } from './IIQProjectActivationProgress';
+import { getBSVirtualContent, isInsideBS } from './embedded-bs';
 
 let languageClient: LanguageClient;
 let iiqCommands: IIQCommands = new IIQCommands();
@@ -28,10 +29,42 @@ async function startLanguageClient(ctx: vscode.ExtensionContext){
     }
   };
 
+	const virtualDocumentContents = new Map<string, string>();
+
+	vscode.workspace.registerTextDocumentContentProvider('embedded-content', {
+		provideTextDocumentContent: uri => {
+      const text = getBSVirtualContent(vscode.window.activeTextEditor.document.getText(), iiqCommands.getContextManager().getBSSource());
+			return text;
+		}
+	});
+
   // Options to control the language client
   let clientOptions: LanguageClientOptions = {
-    documentSelector: [{ scheme: 'file', language: 'xml',  }],
-    //workspaceFolder: vscode.workspace.workspaceFolders[0];
+    documentSelector: [{ scheme: 'file', language: 'xml' }],
+    initializationOptions: {baseSSBFolder: iiqCommands.getBaseSSBFolder()},
+		middleware: {
+			provideCompletionItem: async (document, position, context, token, next) => {
+				// If not in `<style>`, do not perform request forwarding
+				if (!isInsideBS(document.getText(), iiqCommands.getContextManager().getBSSource(), document.offsetAt(position))) {
+          const completionList = await next(document, position, context, token);
+					return completionList; 
+				}
+
+				const originalUri = document.uri.toString();
+				virtualDocumentContents.set(originalUri, getBSVirtualContent(document.getText(), iiqCommands.getContextManager().getBSSource()));
+
+				const vdocUriString = `embedded-content://java/${encodeURIComponent(originalUri)}.java`;
+        
+				const vdocUri = vscode.Uri.parse(vdocUriString);
+        const completionList = await vscode.commands.executeCommand<vscode.CompletionList>(
+					'vscode.executeCompletionItemProvider',
+					vdocUri,
+					position,
+					context.triggerCharacter
+				);
+        return completionList;
+			}
+		}
   };
 
   languageClient = new LanguageClient(
@@ -74,9 +107,10 @@ async function startLanguageClient(ctx: vscode.ExtensionContext){
   languageClient.start();
 }
 
-async function shouldStartLSP(): Promise<boolean>{
+function shouldStartLSP(ctx: vscode.ExtensionContext): boolean{
   var enableLSP: boolean = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('enableLSP');
-  if(enableLSP && await iiqCommands.isCorrectSSBWorkspaceFolder()){
+  var isDevMode: boolean = ctx.extensionMode == vscode.ExtensionMode.Development;
+  if((enableLSP || isDevMode) && null != iiqCommands.getBaseSSBFolder()){
     return true;
   }
   return false;
@@ -109,7 +143,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.refreshObject', () => iiqCommands.refreshObject()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.importJava', () => iiqCommands.importJava()));
  
-  if(await shouldStartLSP()){
+  if(shouldStartLSP(ctx)){
     await startLanguageClient(ctx);
   }
   else{

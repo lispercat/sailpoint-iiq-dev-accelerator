@@ -1,4 +1,10 @@
 # Change Log
+## [1.0.32]
+### Fixed
+ - Added disableTLSValidation configuraion variable to address the issue of some users having to manually setting process.env.NODE_TLS_REJECT_UNAUTHORIZED=0 
+ - Fixed the git repository failure to find git files 
+ - Some LSP additions (trying out virtual documents)
+
 ## [1.0.31]
 ### Fixed
  - Fixed properties-reader weird dependency issue (properties-reader didn't pull the src folder)
