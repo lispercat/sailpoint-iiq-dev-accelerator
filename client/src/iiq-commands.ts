@@ -48,6 +48,7 @@ class ContextManager {
     //reset objClass and objName
     this._objClass = null;
     this._objName = null;
+    this._bsSource = null;
 
     if(null != parsedXml){
       //objClass may be inside <Rule> or outer <sailpoint> tag
@@ -62,7 +63,9 @@ class ContextManager {
       }
       this._objClass = objClass;
       this._objName = parsedXml["ATTR"]["name"];
-      this._bsSource = parsedXml["Source"][0];
+      if(parsedXml["Source"]){
+        this._bsSource = parsedXml["Source"][0];
+      }
     }
 
     //try to deduce contextValue when only objClass and objNames are set
@@ -1698,7 +1701,7 @@ export class IIQCommands {
   }
 
   private isProjectFile(searchFileName: string){
-    if(searchFileName.includes(this.g_workspaceFolder)){
+    if(searchFileName.replace(/\\/g, "/").includes(this.g_workspaceFolder)){
       return true;
     }
     return false;

@@ -1,4 +1,8 @@
 # Change Log
+## [1.0.33]
+### Fixed
+ - Some minor fixes for the setting xml context
+
 ## [1.0.32]
 ### Fixed
  - Added disableTLSValidation configuraion variable to address the issue of some users having to manually setting process.env.NODE_TLS_REJECT_UNAUTHORIZED=0 
