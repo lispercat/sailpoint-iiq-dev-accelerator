@@ -1,4 +1,13 @@
 # Change Log
+
+## [1.0.34]
+### Added
+ - The ability to update log4j configuration on multiple iiq servers
+### Fixed
+ - Ctrl-Alt-x will reload the logging configuraion if your current file is a log4j config (either from you disk or obtained from the iiq server)
+ - Installed new packages with security updates
+ - Cleared some ground for tests
+
 ## [1.0.33]
 ### Fixed
  - Some minor fixes for the setting xml context

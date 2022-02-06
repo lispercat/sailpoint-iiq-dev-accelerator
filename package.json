@@ -3,7 +3,7 @@
     "displayName": "Sailpoint IIQ Development Accelerator",
     "description": "Provides commands to facilitate/accelerate coding/interacting with remote Sailpoint IIQ server",
     "icon": "images/icon.png",
-    "version": "1.0.33",
+    "version": "1.0.34",
     "engines": {
         "vscode": "^1.60.0"
     },
@@ -31,6 +31,9 @@
     ],
     "categories": [
         "Other"
+    ],
+    "extensionDependencies": [
+        "vscode.git"
     ],
     "activationEvents": [
         "workspaceContains:**/config/**/*.xml",
@@ -120,13 +123,13 @@
                     "default": 100,
                     "scope": "resource"
                 },
-                "iiq-dev-accelerator.enableLSP": { 
+                "iiq-dev-accelerator.enableLSP": {
                     "type": "boolean",
                     "description": "When set to true, the language server protocol will be enabled",
                     "default": false,
                     "scope": "application"
                 },
-                "iiq-dev-accelerator.disableTLSValidation": { 
+                "iiq-dev-accelerator.disableTLSValidation": {
                     "type": "boolean",
                     "description": "This option is quite insecure since it sets process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0 which allows you to connect to your server ignoring certificate issues",
                     "default": false,
@@ -279,10 +282,11 @@
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",
+        "pretest": "npm run compile",
         "compile": "tsc -b",
         "watch": "tsc -b -w",
         "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
-        "test": "sh ./scripts/e2e.sh",
+        "test": "node ./test/out/runTest.js",
         "antlr4ts": "del-cli parser/src/SPBS* !parser/src/*Impl.ts && antlr4ts -visitor -o parser/src -Xexact-output-dir beanshell_grammar/SPBSLexer.g4 beanshell_grammar/SPBSParser.g4"
     },
     "devDependencies": {
@@ -296,14 +300,14 @@
         "antlr4ts-cli": "^0.5.0-alpha.4",
         "del-cli": "^4.0.1",
         "eslint": "^7.32.0",
-        "mocha": "^9.1.1",
+        "mocha": "^9.2.0",
         "typescript": "^4.4.3"
     },
     "dependencies": {
         "antlr4ts": "^0.5.0-alpha.4",
         "base-64": "^1.0.0",
         "fast-glob": "^3.2.8",
-        "node-fetch": "^2.6.5",
+        "node-fetch": "^2.6.7",
         "properties-reader": "^2.2.0",
         "tmp": "^0.2.1",
         "vscode-languageclient": "^8.0.0-next.3",

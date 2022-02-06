@@ -44,7 +44,19 @@
       "startRule": "xml_document",
       "printParseTree": true,
       "visualParseTree": true
-    }
+    },
+		{
+			"name": "Run Extension Tests",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}",
+				"--extensionTestsPath=${workspaceFolder}/test/out/suite/index"
+			],
+			"outFiles": ["${workspaceFolder}/test/out/**/*.js"],
+			"preLaunchTask": "npm: watch"
+		}
   ],
   "compounds": [
     {

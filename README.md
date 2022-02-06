@@ -44,6 +44,10 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
     * Currently selected text
     * Currently open log4j document (including the one obtained with **Get Logging Config** command)
     * Detected **your-target-environment**.log4j(2).properties document, where **your-target-environment** is your target environment configuration. It should work equally with old log4j and new log4j2 files.
+    * If you have a mulitple server environment you can put the servers in %%IIQ_SERVERS%% token (servers separated by commas) in your **your-target-environment**.target.properties file like this:
+      %%IIQ_SERVERS%%=http://server1:8080/identityiq,http://server2:8080/identityiq
+      In this case when you reload your logging config, it will be reloaded on all the servers specified in the token.
+
 * **Switch Environment**
   * Allows to switch to a different SSB environment. For better results make sure that you have specified %%ECLIPSE_URL%%, %%ECLIPSE_USER%%, %%ECLIPSE_PASSWORD%% tokens in your **your-target-environment**.target.properties file. You can also store your secret tokens in **your-target-environment**.target.secret.properties file
 * **Context-based Execution**

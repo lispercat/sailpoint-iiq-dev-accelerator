@@ -162,7 +162,7 @@ export class IIQCommands {
     if(script && ext === '.xml'){
       this.g_contextManager.set(ContextValue.BeanShellSelection);
     }
-    else if(ext === ".properties" && baseName.startsWith("log4j")){
+    else if(ext === ".properties" && baseName.includes("log4j")){
       this.g_contextManager.set(ContextValue.LogConfig);
     }
     else if(ext === ".java"){
@@ -218,18 +218,13 @@ export class IIQCommands {
     return this.g_statusBarEnvItem;
   }
 
-  public updateStatusBar(currEnv: string){
-    this.g_statusBarEnvItem.text = "IIQ: " + currEnv;
-    if(currEnv){
+  public updateStatusBar(text: string){
+    this.g_statusBarEnvItem.text = text;
+    if(this.g_statusBarEnvItem.text){
       this.g_statusBarEnvItem.show();
     }else{
       this.g_statusBarEnvItem.hide();
     }
-  }
-
-  public updateStatusBarIcon(icon: string){
-    this.g_statusBarEnvItem.text = icon;
-    this.g_statusBarEnvItem.show();
   }
 
   private parseCurrentXmlFile(text:string | null = null){
@@ -274,26 +269,14 @@ export class IIQCommands {
     if(!environment){
       return;
     }
-    this.updateStatusBar(environment);
+    this.updateStatusBar("IIQ: " + environment);
   }
 
   private async getEnvironment(){
     var environment: string = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('environment');
     if(!environment){
-      var environments = await this.listEnvironments();
-      if(!environments || environments.length < 1){
-        return null;
-      }
-      environment = await vscode.window.showQuickPick(environments, 
-      { placeHolder: 'Select an environment', ignoreFocusOut: false });
-      if(environment === undefined){
-        return null;
-      }
-      await vscode.workspace.getConfiguration('iiq-dev-accelerator').
-            update('environment', environment, true);
-      environment = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('environment');
+      this.switchEnv();
     }
-    await this.updateStatusBar(environment);
     return environment;
   }
 
@@ -420,7 +403,7 @@ export class IIQCommands {
           validateInput: this.validateConfigInput
         });
         if(configParams === undefined){
-          return;
+          return [null, null, null];
         }
         [url, username, password] = configParams.split(";");
         vscode.workspace.getConfiguration('iiq-dev-accelerator').update('iiq_url', url, true);
@@ -480,8 +463,11 @@ export class IIQCommands {
     return result;
 
   }
-  private async postRequest(post_body){
-    const [url, username, password] = await this.getSiteConfig();
+  private async postRequest(post_body, url2 = null){
+    let [url, username, password] = await this.getSiteConfig();
+    if(null != url2){
+      url = url2;
+    }
     if(!url || !username || !password){
       vscode.window.showInformationMessage(`Please update your configuration with url, username and password`);
       return;
@@ -1107,6 +1093,22 @@ export class IIQCommands {
     }
   }
 
+  private async getURLs() : Promise<string[]> {
+    var result = [];
+    let [url, username, password] = await this.getSiteConfig();
+    const props = await this.loadTargetProps();
+    if(!props){
+      return [url];
+    }
+    var servers = props["%%IIQ_SERVERS%%"];
+    if(!servers){
+      return [url];
+    }
+    servers = servers.split(",").map(s => s.trim());
+
+    return servers;
+  }
+
   public async reloadLog(){
     var logContent = null;
     var environment = await this.getEnvironment();
@@ -1129,7 +1131,7 @@ export class IIQCommands {
     }
 
     //Priority #3
-    if(foundLogFileName){
+    if(!logContent){
       const uris = await vscode.workspace.findFiles(`**/${searchFileName}`);
       console.log("now trying to go over log config files...");
       uris.forEach((uri) => {
@@ -1146,22 +1148,45 @@ export class IIQCommands {
         "logContent": logContent
       }
     };
-    
-    var result = await vscode.window.withProgress({
+    //Check if we have mulitple servers
+    var wasCancelled = false;
+    const urls: string[] = await this.getURLs();
+    var reload_count = await vscode.window.withProgress({
       location: vscode.ProgressLocation.Notification,
-      title: `Reloading Logging Config from ${foundLogFileName ? foundLogFileName:'server log file'}`,
+      title: `Reloading Logging Config `,
       cancellable: true
       }, 
-      progress => {
-        return this.postRequest(JSON.stringify(post_body));
-      });
+      async (progress, token) => {
+        token.onCancellationRequested(() => {
+        });
+        var incr = 100/urls.length;
+        progress.report({ increment: 0 });
+        var reload_count = 0;
 
+        for(var url of urls){
+          progress.report({ increment: incr, message: `on ${url} server` });
+          if(token.isCancellationRequested){
+            wasCancelled = true;
+            break;
+          }
+          var result = await this.postRequest(JSON.stringify(post_body), url);
+          if(result["payload"] !== undefined){
+            reload_count += 1;
+          }
+        }
+        return reload_count;
+    });
 
-    if(result["payload"] !== undefined){
-      vscode.window.showInformationMessage(`Refreshing from ${foundLogFileName ? foundLogFileName:'server log file'}: ${result["payload"]}`);
+    if(reload_count == urls.length){
+      vscode.window.showInformationMessage(`Refreshing from ${foundLogFileName ? foundLogFileName:'server log file'}: ${reload_count} server(s) updated`);
     }
     else{
-      vscode.window.showErrorMessage(`Operation failed`);
+      if(wasCancelled){
+        vscode.window.showErrorMessage(`Operation was cancelled ${reload_count} server(s) reloaded`);
+      }
+      else{
+        vscode.window.showErrorMessage(`Operation failed`);
+      }
     }
   }
 
@@ -1394,16 +1419,17 @@ export class IIQCommands {
 
     //reset old environment's settings
     this.g_props = {};
-    var url = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('iiq_url');
-    var username = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('username');
-    var password = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('password');
-    if(url || username || password){
-      vscode.workspace.getConfiguration('iiq-dev-accelerator').update('iiq_url', "", true);
-      vscode.workspace.getConfiguration('iiq-dev-accelerator').update('username', "", true);
-      vscode.workspace.getConfiguration('iiq-dev-accelerator').update('password', "", true);
+    vscode.workspace.getConfiguration('iiq-dev-accelerator').update('iiq_url', "", true);
+    vscode.workspace.getConfiguration('iiq-dev-accelerator').update('username', "", true);
+    vscode.workspace.getConfiguration('iiq-dev-accelerator').update('password', "", true);
+    let [url, username, password] = await this.getSiteConfig();
+    if(url && username && password){
+      await this.updateStatusBar("IIQ: " + environment);
+    }
+    else{
+      await this.updateStatusBar("$(thumbsdown) IIQ is not ready...");
     }
 
-    await this.updateStatusBar(environment);
     return environment;
   }
 

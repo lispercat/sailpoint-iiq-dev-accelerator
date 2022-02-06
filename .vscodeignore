@@ -8,3 +8,4 @@ scripts
 **/scratch.*
 beanshell_grammar
 publish.cmd
+.vscode-test/**
