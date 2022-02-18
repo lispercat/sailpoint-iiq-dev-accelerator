@@ -1239,6 +1239,27 @@ export class IIQCommands {
   
   }
 
+  private beautifyIIQObject(xml){
+    let replaceDict = {"&lt;": "<",
+                       "&gt;": ">",
+                       "&amp;&amp;": "&&",
+                       "<Source>": "<Source><![CDATA[",
+                       "</Source>": "]]></Source>",
+                       'id=".*?"\\s*': "",
+                       'created=".*?"\\s*': "",
+                       'modified=".*?"\\s*': "",
+                       };
+    try{
+      for (let key in replaceDict){
+        xml = xml.replace(new RegExp(key, "gi"), replaceDict[key]);
+      }
+    }
+    catch(e){
+      vscode.window.showErrorMessage(`IIQ object beautification failed: ${e}`);
+    }
+    return xml;
+  }
+
   private async searchObject(cls, objName){
     var post_body = 
     {
@@ -1259,7 +1280,9 @@ export class IIQCommands {
         return this.postRequest(JSON.stringify(post_body));
       });
 
-    return result["payload"];
+    let xml = result["payload"];
+    xml = this.beautifyIIQObject(xml);
+    return xml;
   }
 
   public async getObject(){

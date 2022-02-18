@@ -34,7 +34,7 @@
         import org.apache.log4j.Logger;
         Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
         iidDevAccelLogger.debug("GetVersion is called");
-        return "1.0.34";
+        return "1.0.36";
       </Source>
     </Script>
     <Transition to="Stop"/>

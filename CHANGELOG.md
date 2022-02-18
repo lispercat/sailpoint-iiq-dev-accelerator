@@ -1,5 +1,14 @@
 # Change Log
 
+## [1.0.36]
+### Fixed
+ - Make regex for xml object global so it doesn't miss repeated characters
+
+## [1.0.35]
+### Added
+ - When getting a deployed XML object, it will be "beautified" before presenting to the user 
+   (That is "id", "created", "modified" attributes will be removed and special XML characters like &lt; &gt; or &amp;&amp; will be correspondingly replaced by <, > or &&)
+
 ## [1.0.34]
 ### Added
  - The ability to update log4j configuration on multiple iiq servers
