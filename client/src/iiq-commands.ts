@@ -8,11 +8,21 @@ import * as xml2js from 'xml2js';
 import * as tmp from 'tmp';
 import { URL } from 'url';
 import * as path from 'path';
+
+var xpath = require('xpath')
+import { DOMParser } from 'xmldom'
+import { XMLSerializer } from 'xmldom'
 const fg = require('fast-glob');
 
 export namespace Commands{
   export const SHOW_LANGUAGE_SERVER_OUTPUT = 'show.language.server.output';
   export const EXECUTE_WORKSPACE_COMMAND = 'execute.workspaceCommand';
+}
+
+enum UseTokenization {
+  Yes = "Yes",
+  No = "No",
+  Ask = "Ask"
 }
 
 interface PropFileInfo{
@@ -44,29 +54,33 @@ class ContextManager {
     this._name = name;
   } 
 
+  public getParsedObjectAttr(parsedXml){
+    var objClass = null;
+    var objName = null;
+    var bsSource = null;
+    if(!parsedXml){
+      return [objClass, objName, bsSource];
+    }
+
+     objClass = Object.keys(parsedXml)[0];
+    if("sailpoint" == objClass){
+      parsedXml = parsedXml["sailpoint"];
+      objClass = Object.keys(parsedXml)[0];
+      parsedXml = parsedXml[objClass][0];
+    }
+    else{
+      parsedXml = parsedXml[objClass];
+    }
+    objName = parsedXml["ATTR"]["name"];
+    if(parsedXml["Source"]){
+      bsSource = parsedXml["Source"][0];
+    }
+    return [objClass, objName, bsSource];
+  }
+
   public set(contextValue: ContextValue, parsedXml?: any, isProjectObject?: boolean): void {
     //reset objClass and objName
-    this._objClass = null;
-    this._objName = null;
-    this._bsSource = null;
-
-    if(null != parsedXml){
-      //objClass may be inside <Rule> or outer <sailpoint> tag
-      var objClass = Object.keys(parsedXml)[0];
-      if("sailpoint" == objClass){
-        parsedXml = parsedXml["sailpoint"];
-        objClass = Object.keys(parsedXml)[0];
-        parsedXml = parsedXml[objClass][0];
-      }
-      else{
-        parsedXml = parsedXml[objClass];
-      }
-      this._objClass = objClass;
-      this._objName = parsedXml["ATTR"]["name"];
-      if(parsedXml["Source"]){
-        this._bsSource = parsedXml["Source"][0];
-      }
-    }
+    [this._objClass, this._objName, this._bsSource] = this.getParsedObjectAttr(parsedXml);
 
     //try to deduce contextValue when only objClass and objNames are set
     if(null == contextValue && this._objClass){
@@ -138,7 +152,7 @@ export class IIQCommands {
       this.contextChange();
     });
 		vscode.window.onDidChangeTextEditorSelection((e: vscode.TextEditorSelectionChangeEvent) => {
-			this.contextChange();
+			// this.contextChange();
 		});
     this.initVariables();
   }
@@ -170,7 +184,7 @@ export class IIQCommands {
     }
     else if(ext === '.xml'){
       try {
-        var parsedXml = this.parseCurrentXmlFile();
+        var parsedXml = this.parseXMLObject();
         this.g_contextManager.set(null, parsedXml, this.isProjectFile(fullFileName));
       } 
       catch (error) {
@@ -227,7 +241,7 @@ export class IIQCommands {
     }
   }
 
-  private parseCurrentXmlFile(text:string | null = null){
+  private parseXMLObject(text:string | null = null){
     const xmlParser = new xml2js.Parser({ attrkey: "ATTR" });
 
     if(!text){
@@ -304,7 +318,6 @@ export class IIQCommands {
     }
     var uri = uris[0];
     var filePath: string = uri.fsPath; 
-    console.log(`Trying to read ${filePath} file`);
 
     if(this.canUseCachedProp(filePath)){
       return this.g_props[filePath]["props"];
@@ -312,6 +325,7 @@ export class IIQCommands {
 
     this.g_props[filePath] = {"mtime": null, "props": {}};
     this.g_props[filePath]["mtime"] = fs.statSync(filePath).mtime;
+    console.log(`Trying to read ${filePath} file`);
     var properties = propertiesReader(filePath).getAllProperties();
     for(var key in properties){
       var val: string = properties[key].toString();
@@ -322,7 +336,7 @@ export class IIQCommands {
     return this.g_props[filePath]["props"];
   }
 
-  public async loadTargetProps(){
+  private async loadTargetProps(){
     var environment = await this.getEnvironment();
     if(!environment){
       return null;
@@ -337,6 +351,28 @@ export class IIQCommands {
     return allProps;
   }
 
+  private async loadTokensToIgnore(){
+    var environment = await this.getEnvironment();
+    if(!environment){
+      return null;
+    }
+
+    var ignoreTokens = await this.getFileProperties(`${environment}.target.ignoretokens.properties`);
+    if(!ignoreTokens){
+      ignoreTokens = {};
+    }
+    return ignoreTokens;
+  }
+
+  private async loadReverseTokens(){
+    var environment = await this.getEnvironment();
+    if(!environment){
+      return null;
+    }
+
+    return await this.getFileProperties(`${environment}.target.vscode-reverse.properties`);
+  }
+
   public processFileContent(fileContent, props){
     var errors = {"processFileErrors" : []};
     if(props){
@@ -344,7 +380,7 @@ export class IIQCommands {
       if(found){
         found.forEach((token) => {
           var replacement = props[token]; 
-          if(replacement != null){
+          if(replacement){
             fileContent = fileContent.replace(token, replacement);
           }
         });
@@ -824,7 +860,7 @@ export class IIQCommands {
       return null;
     }
 
-    var parsedXml = this.parseCurrentXmlFile();
+    var parsedXml = this.parseXMLObject();
     if(parsedXml){
       try{
         retArgs =
@@ -1216,7 +1252,7 @@ export class IIQCommands {
     return this.g_IIQClasses;
   }
 
-  private async getClassObjects(cls){
+  private async getClassObjects(cls, showProgress=true){
     var post_body = 
     {
       "workflowArgs":
@@ -1225,15 +1261,21 @@ export class IIQCommands {
         "theClass": cls
       }
     };
-    
-    var result = await vscode.window.withProgress({
-      location: vscode.ProgressLocation.Notification,
-      title: "Getting class objects ...",
-      cancellable: true
-      }, 
-      progress => {
-        return this.postRequest(JSON.stringify(post_body));
-      });
+   
+    var result = null;
+    if(showProgress){
+      result = await vscode.window.withProgress({
+        location: vscode.ProgressLocation.Notification,
+        title: "Getting class objects ...",
+        cancellable: true
+        }, 
+        progress => {
+          return this.postRequest(JSON.stringify(post_body));
+        });
+    }
+    else{
+      result = await this.postRequest(JSON.stringify(post_body));
+    }
 
     return result["payload"];
   
@@ -1245,10 +1287,7 @@ export class IIQCommands {
                        "&amp;&amp;": "&&",
                        "<Source>": "<Source><![CDATA[",
                        "</Source>": "]]></Source>",
-                       'id=".*?"\\s*': "",
-                       'created=".*?"\\s*': "",
-                       'modified=".*?"\\s*': "",
-                       };
+                       '(id|created|modified)=".*?"\\s*': ""};
     try{
       for (let key in replaceDict){
         xml = xml.replace(new RegExp(key, "gi"), replaceDict[key]);
@@ -1260,7 +1299,65 @@ export class IIQCommands {
     return xml;
   }
 
-  private async searchObject(cls, objName){
+  private async tokenizeWithDirectTokens(xml){
+    const exclusions = [
+    "%%ECLIPSE_URL%%",
+    "%%ECLIPSE_USER%%",
+    "%%ECLIPSE_PASS%%",
+    "%%IIQ_SERVERS%%"
+    ];
+    const props = await this.loadTargetProps();
+    const ignoreProps = await this.loadTokensToIgnore();
+    var ignorePropsList = Object.keys(ignoreProps);
+    try{
+      for (let key in props){
+        if(exclusions.includes(key) || ignorePropsList.includes(key)){
+          continue;
+        }
+        xml = xml.replace(new RegExp(props[key], "g"), key);
+      }
+    }
+    catch(e){
+      vscode.window.showErrorMessage(`IIQ object beautification failed: ${e}`);
+    }
+    return xml;
+  }
+
+  private async tokenizeWithRerverseTokens(xml){
+    const reverseTokens = await this.loadReverseTokens();
+    const props = await this.loadTargetProps();
+
+    try{
+      var doc = new DOMParser().parseFromString(xml);
+      for (let key in reverseTokens){
+        var element = xpath.select(reverseTokens[key], doc)
+        if(element && element.length > 0){
+          const directReplacement = props[key];
+          //check if we have "direct token" in our target.properties file, only then do the replacement
+          if(directReplacement){
+            element[0].value = key
+          }
+        }
+      }
+      xml = new XMLSerializer().serializeToString(doc)
+    }
+    catch(e){
+      vscode.window.showErrorMessage(`tokenizeWithRerverseTokens failed: ${e}`);
+    }
+    return xml;
+  }
+
+  private async tokenizeIIQObject(xml){
+    const reverseTokens = await this.loadReverseTokens();
+    if(reverseTokens){
+      return await this.tokenizeWithRerverseTokens(xml);
+    }
+    else{
+      return await this.tokenizeWithDirectTokens(xml);
+    }
+  }
+
+  private async searchObject(cls, objName, showProgress=true, useTokenization: UseTokenization=UseTokenization.Ask){
     var post_body = 
     {
       "workflowArgs":
@@ -1270,8 +1367,10 @@ export class IIQCommands {
         "objName": objName
       }
     };
-    
-    var result = await vscode.window.withProgress({
+  
+    var result = null;
+    if(showProgress){
+      result = await vscode.window.withProgress({
       location: vscode.ProgressLocation.Notification,
       title: `Getting the object for ${objName} ...`,
       cancellable: true
@@ -1279,9 +1378,22 @@ export class IIQCommands {
       progress => {
         return this.postRequest(JSON.stringify(post_body));
       });
-
+    }
+    else{
+      result = await this.postRequest(JSON.stringify(post_body)); 
+    }
     let xml = result["payload"];
     xml = this.beautifyIIQObject(xml);
+
+    if(useTokenization == UseTokenization.Yes){
+      xml = this.tokenizeIIQObject(xml);
+    }
+    else if(useTokenization == UseTokenization.Ask){
+      const answer = await vscode.window.showQuickPick(["No", "Yes"], {placeHolder: `Would you like to tokenize the object`});
+      if(answer === "Yes"){
+        xml = this.tokenizeIIQObject(xml);
+      }
+    }
     return xml;
   }
 
@@ -1602,7 +1714,7 @@ export class IIQCommands {
     const spInitCustomPath = spInitCustom[0].fsPath.replace(/\\/g, "/");
     const deployBaseDir = require("path").dirname(spInitCustomPath);
     const spInitCustomContent = fs.readFileSync(spInitCustomPath, {encoding:'utf8', flag:'r'});
-    const parsedXml = this.parseCurrentXmlFile(spInitCustomContent);
+    const parsedXml = this.parseXMLObject(spInitCustomContent);
     const filesToDeploy = parsedXml.sailpoint.ImportAction
                               .reduce(function(arr, obj){
                                 if("include" === obj.ATTR.name){
@@ -1647,7 +1759,7 @@ export class IIQCommands {
       return;
     }
     
-    const parsedXml = this.parseCurrentXmlFile();
+    const parsedXml = this.parseXMLObject();
     const keys = Object.keys(parsedXml);
     if(!keys || keys.length == 0 || keys.length > 1){
       vscode.window.showWarningMessage(`An IIQ object should have a well formed xml with one root element`); 
@@ -1794,4 +1906,103 @@ export class IIQCommands {
     }
   }
 
+  public async exportObjects(){
+    let exportFolder = await vscode.window.showInputBox({
+      ignoreFocusOut: true,
+      value: `${this.g_workspaceFolder}/exportedObjects`,
+      prompt: `Enter folder to save the exported objects`
+    });
+    if(exportFolder === undefined){
+      vscode.window.showErrorMessage(`Please specify the path to IIQ libraries so that you file can get compiled`);
+      return;
+    }
+    if (!fs.existsSync(exportFolder)){
+      fs.mkdirSync(exportFolder, { recursive: true });
+    }
+    else{
+      const answer = await vscode.window.showQuickPick(["No", "Yes"], {placeHolder: `The folder already exists, do you want to overwrite it?`});
+      if(answer === "No"){
+        return;
+      }
+    }
+
+    var classes = await this.getClasses();
+    if(!classes){
+      vscode.window.showInformationMessage("No classes were found, exiting");
+      return;
+    }
+
+    let selectedClasses = await vscode.window.showQuickPick(classes, 
+      { placeHolder: `Pick classes that you want to export...`, ignoreFocusOut: true, canPickMany: true });
+    if(!selectedClasses){
+      vscode.window.showInformationMessage("No classes was selected, exiting");
+      return;
+    }
+    let useTokenization: UseTokenization = UseTokenization.No;
+    const answer = await vscode.window.showQuickPick(["No", "Yes"], {placeHolder: `Would you like to apply reverse tokenization?`});
+    if(answer === "Yes"){
+      useTokenization = UseTokenization.Yes;
+    }
+
+    let objectsToExport = {};
+    let totalObjectCnt = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: `Collecting objects for class `,
+      cancellable: true
+      }, 
+      async (progress, token) => {
+        token.onCancellationRequested(() => {
+        });
+        var totalObjectCnt = 0;
+        var incr = 100/selectedClasses.length;
+        progress.report({ increment: 0 });
+        for (let aClass of selectedClasses){
+          if(token.isCancellationRequested){
+            break;
+          }
+          progress.report({ increment: incr, message: `${aClass}` });
+          let objects = await this.getClassObjects(aClass, false);
+          if(objects && objects.length > 0){
+            objectsToExport[aClass] = objects 
+            totalObjectCnt += objects.length;
+          }
+        }
+        return totalObjectCnt;
+      });
+
+    
+    let exportedCount = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: `Exporting  `,
+      cancellable: true
+      }, 
+      async (progress, token) => {
+        token.onCancellationRequested(() => {
+        });
+        var exportedCount = 0;
+        var incr = 100/totalObjectCnt;
+        progress.report({ increment: 0 });
+        for (let aClass in objectsToExport){
+          if(token.isCancellationRequested){
+            break;
+          }
+          let classFolder = `${exportFolder}/${aClass}`;
+          if (!fs.existsSync(classFolder)){
+            fs.mkdirSync(classFolder);
+          }
+          for (let objName of objectsToExport[aClass]){
+            if(token.isCancellationRequested){
+              break;
+            }
+            progress.report({ increment: incr, message: `${aClass} "${objName}"` });
+            var xml = await this.searchObject(aClass, objName, false, useTokenization);
+            fs.writeFileSync(`${classFolder}/${objName}.xml`, xml, {encoding:'utf8',flag:'w'});
+            exportedCount++;
+          }
+        }
+        return exportedCount;
+      });
+
+    vscode.window.showInformationMessage(`${exportedCount} objects out of ${totalObjectCnt} were exported to ${exportFolder}`);
+  }
 }

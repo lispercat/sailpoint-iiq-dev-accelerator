@@ -1,5 +1,10 @@
 # Change Log
 
+## [1.0.37]
+### Added
+ - Added the ability to tokenize xml objects when using GetObject and compareLocalWithDeployed 
+ - Added ExportObjects command using reverse tokenization which gets deployed objects and saves them in a local folder
+
 ## [1.0.36]
 ### Fixed
  - Make regex for xml object global so it doesn't miss repeated characters

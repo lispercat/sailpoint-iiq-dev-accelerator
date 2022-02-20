@@ -34,7 +34,7 @@
         import org.apache.log4j.Logger;
         Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
         iidDevAccelLogger.debug("GetVersion is called");
-        return "1.0.36";
+        return "1.0.37";
       </Source>
     </Script>
     <Transition to="Stop"/>
@@ -76,7 +76,18 @@
           iidDevAccelLogger.debug("Started getting classes"); 
           List resultArray = new ArrayList();
           for(Class cls : ClassLists.MajorClasses){
-            resultArray.add(cls.getSimpleName());
+            boolean objExists = false;
+            try{
+              //make sure search operation works on this class and it has objects
+              Iterator it = context.search(cls, null, "name");
+              objExists = it.hasNext();
+            }
+            catch(Exception e){
+              iidDevAccelLogger.debug("Class " + cls + " can't be searched"); 
+            }
+            if(objExists){
+              resultArray.add(cls.getSimpleName());
+            }
           }
           iidDevAccelLogger.debug("Finished getting classes"); 
           return resultArray; 

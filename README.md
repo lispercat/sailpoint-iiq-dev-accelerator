@@ -17,6 +17,7 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
 * **Get Object**
   * Will retrive an object of selected class
   * You can make modifications and import it with **Import File** command
+  * As an option, you may reverse tokenize your object (see **Export Objects** for more details)
   * **Get Object** + **Import File** gives you the ability to modify objects
 * **Refresh Object**
   * Will refresh the currently open object (that you got with a **Get Object** command)
@@ -67,6 +68,7 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
   * Deploys the xml files which are currently open in the editor. It's a nice way to deploy a handful of files, especially if you need to deploy the same set to a few different environments
 * **Compare Local with Deployed**
   * Compares current xml file with the corresponding deployed object in your target environment
+  * As an option, you may reverse tokenize your remote object for comparison only (see **Export Objects** for more details)
 * **Code snippets**
   * `rule + Tab` - inserts rule code snippet
 * **Syntax highlighting**
@@ -98,6 +100,25 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
   * If those conditions listed above are not satisfied, the current solution will redeploy the IIQ Tomcat application (which of course take a couple of minutes)
     - But it's still better than to do the same redeployment manually by compiling the file, copy *.class over to Tomcat's classes folder and restarting Tomcat
     - Sometimes HotSwap will fail to work when you add new methods to your class and your current VirtualMachine doesn't support adding methods. In this case you'll need to wait for identityiq redeployment only when you add new methods. When you modify the existing methods HotSwap will be able to instantly update the class.
+* **Export Objects**
+  * Using this command you can download your deployed objects (Rules, Taks etc) for your current environment and save them in a local folder
+  * For exporting, the reverse token replacement is used. There are two options:
+    1) If you have a file **your-target-environment**.target.vscode-reverse.properties with reverse tokens, it will be used as a first priority
+      * Format of the entries in the file is based on xpath expressions like so:
+        %%FILENAME%%=/Application[@name='TestApp']/Attributes/Map/entry[@key='file']/@value
+      * This means that during the reverse tokenization process the element found by the xpath will be replaced by %%FILENAME%% token
+      * Note, that this token %%FILENAME%% must be present in either **your-target-environment**.target.properties or **your-target-environment**.target.secret.properties files so that the file could be correctly compiled later
+    2) If you don't want to deal with xpath expressions you can still use reverse tokenization based on your current **your-target-environment**.target.properties or **your-target-environment**.target.secret.properties files
+      * Following tokens from your **your-target-environment**.target.properties will be *excluded* from the reverse tokenization:
+        - %%ECLIPSE_URL%%
+        - %%ECLIPSE_USER%%
+        - %%ECLIPSE_PASS%%
+        - %%IIQ_SERVERS%%
+  * To test your reverse tokenization (using methods #1 or #2) you may experiment with **Get Object** command which also can optionally apply the reverse tokenization
+  * To start exporting objects, 
+    * specify the path to your target folder 
+    * select object classes you are interested in (Rule, TaskDefinition etc)
+    * choose if you need reverse tokenization or not
 
 ## Shortcuts
   * `Ctrl Alt s` - will execute either "Import File" or "Import Java File" based on your currently open file
