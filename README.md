@@ -114,7 +114,7 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
         - %%ECLIPSE_USER%%
         - %%ECLIPSE_PASS%%
         - %%IIQ_SERVERS%%
-  * To test your reverse tokenization (using methods #1 or #2) you may experiment with **Get Object** command which also can optionally apply the reverse tokenization
+  * To test your reverse tokenization (using methods 1 or 2) you may experiment with **Get Object** command which also can optionally apply the reverse tokenization
   * To start exporting objects, 
     * specify the path to your target folder 
     * select object classes you are interested in (Rule, TaskDefinition etc)

@@ -294,6 +294,9 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   let allErrors: object[] = nodeErrors.concat(parserErrors).concat(lexerErrors);
  
   let diagnostics: Diagnostic[] = [];
+  if(data.language != "beanshell"){
+    allErrors = [];
+  }  
   allErrors.forEach(err => {
     let line = err["line"] - 1;
     let start = err["start"];

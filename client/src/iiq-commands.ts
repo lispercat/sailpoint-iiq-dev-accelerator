@@ -380,7 +380,7 @@ export class IIQCommands {
       if(found){
         found.forEach((token) => {
           var replacement = props[token]; 
-          if(replacement){
+          if(null != replacement){
             fileContent = fileContent.replace(token, replacement);
           }
         });

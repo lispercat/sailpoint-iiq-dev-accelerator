@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.0.38]
+### Added
+ - Bump minimist from 1.2.5 to 1.2.6 based on Dependabot suggestion
+### Fixed
+ - Removed the LSP diagnostics for powershell documents, now it will not underline powershell scripts with red lines
+ - Allow tokens in property files to have empty values, before it used to complain that the token wasn't defined
+
 ## [1.0.37]
 ### Added
  - Added the ability to tokenize xml objects when using GetObject and compareLocalWithDeployed 
