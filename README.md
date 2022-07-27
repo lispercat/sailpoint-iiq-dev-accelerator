@@ -50,7 +50,7 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
       In this case when you reload your logging config, it will be reloaded on all the servers specified in the token.
 
 * **Switch Environment**
-  * Allows to switch to a different SSB environment. For better results make sure that you have specified %%ECLIPSE_URL%%, %%ECLIPSE_USER%%, %%ECLIPSE_PASSWORD%% tokens in your **your-target-environment**.target.properties file. You can also store your secret tokens in **your-target-environment**.target.secret.properties file
+  * Allows to switch to a different SSB environment. For better results make sure that you have specified %%ECLIPSE_URL%%, %%ECLIPSE_USER%%, %%ECLIPSE_PASS%% tokens in your **your-target-environment**.target.properties file. You can also store your secret tokens in **your-target-environment**.target.secret.properties file
 * **Context-based Execution**
   * Allows to execute a "smart" command based on a currently active file.
     * If the file is a **Rule**, the rule will be executed
