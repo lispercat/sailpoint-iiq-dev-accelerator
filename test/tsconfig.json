@@ -5,7 +5,7 @@
     "module": "commonjs",
     "sourceMap": true,
     "outDir": "out",
-    "rootDir": "src",
+    "rootDir": "src"
   },
   "include": ["src"],
   "exclude": ["node_modules", ".vscode-test"]

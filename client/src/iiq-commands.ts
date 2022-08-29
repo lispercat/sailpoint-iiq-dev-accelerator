@@ -1612,8 +1612,8 @@ export class IIQCommands {
       vscode.window.showErrorMessage(`Couldn't find a git repository at ${this.g_workspaceFolder} try to open VSCode with a different folder`);
       return;
     }
-    const unstaged = repository._repository.workingTreeGroup.resourceStates;
-    const staged = repository._repository.indexGroup.resourceStates;
+    const unstaged = repository.state.workingTreeChanges.map(r => r.resource);
+    const staged = repository.state.indexChanges.map(r => r.resource);
     const all = unstaged.concat(staged);
     //const all = Array.from(new Set([...unstaged, ...staged]));
     var filesToDeploy = all.filter(res => res.letter !== "D").

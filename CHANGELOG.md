@@ -1,5 +1,9 @@
 # Change Log
 
+## [1.0.39]
+### Fixed
+ - Fixed the "Deploy Uncommitted Change" error 
+
 ## [1.0.38]
 ### Added
  - Bump minimist from 1.2.5 to 1.2.6 based on Dependabot suggestion
