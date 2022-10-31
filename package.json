@@ -27,7 +27,11 @@
     "license": "MIT",
     "publisher": "AndreiStebakov",
     "contributors": [
-        "Andrei Stebakov"
+        "Andrei Stebakov",
+        {
+            "name": "Anthony Conrad",
+            "email": "parithon@outlook.com"
+        }
     ],
     "categories": [
         "Other"
@@ -292,7 +296,7 @@
         "watch": "tsc -b -w",
         "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
         "test": "node ./test/out/runTest.js",
-        "antlr4ts": "del-cli parser/src/SPBS* !parser/src/*Impl.ts && antlr4ts -visitor -o parser/src -Xexact-output-dir beanshell_grammar/SPBSLexer.g4 beanshell_grammar/SPBSParser.g4"
+        "antlr4ts": "del-cli server/src/parser/SPBS* !server/src/parser/*Impl.ts && antlr4ts -visitor -o server/src/parser -Xexact-output-dir beanshell_grammar/SPBSLexer.g4 beanshell_grammar/SPBSParser.g4"
     },
     "devDependencies": {
         "@types/glob": "^7.1.4",
