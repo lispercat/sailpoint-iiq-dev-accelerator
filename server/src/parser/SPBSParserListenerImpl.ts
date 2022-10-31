@@ -2,7 +2,7 @@ import { ErrorNode } from 'antlr4ts/tree/ErrorNode';
 import {SPBSParserListener} from './SPBSParserListener'
 import { Xml_elementContext } from "./SPBSParser";
 import { TerminalNode } from 'antlr4ts/tree/TerminalNode';
-import {IIQObjectInfoImpl}  from '../../server/out/common-types'; 
+import {IIQObjectInfoImpl, IIQObjectType}  from '../common-types'; 
 
 export class SPBSParserListenerImpl implements SPBSParserListener{
   private m_errors: Object[];
@@ -51,7 +51,7 @@ export class SPBSParserListenerImpl implements SPBSParserListener{
                             .filter(attr => attr.XMLName().text == "language")
                             .map(el => el.STRING().text.replace(/'|"/g, ""))
                             .reduce((prev, curr) => prev + curr, "");
-      this.m_data["type"] = "Rule";
+      this.m_data["type"] = IIQObjectType.Rule;
       this.m_data["name"] = name;
       if(null == this.m_data["language"]){
         this.m_data["language"] = language;
