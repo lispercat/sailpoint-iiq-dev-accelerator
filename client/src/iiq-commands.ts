@@ -135,7 +135,11 @@ export class IIQCommands {
     if(1 == files.length){
       const baseSSBFolder = require("path").dirname(files[0]);
       
-      var xml_files: string[] = fg.sync(`${baseSSBFolder}/config/**/*.xml`);
+      var xml_path = `${baseSSBFolder}/config/**/*.xml`;
+      if(vscode.workspace.getConfiguration('iiq-dev-accelerator').get('mode') == "devsecops") {
+        xml_path = `${baseSSBFolder}/iiq-xml-config/src/main/config/**/*.xml`;
+      }
+      var xml_files: string[] = fg.sync(xml_path);
       var lib_files: string[] = fg.sync(`${baseSSBFolder}/lib/*.jar`);
       var scripts_files: string[] = fg.sync(`${baseSSBFolder}/scripts/*.xml`);
       if(xml_files.length > 0 && lib_files.length > 0 && scripts_files.length > 0){
@@ -265,13 +269,22 @@ export class IIQCommands {
   private async listEnvironments(): Promise<string[]>{
     var result:string[] = [];
 
-    var searchFileName = '*.target.properties';
-    const uris = await vscode.workspace.findFiles(`**/${searchFileName}`);
-    uris.forEach((uri) => {
-      let [env, rest] = path.basename(uri.fsPath).split(".");
-      result.push(env);
-    });
-    return result;
+    if( vscode.workspace.getConfiguration('iiq-dev-accelerator').get('mode') == "devsecops" ) {
+      const uris = await vscode.workspace.findFiles(`iiq-xml-config/profiles/**/target.properties`);
+
+      uris.forEach((uri) => {
+        let env = uri.fsPath.split(path.sep);
+        result.push(env[env.length -2].substring(4));
+      });
+      return result;
+    } else {
+      const uris = await vscode.workspace.findFiles(`**/*.target.properties`);
+      uris.forEach((uri) => {
+        let [env, rest] = path.basename(uri.fsPath).split(".");
+        result.push(env);
+      });
+      return result;
+    }
   }
 
   public getBaseSSBFolder() : string|null{
@@ -341,12 +354,23 @@ export class IIQCommands {
     if(!environment){
       return null;
     }
-
-    var mainProps = await this.getFileProperties(`${environment}.target.properties`);
+    //devsecops
+    var mainProps: any;
+    if( vscode.workspace.getConfiguration('iiq-dev-accelerator').get('mode') == "devsecops" ) {
+      mainProps = await this.getFileProperties(`iiq-xml-config/profiles/env-${environment}/target.properties`);
+    } else {
+      mainProps = await this.getFileProperties(`${environment}.target.properties`);
+    }
+    
     if(!mainProps){
       return null;
     }
-    var secretProps =  await this.getFileProperties(`${environment}.target.secret.properties`);
+    var secretProps: any;
+    if( vscode.workspace.getConfiguration('iiq-dev-accelerator').get('mode') == "devsecops" ) {
+      secretProps =  await this.getFileProperties(`env-${environment}/target.secret.properties`);
+    } else {
+      secretProps =  await this.getFileProperties(`${environment}.target.secret.properties`);
+    }
     var allProps = Object.assign({}, mainProps, secretProps);
     return allProps;
   }
@@ -1149,6 +1173,9 @@ export class IIQCommands {
     var logContent = null;
     var environment = await this.getEnvironment();
     var searchFileName = `${environment}.log4*.properties`;
+    if( vscode.workspace.getConfiguration('iiq-dev-accelerator').get('mode') == "devsecops" ) {
+      searchFileName = `iiq-web/profiles/env-${environment}/log4*.properties`;
+    }
     var foundFullLogFileName = null;
     var foundLogFileName = null;
     console.log(`Looking for and loading ${searchFileName}`);
@@ -1335,7 +1362,11 @@ export class IIQCommands {
           const directReplacement = props[key];
           //check if we have "direct token" in our target.properties file, only then do the replacement
           if(directReplacement){
-            element[0].value = key
+            var val = key;
+            if( vscode.workspace.getConfiguration('iiq-dev-accelerator').get('mode') == "devsecops" ) {
+              val = "${" + key + "}"
+            }
+            element[0].value = val;
           }
         }
       }
@@ -1566,6 +1597,15 @@ export class IIQCommands {
     }
 
     return environment;
+  }
+
+  public async switchMode() {
+    var mode = await vscode.window.showQuickPick(["SSB", "devsecops"], {placeHolder: "Select a mode", ignoreFocusOut: false});
+    if( mode === undefined ) {
+      return null;
+    }
+
+    await vscode.workspace.getConfiguration('iiq-dev-accelerator').update('mode', mode, true);
   }
 
 
@@ -1907,9 +1947,13 @@ export class IIQCommands {
   }
 
   public async exportObjects(){
+    var defaultFolder = `${this.g_workspaceFolder}/exportedObjects`;
+    if(vscode.workspace.getConfiguration('iiq-dev-accelerator').get('mode') == "devsecops") {
+      defaultFolder = `${this.g_workspaceFolder}/iiq-xml-config/src/main/config`;
+    }
     let exportFolder = await vscode.window.showInputBox({
       ignoreFocusOut: true,
-      value: `${this.g_workspaceFolder}/exportedObjects`,
+      value: defaultFolder,
       prompt: `Enter folder to save the exported objects`
     });
     if(exportFolder === undefined){
