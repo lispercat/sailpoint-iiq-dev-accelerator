@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.0.40]
+### Fixed
+ - Fixed https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/32 issue, thanks to @parithon
+ - Bumped minimatch and mocha versions
+### Added
+ - Added ability to use extension with projects using DevSecOps project structure (https://community.sailpoint.com/t5/Professional-Services/IdentityIQ-DevSecOps-Toolkit-Alpha-V2/ta-p/196332), thanks to @claesjohansson
+
 ## [1.0.39]
 ### Fixed
  - Fixed the "Deploy Uncommitted Change" error 

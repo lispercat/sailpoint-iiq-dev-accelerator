@@ -3,7 +3,7 @@
     "displayName": "Sailpoint IIQ Development Accelerator",
     "description": "Provides commands to facilitate/accelerate coding/interacting with remote Sailpoint IIQ server",
     "icon": "images/icon.png",
-    "version": "1.0.39",
+    "version": "1.0.40",
     "engines": {
         "vscode": "^1.60.0"
     },
@@ -64,7 +64,6 @@
         "onCommand:iiq-dev-accelerator.showSysInfo",
         "onCommand:iiq-dev-accelerator.refreshObject",
         "onCommand:iiq-dev-accelerator.importJava",
-        "onCommand:iiq-dev-accelerator.exportObjects"
         "onCommand:iiq-dev-accelerator.exportObjects",
         "onCommand:iiq-dev-accelerator.switchMode"
     ],
