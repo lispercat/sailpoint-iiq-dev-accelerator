@@ -31,6 +31,10 @@
         {
             "name": "Anthony Conrad",
             "email": "parithon@outlook.com"
+        },
+        {
+            "name": "Claes Johansson",
+            "email": "claexon@gmail.com"
         }
     ],
     "categories": [
@@ -61,6 +65,8 @@
         "onCommand:iiq-dev-accelerator.refreshObject",
         "onCommand:iiq-dev-accelerator.importJava",
         "onCommand:iiq-dev-accelerator.exportObjects"
+        "onCommand:iiq-dev-accelerator.exportObjects",
+        "onCommand:iiq-dev-accelerator.switchMode"
     ],
     "main": "./client/out/extension.js",
     "contributes": {
@@ -138,6 +144,12 @@
                     "type": "boolean",
                     "description": "This option is quite insecure since it sets process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0 which allows you to connect to your server ignoring certificate issues",
                     "default": false,
+                    "scope": "application"
+                },
+                "iiq-dev-accelerator.mode": {
+                    "type": "string",
+                    "description": "Change mode between SSB or devsecops",
+                    "default": "SSB",
                     "scope": "application"
                 }
             }
@@ -218,6 +230,10 @@
             {
                 "command": "iiq-dev-accelerator.exportObjects",
                 "title": "iiq: Export Objects"
+            },
+            {
+                "command": "iiq-dev-accelerator.switchMode",
+                "title": "iiq: Switch Mode"
             }
         ],
         "keybindings": [

@@ -51,6 +51,8 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
 
 * **Switch Environment**
   * Allows to switch to a different SSB environment. For better results make sure that you have specified %%ECLIPSE_URL%%, %%ECLIPSE_USER%%, %%ECLIPSE_PASS%% tokens in your **your-target-environment**.target.properties file. You can also store your secret tokens in **your-target-environment**.target.secret.properties file
+* **Switch Mode**
+  * Allows to switch mode between SSB and DevSecOps
 * **Context-based Execution**
   * Allows to execute a "smart" command based on a currently active file.
     * If the file is a **Rule**, the rule will be executed
@@ -183,6 +185,12 @@ To specify the environment you may also add this to your settings.json:
   * In the case when you don't use SSB environment, or those libraries are localted not under your VSCode workspace, you'll need to specify this parameter
 ```json
 "iiq.dev-accelerator.iiq_lib_path": null 
+```
+* (optional) `iiq.dev-accelerator.mode`: Change mode for the project between SSB or DevSecOps 
+  * Gives you the ability to use this extension with a project using the [IdentityIQ DevSecOps Toolkit](https://community.sailpoint.com/t5/Professional-Services/IdentityIQ-DevSecOps-Toolkit-Alpha-V2/ta-p/196332) structure
+  * Will default to SSB
+```json
+"iiq-dev-accelerator.mode": "devsecops"
 ```
 
 ## Release Notes
