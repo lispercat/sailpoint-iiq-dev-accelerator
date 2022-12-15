@@ -29,6 +29,10 @@
     "contributors": [
         "Andrei Stebakov",
         {
+            "name": "Anthony Conrad",
+            "email": "parithon@outlook.com"
+        },
+        {
             "name": "Claes Johansson",
             "email": "claexon@gmail.com"
         }
@@ -308,7 +312,7 @@
         "watch": "tsc -b -w",
         "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
         "test": "node ./test/out/runTest.js",
-        "antlr4ts": "del-cli parser/src/SPBS* !parser/src/*Impl.ts && antlr4ts -visitor -o parser/src -Xexact-output-dir beanshell_grammar/SPBSLexer.g4 beanshell_grammar/SPBSParser.g4"
+        "antlr4ts": "del-cli server/src/parser/SPBS* !server/src/parser/*Impl.ts && antlr4ts -visitor -o server/src/parser -Xexact-output-dir beanshell_grammar/SPBSLexer.g4 beanshell_grammar/SPBSParser.g4"
     },
     "devDependencies": {
         "@types/glob": "^7.1.4",
@@ -321,7 +325,7 @@
         "antlr4ts-cli": "^0.5.0-alpha.4",
         "del-cli": "^4.0.1",
         "eslint": "^7.32.0",
-        "mocha": "^9.2.0",
+        "mocha": "^9.2.2",
         "typescript": "^4.4.3"
     },
     "dependencies": {

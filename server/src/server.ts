@@ -15,13 +15,13 @@ import {
 
 import { createConnection } from 'vscode-languageserver/node';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import {SPBSLexer} from '../../parser/out/SPBSLexer';
-import {SPBSParser} from '../../parser/out/SPBSParser';
-import {SPBSParserVisitorImpl} from '../../parser/out/SPBSParserVisitorImpl';
+import {SPBSLexer} from './parser/SPBSLexer';
+import {SPBSParser} from './parser/SPBSParser';
+import {SPBSParserVisitorImpl} from './parser/SPBSParserVisitorImpl';
 import {CharStreams, CommonTokenStream} from 'antlr4ts';
-import {ParserErrorListenerImpl} from "../../parser/out/ParserErrorListenerImpl";
-import {LexerErrorListenerImpl} from "../../parser/out/LexerErrorListenerImpl";
-import {SPBSParserListenerImpl} from "../../parser/out/SPBSParserListenerImpl";
+import {ParserErrorListenerImpl} from "./parser/ParserErrorListenerImpl";
+import {LexerErrorListenerImpl} from "./parser/LexerErrorListenerImpl";
+import {SPBSParserListenerImpl} from "./parser/SPBSParserListenerImpl";
 import { IIQObjectInfo, IIQDictionary, IIQObjectInfoImpl } from './common-types'; 
 import * as proto from 'vscode-languageserver-protocol';
 import * as fs from 'fs';
