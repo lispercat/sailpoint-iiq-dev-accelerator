@@ -1,5 +1,9 @@
 # Change Log
 
+## [1.0.41]
+### Fixed
+ - Fixed deploying uncommitted change. In VSCode they [mangled private properties to speedup loading](https://github.com/microsoft/vscode-discussions/discussions/257) so I removed dependency on private properties.
+
 ## [1.0.40]
 ### Fixed
  - Fixed https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/32 issue, thanks to @parithon

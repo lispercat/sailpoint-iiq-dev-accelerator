@@ -12,6 +12,8 @@ import * as path from 'path';
 var xpath = require('xpath')
 import { DOMParser } from 'xmldom'
 import { XMLSerializer } from 'xmldom'
+import { API as GitAPI, Repository, GitExtension, Status } from './typings/git';
+
 const fg = require('fast-glob');
 
 export namespace Commands{
@@ -1634,31 +1636,23 @@ export class IIQCommands {
   }
 
   public async deployChange(){
-    var gitExtension = vscode.extensions.getExtension('vscode.git');
-    if(!gitExtension){
-      vscode.window.showInformationMessage(`Can't get git extension`);
-      return;
-    }
-    const gitExports = await gitExtension.activate();
-    const gitAPI = gitExports.getAPI(1);
-    while(gitAPI.repositories.length === 0){
+    const gitExt:GitExtension = vscode.extensions.getExtension<GitExtension>('vscode.git')!.exports;
+    const gitApi:GitAPI = gitExt.getAPI(1);
+
+    while(gitApi.repositories.length === 0){
       vscode.window.showInformationMessage(`Couldn't find any git repositories`);
-      //await gitAPI.onDidOpenRepository();
       return;
     }
     
-    var repository = gitAPI.repositories.filter(r => r.rootUri.fsPath.replace(/\\/g, "/").startsWith(this.g_workspaceFolder))[0];
+    var repository:Repository = gitApi.repositories.filter(r => r.rootUri.fsPath.replace(/\\/g, "/").startsWith(this.g_workspaceFolder))[0];
     if(undefined == repository){
       vscode.window.showErrorMessage(`Couldn't find a git repository at ${this.g_workspaceFolder} try to open VSCode with a different folder`);
       return;
     }
-    const unstaged = repository.state.workingTreeChanges.map(r => r.resource);
-    const staged = repository.state.indexChanges.map(r => r.resource);
-    const all = unstaged.concat(staged);
-    //const all = Array.from(new Set([...unstaged, ...staged]));
-    var filesToDeploy = all.filter(res => res.letter !== "D").
-                            filter(res => path.extname(res.resourceUri.fsPath) === '.xml').
-                            map(res => res.resourceUri.fsPath);
+    const changes = repository.state.workingTreeChanges;
+    var filesToDeploy = changes.filter(res => res.status !== Status.DELETED).
+                                filter(res => path.extname(res.uri.fsPath) === '.xml').
+                                map(res => res.uri.fsPath);
     filesToDeploy = Array.from(new Set(filesToDeploy));
     if(filesToDeploy.length === 0){
       vscode.window.showWarningMessage(`Currently you don't have any modified or new files to import`);
