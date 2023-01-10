@@ -20,8 +20,9 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
   * As an option, you may reverse tokenize your object (see **Export Objects** for more details)
   * **Get Object** + **Import File** gives you the ability to modify objects
 * **Refresh Object**
-  * Will refresh the currently open object (that you got with a **Get Object** command)
-  * You can also choose to see the difference between the old and the new objects
+  * For a temporary object (that you got with a **Get Object** command) the command will try to refresh it's content grabbing the latest from the server
+  * In the case of a local file this command will just execute **Compare Local with Deployed** command
+  * You can display it in a "diff" mode
 * **Delete Objects**
   * Will delete the selected objects from the target system
 * **Run Task**

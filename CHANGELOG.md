@@ -1,5 +1,9 @@
 # Change Log
 
+## [1.0.42]
+### Fixed
+ - Fixed "Refresh object" command. The command was expecting a temporary file context which was broken. Now I removed the dependency on the temp file so the command will work for both temp objects (obtained via Get Object command) and local files.
+
 ## [1.0.41]
 ### Fixed
  - Fixed deploying uncommitted change. In VSCode they [mangled private properties to speedup loading](https://github.com/microsoft/vscode-discussions/discussions/257) so I removed dependency on private properties.

@@ -1903,8 +1903,8 @@ export class IIQCommands {
   }
 
   public async refreshObject(){
-    if(this.g_contextManager.getContextValue() != ContextValue.TempXMLObject || !this.g_contextManager.getObjName())  {
-      vscode.window.showInformationMessage(`To execute based on context, please open file with some IIQ object or a logging config`); 
+    if(!this.g_contextManager.getObjName())  {
+      vscode.window.showInformationMessage(`Couldn't determine the object name`); 
       return;
     }
 
