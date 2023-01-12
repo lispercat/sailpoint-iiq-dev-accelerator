@@ -400,12 +400,21 @@ export class IIQCommands {
   }
 
   public processFileContent(fileContent, props){
-    var errors = {"processFileErrors" : []};
+    var errors = {processFileErrors: []};
+    let regexToken = /%%\w+%%/g;
+
+    if (
+      vscode.workspace.getConfiguration("iiq-dev-accelerator").get("mode") ==
+      "devsecops"
+    ) {
+      regexToken = /\${\w+}/g;
+    }
+
     if(props){
-      var found = fileContent.match(/%%\w+%%/g);
+      var found = fileContent.match(regexToken);
       if(found){
-        found.forEach((token) => {
-          var replacement = props[token]; 
+        found.forEach((token: string) => {
+          var replacement = props[token.replace(/(^\${)|(}$)/g, "")];
           if(null != replacement){
             fileContent = fileContent.replace(token, replacement);
           }
@@ -413,7 +422,7 @@ export class IIQCommands {
       }
 
       //second iteration, looking for missed tokens
-      found = fileContent.match(/%%\w+%%/g);
+      found = fileContent.match(regexToken);
       if(found){
         found.forEach((missed) => {
           if(!errors["processFileErrors"].includes(missed)){
