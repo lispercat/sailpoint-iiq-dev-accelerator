@@ -74,6 +74,8 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
   * As an option, you may reverse tokenize your remote object for comparison only (see **Export Objects** for more details)
 * **Code snippets**
   * `rule + Tab` - inserts rule code snippet
+  * `rule-<rule type> + Tab` - inserts a rule code snippet for a given type. For instance `rule-accountselector`, `rule-afterprovisioning`, `rule-allowedvalues`, etc.
+
 * **Syntax highlighting**
   * By default the BeanShell code will be highlighed like regular Java code
 * **Show System Information (About)**
