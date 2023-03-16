@@ -45,27 +45,7 @@
     ],
     "activationEvents": [
         "workspaceContains:**/config/**/*.xml",
-        "onLanguage:xml",
-        "onCommand:iiq-dev-accelerator.importFile",
-        "onCommand:iiq-dev-accelerator.runTask",
-        "onCommand:iiq-dev-accelerator.runRule",
-        "onCommand:iiq-dev-accelerator.evalBS",
-        "onCommand:iiq-dev-accelerator.runTaskWithAttr",
-        "onCommand:iiq-dev-accelerator.getLog",
-        "onCommand:iiq-dev-accelerator.reloadLog",
-        "onCommand:iiq-dev-accelerator.getObject",
-        "onCommand:iiq-dev-accelerator.deleteObject",
-        "onCommand:iiq-dev-accelerator.switchEnv",
-        "onCommand:iiq-dev-accelerator.runContext",
-        "onCommand:iiq-dev-accelerator.deployChange",
-        "onCommand:iiq-dev-accelerator.deployCustomBuild",
-        "onCommand:iiq-dev-accelerator.compareLocalWithDeployed",
-        "onCommand:iiq-dev-accelerator.deployOpenFiles",
-        "onCommand:iiq-dev-accelerator.showSysInfo",
-        "onCommand:iiq-dev-accelerator.refreshObject",
-        "onCommand:iiq-dev-accelerator.importJava",
-        "onCommand:iiq-dev-accelerator.exportObjects",
-        "onCommand:iiq-dev-accelerator.switchMode"
+        "onLanguage:xml"
     ],
     "main": "./client/out/extension.js",
     "contributes": {
@@ -149,6 +129,16 @@
                     "type": "string",
                     "description": "Change mode between SSB or devsecops",
                     "default": "SSB",
+                    "scope": "application"
+                },
+                "iiq-dev-accelerator.defaultExportObjectsPattern": {
+                    "type": "string",
+                    "description": "Define the pattern for the folder to export objects",
+                    "scope": "application"
+                },
+                "iiq-dev-accelerator.defaultExportObjectPattern": {
+                    "type": "string",
+                    "description": "Define the pattern for the folder to get an object",
                     "scope": "application"
                 }
             }
