@@ -10,10 +10,10 @@ import { URL } from 'url';
 import * as path from 'path';
 
 var xpath = require('xpath')
-import { DOMParser } from 'xmldom'
-import { XMLSerializer } from 'xmldom'
+import { DOMParser, XMLSerializer } from '@xmldom/xmldom'
 import { API as GitAPI, Repository, GitExtension, Status } from './typings/git';
 import { PathProposer } from './pathProposer';
+import { beautifyIIQObject } from './xmlUtils';
 
 const fg = require('fast-glob');
 
@@ -1314,26 +1314,6 @@ export class IIQCommands {
 
   }
 
-  private beautifyIIQObject(xml) {
-    let replaceDict = {
-      "&lt;": "<",
-      "&gt;": ">",
-      "&amp;&amp;": "&&",
-      "<Source>": "<Source><![CDATA[",
-      "</Source>": "]]></Source>",
-      '(id|created|modified)=".*?"\\s*': ""
-    };
-    try {
-      for (let key in replaceDict) {
-        xml = xml.replace(new RegExp(key, "gi"), replaceDict[key]);
-      }
-    }
-    catch (e) {
-      vscode.window.showErrorMessage(`IIQ object beautification failed: ${e}`);
-    }
-    return xml;
-  }
-
   private async tokenizeWithDirectTokens(xml) {
     const exclusions = [
       "%%ECLIPSE_URL%%",
@@ -1422,7 +1402,7 @@ export class IIQCommands {
       result = await this.postRequest(JSON.stringify(post_body));
     }
     let xml = result["payload"];
-    xml = this.beautifyIIQObject(xml);
+    xml = beautifyIIQObject(xml, cls);
 
     if (useTokenization === UseTokenization.Ask) {
       let useTokenizationConfig = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('useTokenization');
@@ -2065,3 +2045,5 @@ export class IIQCommands {
     vscode.window.showInformationMessage(`${exportedCount} objects out of ${totalObjectCnt} were exported to ${exportFolder}`);
   }
 }
+
+
