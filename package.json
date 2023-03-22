@@ -128,8 +128,29 @@
                 "iiq-dev-accelerator.mode": {
                     "type": "string",
                     "description": "Change mode between SSB or devsecops",
+                    "enum": [
+                        "SSB",
+                        "devsecops"
+                    ],
                     "default": "SSB",
                     "scope": "application"
+                },
+                "iiq-dev-accelerator.sort": {
+                    "type": "string",
+                    "description": "Sorting option when listing objects",
+                    "enum": [
+                        "name",
+                        "modified"
+                    ],
+                    "enumDescriptions": [
+                        "Sort by name",
+                        "Sort by modified date"
+                    ],
+                    "enumItemLabels": [
+                        "Name",
+                        "Last Modified"
+                    ],
+                    "default": "name"
                 },
                 "iiq-dev-accelerator.useTokenization": {
                     "type": "string",

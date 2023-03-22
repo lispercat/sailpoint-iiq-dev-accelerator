@@ -1283,12 +1283,15 @@ export class IIQCommands {
   }
 
   private async getClassObjects(cls, showProgress = true) {
-    var post_body =
+    const orderby = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('sort');
+
+    const post_body =
     {
       "workflowArgs":
       {
         "operation": "getClassObjects",
-        "theClass": cls
+        "theClass": cls,
+        orderby
       }
     };
 
@@ -1297,11 +1300,10 @@ export class IIQCommands {
       result = await vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
         title: "Getting class objects ...",
-        cancellable: true
+        cancellable: false
       },
-        progress => {
-          return this.postRequest(JSON.stringify(post_body));
-        });
+        (task, token) => this.postRequest(JSON.stringify(post_body))
+      );
     }
     else {
       result = await this.postRequest(JSON.stringify(post_body));
@@ -1355,7 +1357,7 @@ export class IIQCommands {
     return xml;
   }
 
-  private async tokenizeWithReverseTokens(xml) {
+  private async tokenizeWithRerverseTokens(xml) {
     const reverseTokens = await this.loadReverseTokens();
     const props = await this.loadTargetProps();
 
@@ -1386,14 +1388,14 @@ export class IIQCommands {
   private async tokenizeIIQObject(xml) {
     const reverseTokens = await this.loadReverseTokens();
     if (reverseTokens) {
-      return await this.tokenizeWithReverseTokens(xml);
+      return await this.tokenizeWithRerverseTokens(xml);
     }
     else {
       return await this.tokenizeWithDirectTokens(xml);
     }
   }
 
-  private async searchObject(cls, objName, showProgress = true, useTokenization = UseTokenization.Ask) {
+  private async searchObject(cls, objName, showProgress = true, useTokenization: UseTokenization = UseTokenization.Ask) {
     var post_body =
     {
       "workflowArgs":
