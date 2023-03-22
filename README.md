@@ -189,11 +189,51 @@ To specify the environment you may also add this to your settings.json:
 ```json
 "iiq.dev-accelerator.iiq_lib_path": null 
 ```
+
 * (optional) `iiq.dev-accelerator.mode`: Change mode for the project between SSB or DevSecOps 
   * Gives you the ability to use this extension with a project using the [IdentityIQ DevSecOps Toolkit](https://community.sailpoint.com/t5/Professional-Services/IdentityIQ-DevSecOps-Toolkit-Alpha-V2/ta-p/196332) structure
   * Will default to SSB
 ```json
 "iiq-dev-accelerator.mode": "devsecops"
+```
+
+* (optional) `iiq-dev-accelerator.sort`: Sorting option when listing objects
+  * Gives you the ability to sort objects by name or by last modified date
+  * Will default to sorting by name
+```json
+"iiq-dev-accelerator.sort": "modified"
+```
+
+* (optional) `iiq-dev-accelerator.useTokenization`: Define whether tokenization is used or not
+  * Gives you the ability to disable tokenization (`No`), force  tokenization (`Yes`) or ask each time (`Ask`)
+  * Will default to sorting by `Ask`
+```json
+"iiq-dev-accelerator.useTokenization": "No"
+```
+
+* (optional) `iiq-dev-accelerator.defaultExportObjectsPattern`: Define the pattern for the folder to export objects. It will then concatenate the object type and the object name.
+  * The pattern use tokens:
+    * `%u`: User Home Dir
+    * `%w`: Workspace folder
+    * `%x`: Either workspace folder if defined, or home dir
+    * `%d`: Day
+    * `%M`: Month
+    * `%y`: Year
+    * `%h`: Hour
+    * `%m`: Minute
+    * `%s`: Second
+    * `%e`: Environment
+  * If not defined, it will export in the current workspace folder, under `exportedObjects`
+```json
+"iiq-dev-accelerator.defaultExportObjectsPattern": "%w/%e/"
+```
+* (optional) `iiq-dev-accelerator.defaultExportObjectPattern`: Define the pattern for the folder to get an object.
+  * In addition to the tokens used by `iiq-dev-accelerator.defaultExportObjectsPattern`:
+    * `%o`: Object type
+    * `%n`: Object name
+  * If not defined, it will create folder in the temp directory.
+```json
+"iiq-dev-accelerator.defaultExportObjectPattern": "%w/%e/%o/%n.xml"
 ```
 
 ## Release Notes

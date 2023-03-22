@@ -1,5 +1,13 @@
 # Change Log
 
+## [UNRELEASED]
+
+- Add the ability to sort by name or by last modified date (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/44) 
+- Add snippets for rules (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/42)
+- Add the possibility to disable, force or ask tokenization (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/43)
+- Add the possibility to define default folders (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/41)
+
+
 ## [1.0.42]
 ### Fixed
  - Fixed "Refresh object" command. The command was expecting a temporary file context which was broken. Now I removed the dependency on the temp file so the command will work for both temp objects (obtained via Get Object command) and local files.
