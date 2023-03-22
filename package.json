@@ -167,6 +167,16 @@
                     "description": "Define whether tokenization is used or not",
                     "default": "Ask",
                     "maxLength": 0
+                },
+                "iiq-dev-accelerator.defaultExportObjectsPattern": {
+                    "type": "string",
+                    "description": "Define the pattern for the folder to export objects",
+                    "scope": "application"
+                },
+                "iiq-dev-accelerator.defaultExportObjectPattern": {
+                    "type": "string",
+                    "description": "Define the pattern for the folder to get an object",
+                    "scope": "application"
                 }
             }
         },

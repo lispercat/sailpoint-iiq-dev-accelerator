@@ -13,6 +13,7 @@ var xpath = require('xpath')
 import { DOMParser } from 'xmldom'
 import { XMLSerializer } from 'xmldom'
 import { API as GitAPI, Repository, GitExtension, Status } from './typings/git';
+import { PathProposer } from './pathProposer';
 
 const fg = require('fast-glob');
 
@@ -1455,22 +1456,26 @@ export class IIQCommands {
       return;
     }
 
-    var classObjects = await this.getClassObjects(theClass);
-    let objName = await vscode.window.showQuickPick(classObjects,
+    const classObjects = await this.getClassObjects(theClass);
+    const objName = await vscode.window.showQuickPick(classObjects,
       { placeHolder: `Pick an object for ${theClass} ...`, ignoreFocusOut: true });
     if (!objName) {
       vscode.window.showInformationMessage("No object was selected, exiting");
       return;
     }
 
-    var xml = await this.searchObject(theClass, objName);
+    const xml = await this.searchObject(theClass, objName);
     if (!xml) {
       vscode.window.showInformationMessage("Empty object, exiting");
       return;
     }
-    const tempFile = tmp.fileSync({ prefix: `${theClass}-${objName}`, postfix: '.xml' });
-    fs.writeFileSync(tempFile.name, xml);
-    let doc = await vscode.workspace.openTextDocument(tempFile.name);
+
+    const filePath = PathProposer.getExportedObjectFilename(
+      (await this.getEnvironment()),
+      theClass,
+      objName);
+    fs.writeFileSync(filePath, xml);
+    const doc = await vscode.workspace.openTextDocument(filePath);
     await vscode.window.showTextDocument(doc);
   }
 
@@ -1955,17 +1960,14 @@ export class IIQCommands {
   }
 
   public async exportObjects() {
-    var defaultFolder = `${this.g_workspaceFolder}/exportedObjects`;
-    if (vscode.workspace.getConfiguration('iiq-dev-accelerator').get('mode') == "devsecops") {
-      defaultFolder = `${this.g_workspaceFolder}/iiq-xml-config/src/main/config`;
-    }
-    let exportFolder = await vscode.window.showInputBox({
+    const defaultFolder = PathProposer.getExportedObjectsFolder((await this.getEnvironment()));
+    const exportFolder = await vscode.window.showInputBox({
       ignoreFocusOut: true,
       value: defaultFolder,
       prompt: `Enter folder to save the exported objects`
     });
     if (exportFolder === undefined) {
-      vscode.window.showErrorMessage(`Please specify the path to IIQ libraries so that you file can get compiled`);
+      vscode.window.showErrorMessage('Please specify the path to export objects');
       return;
     }
     if (!fs.existsSync(exportFolder)) {
