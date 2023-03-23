@@ -2,11 +2,15 @@
 
 ## [UNRELEASED]
 
-- Add the ability to sort by name or by last modified date (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/44) 
-- Add snippets for rules (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/42)
-- Add the possibility to disable, force or ask tokenization (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/43)
-- Add the possibility to define default folders (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/41)
+### Added
+- Added the ability to sort by name or by last modified date (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/44) 
+- Added snippets for rules (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/42)
+- Added the possibility to disable, force or ask tokenization (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/43)
+- Added the possibility to define default folders (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/41)
 
+### Fixed
+- &amp;&amp; is replaced in attribute value (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/50)
+- Upgrade the xmldom dependency
 
 ## [1.0.42]
 ### Fixed
