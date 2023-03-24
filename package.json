@@ -186,6 +186,10 @@
                 "title": "iiq: Import Current File"
             },
             {
+                "command": "iiq-dev-accelerator.importFileFromExplorer",
+                "title": "iiq: Import Files"
+            },
+            {
                 "command": "iiq-dev-accelerator.runTask",
                 "title": "iiq: Run Task"
             },
@@ -262,6 +266,12 @@
                 "title": "iiq: Switch Mode"
             }
         ],
+        "commandPalette": [
+            {
+                "command": "iiq-dev-accelerator.importFileFromExplorer",
+                "when": "never"
+            }
+        ],
         "keybindings": [
             {
                 "key": "ctrl+alt+x",
@@ -292,8 +302,8 @@
         "menus": {
             "explorer/context": [
                 {
-                    "command": "iiq-dev-accelerator.importFile",
-                    "when": "iiq.context == Rule || iiq.context == Task || iiq.context == ProjectXMLObject || iiq.context = TempXMLObject",
+                    "command": "iiq-dev-accelerator.importFileFromExplorer",
+                    "when": "resourceExtname == .xml || explorerResourceIsFolder",
                     "group": "iiq"
                 }
             ],

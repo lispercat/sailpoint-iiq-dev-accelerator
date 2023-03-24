@@ -7,6 +7,7 @@
 - Added snippets for rules (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/42)
 - Added the possibility to disable, force or ask tokenization (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/43)
 - Added the possibility to define default folders (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/41)
+- Added the possibility to import several files and files within a folder (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/40)
 
 ### Fixed
 - &amp;&amp; is replaced in attribute value (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/50)

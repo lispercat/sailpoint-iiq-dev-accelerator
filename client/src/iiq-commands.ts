@@ -136,7 +136,7 @@ export class IIQCommands {
     //const buildProps = await vscode.workspace.findFiles("**/build.properties");
     var files: string[] = fg.sync(`${this.g_workspaceFolder}/**/build.properties`);
     if (1 == files.length) {
-      const baseSSBFolder = require("path").dirname(files[0]);
+      const baseSSBFolder = path.dirname(files[0]);
 
       var xml_path = `${baseSSBFolder}/config/**/*.xml`;
       if (vscode.workspace.getConfiguration('iiq-dev-accelerator').get('mode') == "devsecops") {
@@ -518,7 +518,6 @@ export class IIQCommands {
       }
     }
     catch (error) {
-      const path = require("path");
       vscode.window.showErrorMessage(`Check if you manually imported the IIQ Dev Accelerator Workflow at ${this.g_fullWFPath}. Post request failed with ${error}`);
       result["fail"] = error;
     }
@@ -538,9 +537,32 @@ export class IIQCommands {
     return this.postRequestInternal(post_body, url, username, password);
   }
 
+  public async importFileFromExplorer(fileUri: any, selectedPaths: vscode.Uri[]): Promise<void> {
+    console.log("> importFileFromExplorer");
+
+    const walkDir = (dir) => {
+      const items = fs.readdirSync(dir, { withFileTypes: true });
+      return items.flatMap(f => {
+        const newPath = path.join(dir, f.name);
+        return fs.statSync(newPath).isDirectory() ?
+            walkDir(newPath) : newPath;
+      });
+    };
+
+    const paths = selectedPaths.flatMap(p => {
+      if (fs.lstatSync(p.fsPath).isDirectory()) {
+        return walkDir(p.fsPath);
+      } else {
+        return p.fsPath;
+      }
+    });
+    console.log({ paths });
+    this.importFileList(paths)
+  }
+
   public async importFileList(filesToDeploy, resolveTokens = true) {
     if (!filesToDeploy || filesToDeploy.length < 0) {
-      vscode.window.showInformationMessage(`Nothing to deploy, exiting`);
+      vscode.window.showInformationMessage('Nothing to deploy, exiting');
       return;
     }
     var wasCancelled = false;
@@ -560,7 +582,7 @@ export class IIQCommands {
         for (var i = 0; i < filesToDeploy.length; i++) {
           try {
             var f = filesToDeploy[i];
-            progress.report({ increment: incr, message: `${require("path").basename(f)}` });
+            progress.report({ increment: incr, message: `${path.basename(f)}` });
             const fileContent = fs.readFileSync(f, { encoding: 'utf8', flag: 'r' });
             let [success, processFileErrors] = await this.importFile(fileContent, resolveTokens);
             if (token.isCancellationRequested) {
@@ -572,11 +594,11 @@ export class IIQCommands {
             }
             else {
               result["failed"] += 1;
-              result["failedFiles"][require("path").basename(f)] = processFileErrors;
+              result["failedFiles"][path.basename(f)] = processFileErrors;
             }
           } catch (error) {
             result["failed"] += 1;
-            result["failedFiles"][require("path").basename(filesToDeploy[i])] = {};
+            result["failedFiles"][path.basename(filesToDeploy[i])] = {};
           }
         }
         return result;
@@ -1656,7 +1678,7 @@ export class IIQCommands {
       return;
     }
 
-    var files = filesToDeploy.map(f => require("path").basename(f)).join("\n");
+    var files = filesToDeploy.map(f => path.basename(f)).join("\n");
 
     var environment = await this.getEnvironment();
     environment = environment ? `to ${environment}` : "";
@@ -1745,7 +1767,7 @@ export class IIQCommands {
       return;
     }
     const spInitCustomPath = spInitCustom[0].fsPath.replace(/\\/g, "/");
-    const deployBaseDir = require("path").dirname(spInitCustomPath);
+    const deployBaseDir = path.dirname(spInitCustomPath);
     const spInitCustomContent = fs.readFileSync(spInitCustomPath, { encoding: 'utf8', flag: 'r' });
     const parsedXml = this.parseXMLObject(spInitCustomContent);
     const filesToDeploy = parsedXml.sailpoint.ImportAction
@@ -1764,7 +1786,7 @@ export class IIQCommands {
       vscode.window.showInformationMessage(`Couldn't find files under build/extract folder. Please run SSB build`);
       return;
     }
-    var files = filesToDeploy.map(f => require("path").basename(f)).join("\n");
+    var files = filesToDeploy.map(f => path.basename(f)).join("\n");
     var deployCustomBuildQuietly: boolean = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('deployCustomBuildQuietly');
     if (!deployCustomBuildQuietly) {
       const pick2 = await vscode.window.showInformationMessage(
@@ -1854,7 +1876,7 @@ export class IIQCommands {
     }
 
     const openFiles = await this.collectOpenXMLFiles();
-    const files = openFiles.map(f => require("path").basename(f)).join("\n");
+    const files = openFiles.map(f => path.basename(f)).join("\n");
 
     const pick = await vscode.window.showInformationMessage(
       `You are about to import the following ${openFiles.length} files to ${env} \n\n${files}`,
