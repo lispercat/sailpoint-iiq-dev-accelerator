@@ -81,13 +81,13 @@ class ContextManager {
     return [objClass, objName, bsSource];
   }
 
-  public set(contextValue: ContextValue, parsedXml?: any, isProjectObject?: boolean): void {
+  public set(contextValue: ContextValue, parsedXml?: any, isProjectObject?: boolean) : void {
     //reset objClass and objName
     [this._objClass, this._objName, this._bsSource] = this.getParsedObjectAttr(parsedXml);
 
     //try to deduce contextValue when only objClass and objNames are set
     if(null == contextValue && this._objClass){
-      switch (this._objClass){
+      switch(this._objClass){
         case "Rule":
           contextValue = ContextValue.Rule;
           break;
@@ -105,16 +105,16 @@ class ContextManager {
     vscode.commands.executeCommand('setContext', this._name, this._lastValue);
   }
 
-  public getContextValue(): ContextValue {
+  public getContextValue() : ContextValue {
     return this._lastValue;
   }
-  public getObjClass(): string {
+  public getObjClass() : string {
     return this._objClass;
   }
-  public getObjName(): string {
+  public getObjName() : string {
     return this._objName;
   }
-  public getBSSource(): string {
+  public getBSSource() : string {
     return this._bsSource;
   }
 }
@@ -164,7 +164,7 @@ export class IIQCommands {
     this.initVariables();
   }
 
-  public getContextManager(): ContextManager {
+  public getContextManager() : ContextManager {
     return this.g_contextManager;
   }
 
@@ -203,12 +203,12 @@ export class IIQCommands {
     }
   }
 
-  private getVersion(): string {
+  private getVersion() : string {
     const version = vscode.extensions.getExtension('AndreiStebakov.sailpoint-iiq-dev-accelerator').packageJSON.version;
     return version;
   }
 
-  public async updateWorkflowIfNeeded(url, username, password): Promise<boolean> {
+  public async updateWorkflowIfNeeded(url, username, password) : Promise<boolean> {
     var retValue: boolean = false;
     const extVersion: string = this.getVersion();
     const wfVersion: string = await this.getWorkflowVersion(url, username, password);
@@ -269,7 +269,7 @@ export class IIQCommands {
 
 
 
-  private async listEnvironments(): Promise<string[]> {
+  private async listEnvironments() : Promise<string[]> {
     var result: string[] = [];
 
     if(vscode.workspace.getConfiguration('iiq-dev-accelerator').get('mode') == "devsecops"){
@@ -290,7 +290,7 @@ export class IIQCommands {
     }
   }
 
-  public getBaseSSBFolder(): string | null {
+  public getBaseSSBFolder() : string | null {
     return this.g_baseSSBFolder;
   }
 
@@ -442,7 +442,7 @@ export class IIQCommands {
     return undefined;
   }
 
-  private async getSiteConfig(): Promise<[string, string, string]> {
+  private async getSiteConfig() : Promise<[string, string, string]> {
     var environment = await this.getEnvironment();
     var url: string = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('iiq_url');
     var username: string = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('username');
@@ -537,7 +537,7 @@ export class IIQCommands {
     return this.postRequestInternal(post_body, url, username, password);
   }
 
-  public async importFileFromExplorer(fileUri: any, selectedPaths: vscode.Uri[]): Promise<void> {
+  public async importFileFromExplorer(fileUri: any, selectedPaths: vscode.Uri[]) : Promise<void> {
     console.log("> importFileFromExplorer");
 
     const walkDir = (dir) => {
@@ -643,7 +643,7 @@ export class IIQCommands {
     return undefined;
   }
 
-  private getClassFile(path, file): string {
+  private getClassFile(path, file) : string {
     var result = fg.sync(`${path}/**/${file}`);
     if(result.length == 0){
       return null;
@@ -651,7 +651,7 @@ export class IIQCommands {
     return result[0];
   }
 
-  private async getIIQClassPath(): Promise<string> {
+  private async getIIQClassPath() : Promise<string> {
     var classPath: string = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('iiq_lib_path');
     if(!classPath){
       classPath = await this.findIIQLibFolder();
@@ -773,7 +773,7 @@ export class IIQCommands {
     }
   }
 
-  public async importFile(fileContent = null, resolveTokens = true): Promise<[boolean, {}]> {
+  public async importFile(fileContent = null, resolveTokens = true) : Promise<[boolean, {}]> {
     if(this.g_contextManager.getContextValue() == ContextValue.JavaFile){
       this.importJava();
       return;
@@ -970,7 +970,7 @@ export class IIQCommands {
       return;
     }
 
-    let inputArgs = await this.getArgumentsFromInput("Please enter arguments (filter->name==\"Identity-XYZ\" etc.): ", "");
+    let inputArgs = await this.getArgumentsFromInput("Please enter arguments (filter->name==\"Identity-XYZ\" etc.) : ", "");
 
     var post_body =
     {
@@ -1070,7 +1070,7 @@ export class IIQCommands {
     if(ruleArgs.length > 0){
       inputArgs = await this.getArgumentsFromBuffer();
       if(!inputArgs || !this.argsIntersect(ruleArgs, Object.keys(inputArgs))){
-        inputArgs = await this.getArgumentsFromInput("Please enter arguments (arg1->value1 arg2->'value two' etc.): ", ruleArgs.join('-> ') + "->");
+        inputArgs = await this.getArgumentsFromInput("Please enter arguments (arg1->value1 arg2->'value two' etc.) : ", ruleArgs.join('-> ') + "->");
       }
       if(!inputArgs){
         inputArgs = {};
@@ -1179,7 +1179,7 @@ export class IIQCommands {
     }
   }
 
-  private async getURLs(): Promise<string[]> {
+  private async getURLs() : Promise<string[]> {
     var result = [];
     let [url, username, password] = await this.getSiteConfig();
     const props = await this.loadTargetProps();
@@ -1636,7 +1636,7 @@ export class IIQCommands {
       vscode.window.showInformationMessage(`To execute based on context, please open file with some IIQ object or a logging config`);
       return;
     }
-    switch (this.g_contextManager.getContextValue()){
+    switch(this.g_contextManager.getContextValue()){
       case ContextValue.BeanShellSelection:
         this.evalBS();
         break;
@@ -1693,7 +1693,7 @@ export class IIQCommands {
     await this.importFileList(filesToDeploy);
   }
 
-  public async getWorkflowVersion(url, username, password): Promise<string> {
+  public async getWorkflowVersion(url, username, password) : Promise<string> {
     var post_body =
     {
       "workflowArgs":
