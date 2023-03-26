@@ -17,7 +17,7 @@ import {beautifyIIQObject} from './xmlUtils';
 
 const fg = require('fast-glob');
 
-export namespace Commands {
+export namespace Commands{
   export const SHOW_LANGUAGE_SERVER_OUTPUT = 'show.language.server.output';
   export const EXECUTE_WORKSPACE_COMMAND = 'execute.workspaceCommand';
 }
@@ -28,7 +28,7 @@ enum UseTokenization {
   Ask = "Ask"
 }
 
-interface PropFileInfo {
+interface PropFileInfo{
   mtime: Date;
   props: {};
 };
@@ -71,7 +71,7 @@ class ContextManager {
       objClass = Object.keys(parsedXml)[0];
       parsedXml = parsedXml[objClass][0];
     }
-    else {
+    else{
       parsedXml = parsedXml[objClass];
     }
     objName = parsedXml["ATTR"]["name"];
@@ -198,7 +198,7 @@ export class IIQCommands {
         vscode.window.showErrorMessage(`Error parsing ${editor.document.fileName}`);
       }
     }
-    else {
+    else{
       this.g_contextManager.set(ContextValue.NotIIQContext);
     }
   }
@@ -216,8 +216,7 @@ export class IIQCommands {
       return false;
     }
     if(extVersion != wfVersion){
-      const json = vscode.extensions.getExtension('AndreiStebakov.sailpoint-iiq-dev-accelerator').packageJSON;
-      const fileContent = fs.readFileSync(this.g_fullWFPath, {encoding: 'utf8', flag: 'r'});
+      const fileContent = fs.readFileSync(this.g_fullWFPath, {encoding:'utf8', flag:'r'});
       var post_body = {
         "workflowArgs": {
           "operation": "Import",
@@ -229,7 +228,7 @@ export class IIQCommands {
         retValue = true;
       }
     }
-    else {
+    else{
       return true;
     }
     return retValue;
@@ -243,7 +242,7 @@ export class IIQCommands {
     this.g_statusBarEnvItem.text = text;
     if(this.g_statusBarEnvItem.text){
       this.g_statusBarEnvItem.show();
-    } else {
+    } else{
       this.g_statusBarEnvItem.hide();
     }
   }
@@ -260,7 +259,7 @@ export class IIQCommands {
       if(error === null){
         parsedXml = result;
       }
-      else {
+      else{
         console.log(error);
       }
     });
@@ -269,8 +268,8 @@ export class IIQCommands {
 
 
 
-  private async listEnvironments() : Promise<string[]> {
-    var result: string[] = [];
+  private async listEnvironments() : Promise<string[]>{
+    var result:string[] = [];
 
     if(vscode.workspace.getConfiguration('iiq-dev-accelerator').get('mode') == "devsecops"){
       const uris = await vscode.workspace.findFiles(`iiq-xml-config/profiles/**/target.properties`);
@@ -280,7 +279,7 @@ export class IIQCommands {
         result.push(env[env.length - 2].substring(4));
       });
       return result;
-    } else {
+    } else{
       const uris = await vscode.workspace.findFiles(`**/*.target.properties`);
       uris.forEach((uri) => {
         let [env, rest] = path.basename(uri.fsPath).split(".");
@@ -361,7 +360,7 @@ export class IIQCommands {
     var mainProps: any;
     if(vscode.workspace.getConfiguration('iiq-dev-accelerator').get('mode') == "devsecops"){
       mainProps = await this.getFileProperties(`iiq-xml-config/profiles/env-${environment}/target.properties`);
-    } else {
+    } else{
       mainProps = await this.getFileProperties(`${environment}.target.properties`);
     }
 
@@ -371,7 +370,7 @@ export class IIQCommands {
     var secretProps: any;
     if(vscode.workspace.getConfiguration('iiq-dev-accelerator').get('mode') == "devsecops"){
       secretProps = await this.getFileProperties(`env-${environment}/target.secret.properties`);
-    } else {
+    } else{
       secretProps = await this.getFileProperties(`${environment}.target.secret.properties`);
     }
     var allProps = Object.assign({}, mainProps, secretProps);
@@ -513,7 +512,7 @@ export class IIQCommands {
       if(response.ok){
         result["payload"] = payload;
       }
-      else {
+      else{
         result["fail"] = response.status;
       }
     }
@@ -549,10 +548,10 @@ export class IIQCommands {
       });
     };
 
-    const paths = selectedPaths.flatMap(p => {
+    const paths = selectedPaths.flatMap(p =>{
       if(fs.lstatSync(p.fsPath).isDirectory()){
         return walkDir(p.fsPath);
-      } else {
+      } else{
         return p.fsPath;
       }
     });
@@ -571,7 +570,7 @@ export class IIQCommands {
       title: "Importing ",
       cancellable: true
     },
-      async (progress, token) => {
+      async (progress, token) =>{
         token.onCancellationRequested(() => {
           //vscode.window.showInformationMessage(`Operation was cancelled`); 
         });
@@ -592,7 +591,7 @@ export class IIQCommands {
             if(success){
               result["deployed"] += 1;
             }
-            else {
+            else{
               result["failed"] += 1;
               result["failedFiles"][path.basename(f)] = processFileErrors;
             }
@@ -607,10 +606,10 @@ export class IIQCommands {
     if(result["deployed"] == filesToDeploy.length){
       vscode.window.showInformationMessage(`All ${filesToDeploy.length} files were successfully deployed!`);
     }
-    else {
+    else{
       if(wasCancelled){
         vscode.window.showWarningMessage(`Operation was cancelled. ${result["deployed"]} out of ${filesToDeploy.length} files were deployed`);
-      } else {
+      } else{
         var failedFiles = Object.keys(result["failedFiles"]).
           map(key => key + (result["failedFiles"][key]["processFileErrors"].length > 0 ?
             `\n - Following tokes couldn't be substituted: 
@@ -768,7 +767,7 @@ export class IIQCommands {
     if(result == "success"){
       vscode.window.showInformationMessage(`Operation succeded!`);
     }
-    else {
+    else{
       vscode.window.showErrorMessage(`${result}`);
     }
   }
@@ -802,7 +801,7 @@ export class IIQCommands {
         vscode.window.showErrorMessage(`Following tokens couldn't be substituted: ${processFileErrors["processFileErrors"]}`);
         return [false, processFileErrors];
       }
-      else {
+      else{
         return [false, processFileErrors];
       }
     }
@@ -827,12 +826,12 @@ export class IIQCommands {
       if(result["payload"] !== undefined){
         vscode.window.showInformationMessage(`File import result: ${result["payload"]}`);
       }
-      else {
+      else{
         vscode.window.showErrorMessage(`Operation failed`);
         isSuccess = false;
       }
     }
-    else {
+    else{
       var result = await this.postRequest(JSON.stringify(post_body));
       if(!result["payload"]){
         isSuccess = false;
@@ -896,7 +895,7 @@ export class IIQCommands {
     if(result["payload"] !== undefined){
       vscode.window.showInformationMessage(`Launched "${taskName} with result: ${result["payload"]}"`);
     }
-    else {
+    else{
       vscode.window.showErrorMessage(`Operation failed`);
     }
   }
@@ -934,7 +933,7 @@ export class IIQCommands {
       validateInput: (text) => {
         if(!text){
           return 'You must enter some input';
-        } else {
+        } else{
           return undefined;
         }
       }
@@ -994,7 +993,7 @@ export class IIQCommands {
     if(result["payload"] !== undefined){
       vscode.window.showInformationMessage(`Launched "${taskName} with result: ${result["payload"]}"`);
     }
-    else {
+    else{
       vscode.window.showErrorMessage(`Operation failed`);
     }
 
@@ -1040,7 +1039,7 @@ export class IIQCommands {
       if(error === null){
         parsedXml = result;
       }
-      else {
+      else{
         console.log(error);
       }
     });
@@ -1104,7 +1103,7 @@ export class IIQCommands {
     if(result["payload"] !== undefined){
       vscode.window.showInformationMessage(`Result: ${result["payload"]}`);
     }
-    else {
+    else{
       vscode.window.showErrorMessage(`Operation failed`);
     }
   }
@@ -1144,7 +1143,7 @@ export class IIQCommands {
     if(result["payload"] !== undefined){
       vscode.window.showInformationMessage(`Result: ${result["payload"]}`);
     }
-    else {
+    else{
       vscode.window.showErrorMessage(`Operation failed`);
     }
   }
@@ -1174,7 +1173,7 @@ export class IIQCommands {
       let doc = await vscode.workspace.openTextDocument(tempFile.name);
       await vscode.window.showTextDocument(doc);
     }
-    else {
+    else{
       vscode.window.showErrorMessage(`Operation failed`);
     }
   }
@@ -1269,11 +1268,11 @@ export class IIQCommands {
     if(reload_count == urls.length){
       vscode.window.showInformationMessage(`Refreshing from ${foundLogFileName ? foundLogFileName : 'server log file'}: ${reload_count} server(s) updated`);
     }
-    else {
+    else{
       if(wasCancelled){
         vscode.window.showErrorMessage(`Operation was cancelled ${reload_count} server(s) reloaded`);
       }
-      else {
+      else{
         vscode.window.showErrorMessage(`Operation failed`);
       }
     }
@@ -1328,7 +1327,7 @@ export class IIQCommands {
         (task, token) => this.postRequest(JSON.stringify(post_body))
       );
     }
-    else {
+    else{
       result = await this.postRequest(JSON.stringify(post_body));
     }
 
@@ -1393,7 +1392,7 @@ export class IIQCommands {
     if(reverseTokens){
       return await this.tokenizeWithRerverseTokens(xml);
     }
-    else {
+    else{
       return await this.tokenizeWithDirectTokens(xml);
     }
   }
@@ -1420,7 +1419,7 @@ export class IIQCommands {
           return this.postRequest(JSON.stringify(post_body));
         });
     }
-    else {
+    else{
       result = await this.postRequest(JSON.stringify(post_body));
     }
     let xml = result["payload"];
@@ -1433,7 +1432,7 @@ export class IIQCommands {
         if(answer === "Yes"){
           useTokenization = UseTokenization.Yes;
         }
-      } else {
+      } else{
         useTokenization = UseTokenization[useTokenizationConfig as string];
       }
     }
@@ -1578,7 +1577,7 @@ export class IIQCommands {
     if(showDeleteProgress){
       status = await this.deleteObjectWithProgress(theClass, objNames);
     }
-    else {
+    else{
       status = await this.deleteObjectInBulk(theClass, objNames);
     }
     if(status){
@@ -1613,7 +1612,7 @@ export class IIQCommands {
     if(url && username && password){
       await this.updateStatusBar("IIQ: " + environment);
     }
-    else {
+    else{
       await this.updateStatusBar("$(thumbsdown) IIQ is not ready...");
     }
 
@@ -1911,7 +1910,7 @@ export class IIQCommands {
       let doc = await vscode.workspace.openTextDocument(tempFile.name);
       await vscode.window.showTextDocument(doc);
     }
-    else {
+    else{
       vscode.window.showErrorMessage(`Operation failed`);
     }
   }
@@ -1955,7 +1954,7 @@ export class IIQCommands {
       const title = "Old vs new " + theClass + ":'" + objName + "'";
       await vscode.commands.executeCommand("vscode.diff", vscode.Uri.file(oldFileName), vscode.Uri.file(newFileName), title);
     }
-    else {
+    else{
       let doc = await vscode.workspace.openTextDocument(newFileName);
       await vscode.window.showTextDocument(doc);
     }
@@ -1975,7 +1974,7 @@ export class IIQCommands {
     if(!fs.existsSync(exportFolder)){
       fs.mkdirSync(exportFolder, {recursive: true});
     }
-    else {
+    else{
       const answer = await vscode.window.showQuickPick(["No", "Yes"], {placeHolder: `The folder already exists, do you want to overwrite it?`});
       if(answer === "No"){
         return;
