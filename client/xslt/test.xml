@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Rule language="beanshell" name="Test" when="script:(isTrue(endOnProvisioningForms) &amp;&amp; (project.hasQuestions()))" >
+  <Source>
+ &amp;&amp; 
+import sailpoint.object.Configuration;
+
+ &amp;&amp; 
+if(a &gt; -1 &amp;&amp; a &lt; ) {
+    
+ return true;   
+}
+return false;   
+
+
+  </Source>
+</Rule>

@@ -12,7 +12,10 @@
       "args": [
         "--extensionDevelopmentPath=${workspaceRoot}"
       ],
-      "preLaunchTask": "${defaultBuildTask}"
+      "outFiles": [
+				"${workspaceFolder}/client/out/**/*.js"
+			],
+      "preLaunchTask": "npm: pretest"
     },
     {
       "type": "node",

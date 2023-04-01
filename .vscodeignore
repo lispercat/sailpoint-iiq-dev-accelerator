@@ -9,3 +9,6 @@ scripts
 beanshell_grammar
 publish.cmd
 .vscode-test/**
+.editorconfig
+.eslintignore
+.eslintrc.json

@@ -120,8 +120,17 @@
           if(theClass.equals("Identity")){
             field = "displayName";
           }
+          
+          QueryOptions qo = new QueryOptions();
+          iidDevAccelLogger.debug("orderby = " + orderby); 
+          if (null != orderby && void != orderby && !orderby.isEmpty()) {
+              boolean ascending = orderby.startsWith("-");
+              String property = orderby.replaceAll("^[+-]","");
+              qo.addOrdering(property, ascending);
+          }
+
           List resultArray = new ArrayList();
-          Iterator it = context.search(myClass, null, field);
+          Iterator it = context.search(myClass, qo, field);
           while(it.hasNext()){
             Object[] obj = it.next();
             resultArray.add(obj[0]);

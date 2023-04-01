@@ -35,7 +35,8 @@
         {
             "name": "Claes Johansson",
             "email": "claexon@gmail.com"
-        }
+        },
+        "Yannick Béot"
     ],
     "categories": [
         "Other"
@@ -45,27 +46,7 @@
     ],
     "activationEvents": [
         "workspaceContains:**/config/**/*.xml",
-        "onLanguage:xml",
-        "onCommand:iiq-dev-accelerator.importFile",
-        "onCommand:iiq-dev-accelerator.runTask",
-        "onCommand:iiq-dev-accelerator.runRule",
-        "onCommand:iiq-dev-accelerator.evalBS",
-        "onCommand:iiq-dev-accelerator.runTaskWithAttr",
-        "onCommand:iiq-dev-accelerator.getLog",
-        "onCommand:iiq-dev-accelerator.reloadLog",
-        "onCommand:iiq-dev-accelerator.getObject",
-        "onCommand:iiq-dev-accelerator.deleteObject",
-        "onCommand:iiq-dev-accelerator.switchEnv",
-        "onCommand:iiq-dev-accelerator.runContext",
-        "onCommand:iiq-dev-accelerator.deployChange",
-        "onCommand:iiq-dev-accelerator.deployCustomBuild",
-        "onCommand:iiq-dev-accelerator.compareLocalWithDeployed",
-        "onCommand:iiq-dev-accelerator.deployOpenFiles",
-        "onCommand:iiq-dev-accelerator.showSysInfo",
-        "onCommand:iiq-dev-accelerator.refreshObject",
-        "onCommand:iiq-dev-accelerator.importJava",
-        "onCommand:iiq-dev-accelerator.exportObjects",
-        "onCommand:iiq-dev-accelerator.switchMode"
+        "onLanguage:xml"
     ],
     "main": "./client/out/extension.js",
     "contributes": {
@@ -148,7 +129,54 @@
                 "iiq-dev-accelerator.mode": {
                     "type": "string",
                     "description": "Change mode between SSB or devsecops",
+                    "enum": [
+                        "SSB",
+                        "devsecops"
+                    ],
                     "default": "SSB",
+                    "scope": "application"
+                },
+                "iiq-dev-accelerator.sort": {
+                    "type": "string",
+                    "description": "Sorting option when listing objects",
+                    "enum": [
+                        "name",
+                        "modified"
+                    ],
+                    "enumDescriptions": [
+                        "Sort by name",
+                        "Sort by modified date"
+                    ],
+                    "enumItemLabels": [
+                        "Name",
+                        "Last Modified"
+                    ],
+                    "default": "name"
+                },
+                "iiq-dev-accelerator.useTokenization": {
+                    "type": "string",
+                    "enum": [
+                        "Yes",
+                        "No",
+                        "Ask"
+                    ],
+                    "enumDescriptions": [
+                        "Tokenization will be applied each time",
+                        "Tokenization will never be used",
+                        "The extension will asked each time"
+                    ],
+                    "description": "Define whether tokenization is used or not",
+                    "default": "Ask",
+                    "maxLength": 0
+                },
+                "iiq-dev-accelerator.defaultExportObjectsPattern": {
+                    "type": "string",
+                    "description": "Define the pattern for the folder to export objects",
+                    "scope": "application"
+                },
+                "iiq-dev-accelerator.defaultExportObjectPattern": {
+                    "type": "string",
+                    "description": "Define the pattern for the folder to get an object",
                     "scope": "application"
                 }
             }
@@ -157,6 +185,10 @@
             {
                 "command": "iiq-dev-accelerator.importFile",
                 "title": "iiq: Import Current File"
+            },
+            {
+                "command": "iiq-dev-accelerator.importFileFromExplorer",
+                "title": "iiq: Import Files"
             },
             {
                 "command": "iiq-dev-accelerator.runTask",
@@ -235,6 +267,12 @@
                 "title": "iiq: Switch Mode"
             }
         ],
+        "commandPalette": [
+            {
+                "command": "iiq-dev-accelerator.importFileFromExplorer",
+                "when": "never"
+            }
+        ],
         "keybindings": [
             {
                 "key": "ctrl+alt+x",
@@ -265,8 +303,8 @@
         "menus": {
             "explorer/context": [
                 {
-                    "command": "iiq-dev-accelerator.importFile",
-                    "when": "iiq.context == Rule || iiq.context == Task || iiq.context == ProjectXMLObject || iiq.context = TempXMLObject",
+                    "command": "iiq-dev-accelerator.importFileFromExplorer",
+                    "when": "resourceExtname == .xml || explorerResourceIsFolder",
                     "group": "iiq"
                 }
             ],
@@ -311,7 +349,9 @@
         "watch": "tsc -b -w",
         "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
         "test": "node ./test/out/runTest.js",
-        "antlr4ts": "del-cli server/src/parser/SPBS* !server/src/parser/*Impl.ts && antlr4ts -visitor -o server/src/parser -Xexact-output-dir beanshell_grammar/SPBSLexer.g4 beanshell_grammar/SPBSParser.g4"
+        "antlr4ts": "del-cli server/src/parser/SPBS* !server/src/parser/*Impl.ts && antlr4ts -visitor -o server/src/parser -Xexact-output-dir beanshell_grammar/SPBSLexer.g4 beanshell_grammar/SPBSParser.g4",
+        "xslt3": "xslt3 -xsl:client/xslt/removeIds.xslt -export:client/xslt/removeIds.xslt.sef.json -nogo && xslt3 -xsl:client/xslt/convertCdata.xslt -export:client/xslt/convertCdata.xslt.sef.json -nogo",
+        "testxslt3": "xslt3 -xsl:client/xslt/convertCdata.xslt -s:client/xslt/test.xml -o:client/xslt/output.xml -t"
     },
     "devDependencies": {
         "@types/glob": "^7.1.4",
@@ -325,21 +365,23 @@
         "del-cli": "^4.0.1",
         "eslint": "^7.32.0",
         "mocha": "^9.2.2",
-        "typescript": "^4.4.3"
+        "typescript": "^4.4.3",
+        "xslt3": "^2.5.0"
     },
     "dependencies": {
+        "@xmldom/xmldom": "^0.8.6",
         "antlr4ts": "^0.5.0-alpha.4",
         "base-64": "^1.0.0",
         "fast-glob": "^3.2.8",
         "node-fetch": "^2.6.7",
         "properties-reader": "^2.2.0",
+        "saxon-js": "^2.5.0",
         "tmp": "^0.2.1",
         "vscode-languageclient": "^8.0.0-next.3",
         "vscode-languageserver": "^8.0.0-next.3",
         "vscode-languageserver-textdocument": "^1.0.2",
         "vscode-uri": "^3.0.2",
         "xml2js": "^0.4.23",
-        "xmldom": "^0.6.0",
         "xpath": "0.0.32"
     }
 }

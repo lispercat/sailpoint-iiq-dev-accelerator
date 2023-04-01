@@ -1,5 +1,18 @@
 # Change Log
 
+## [UNRELEASED]
+
+### Added
+- Added the ability to sort by name or by last modified date (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/44) 
+- Added snippets for rules (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/42)
+- Added the possibility to disable, force or ask tokenization (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/43)
+- Added the possibility to define default folders (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/41)
+- Added the possibility to import several files and files within a folder (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/40)
+
+### Fixed
+- &amp;&amp; is replaced in attribute value (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/50)
+- Upgrade the xmldom dependency
+
 ## [1.0.42]
 ### Fixed
  - Fixed "Refresh object" command. The command was expecting a temporary file context which was broken. Now I removed the dependency on the temp file so the command will work for both temp objects (obtained via Get Object command) and local files.

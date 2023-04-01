@@ -1,0 +1,1 @@
+export const SECTION_CONF = 'iiq-dev-accelerator';
