@@ -3,7 +3,7 @@
     "displayName": "Sailpoint IIQ Development Accelerator",
     "description": "Provides commands to facilitate/accelerate coding/interacting with remote Sailpoint IIQ server",
     "icon": "images/icon.png",
-    "version": "1.0.42",
+    "version": "1.0.43",
     "engines": {
         "vscode": "^1.60.0"
     },
@@ -27,7 +27,10 @@
     "license": "MIT",
     "publisher": "AndreiStebakov",
     "contributors": [
-        "Andrei Stebakov",
+        {
+            "name": "Andrei Stebakov",
+            "email": "lispercat@gmail.com"
+        },
         {
             "name": "Anthony Conrad",
             "email": "parithon@outlook.com"
@@ -36,7 +39,9 @@
             "name": "Claes Johansson",
             "email": "claexon@gmail.com"
         },
-        "Yannick Béot"
+        {
+            "name": "Yannick Béot"
+        }
     ],
     "categories": [
         "Other"

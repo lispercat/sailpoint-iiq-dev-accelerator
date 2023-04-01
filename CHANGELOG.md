@@ -1,7 +1,6 @@
 # Change Log
 
-## [UNRELEASED]
-
+## [1.0.43]
 ### Added
 - Added the ability to sort by name or by last modified date (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/44) 
 - Added snippets for rules (cf. https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues/42)
