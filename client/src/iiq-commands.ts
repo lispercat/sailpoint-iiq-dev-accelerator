@@ -572,7 +572,7 @@ export class IIQCommands {
     },
       async (progress, token) =>{
         token.onCancellationRequested(() => {
-          //vscode.window.showInformationMessage(`Operation was cancelled`); 
+          //vscode.window.showInformationMessage(`Operation was cancelled`);
         });
         var incr = 100 / filesToDeploy.length;
         progress.report({increment: 0});
@@ -612,7 +612,7 @@ export class IIQCommands {
       }else{
         var failedFiles = Object.keys(result["failedFiles"]).
           map(key => key + (result["failedFiles"][key]["processFileErrors"].length > 0 ?
-            `\n - Following tokes couldn't be substituted: 
+            `\n - Following tokes couldn't be substituted:
             ${result["failedFiles"][key]["processFileErrors"]}` : "")).join("\n");
         await vscode.window.showInformationMessage(
           `${result["failed"]} files failed to deploy: \n\n${failedFiles}`,
@@ -642,12 +642,12 @@ export class IIQCommands {
     return undefined;
   }
 
-  private getClassFile(path, file): string {
-    var result = fg.sync(`${path}/**/${file}`);
+  private getClassFiles(path, file): string[] {
+    var result = fg.sync(`${path}/**/${file}*`);
     if(result.length == 0){
       return null;
     }
-    return result[0];
+    return result;
   }
 
   private async getIIQClassPath(): Promise<string> {
@@ -678,7 +678,8 @@ export class IIQCommands {
     var classPath = await this.getIIQClassPath();
     var outputClassDir = tmp.dirSync().name.replace(/\\/g, "/");
     var javaFile = vscode.window.activeTextEditor.document.fileName.replace(/\\/g, "/");
-    var classFileBaseName = path.basename(javaFile, '.java') + '.class';
+    //var classFileBaseName = path.basename(javaFile, '.java') + '.class';
+    var javaClassBase = path.basename(javaFile, '.java');
     var compilerPath = `javac`;
     var javaCompileOptions = `-source 1.8 -target 1.8`;
     const cmd = `${compilerPath} ${javaCompileOptions} -d ${outputClassDir} -cp ${classPath} ${javaFile}`;
@@ -711,65 +712,80 @@ export class IIQCommands {
       fs.rmdirSync(outputClassDir, {recursive: true});
       return;
     }
-    var classFile = this.getClassFile(outputClassDir, classFileBaseName);
-    if(!classFile){
-      vscode.window.showErrorMessage(`Couldn't file ${classFileBaseName} under ${outputClassDir}`);
+    var classFiles = this.getClassFiles(outputClassDir, javaClassBase);
+    if(!classFiles){
+      vscode.window.showErrorMessage(`Couldn't file ${javaClassBase} under ${outputClassDir}`);
       fs.rmdirSync(outputClassDir, {recursive: true});
       return;
     }
-    const classBytes = fs.readFileSync(classFile, {encoding: 'base64'});
-    fs.rmdirSync(outputClassDir, {recursive: true});
-    var relativeClassPath = path.relative(outputClassDir, classFile).replace(/\\/g, "/");
-    var clazzName = relativeClassPath.substring(0, relativeClassPath.search('.class')).replace(/\//g, ".");
-    var post_body =
-    {
-      "workflowArgs":
+    var successCount = 0;
+    var errorCount = 0;
+    var errorMessages = "";
+    for (const classFile of classFiles){
+      var relativeClassPath = path.relative(outputClassDir, classFile).replace(/\\/g, "/");
+      var clazzName = relativeClassPath.substring(0, relativeClassPath.search('.class')).replace(/\//g, ".");
+      var clazzBytes = fs.readFileSync(classFile, {encoding: 'base64'});
+
+      var post_body =
       {
-        "operation": "importJava",
-        "clazzName": clazzName,
-        "clazzPath": relativeClassPath,
-        "clazzBytes": classBytes,
-        "debugPort": "8000",
-        "debugTransport": "dt_socket",
-        "host": "localhost"
+        "workflowArgs":
+        {
+          "operation": "importJava",
+          "clazzName": clazzName,
+          "clazzPath": relativeClassPath,
+          "clazzBytes": clazzBytes,
+          "debugPort": "8000",
+          "debugTransport": "dt_socket",
+          "host": "localhost"
+        }
+      };
+
+      var result = await vscode.window.withProgress({
+        location: vscode.ProgressLocation.Notification,
+        title: "Importing Java Class: " + clazzName,
+        cancellable: true
+      },
+        async (progress, cancellationToken) => {
+          var result = await this.postRequest(JSON.stringify(post_body));
+          var uploadFailure = result["payload"]["uploadFailure"];
+          var hotswapFailure = result["payload"]["hotswapFailure"];
+          if(uploadFailure){
+            return `Java class upload failed: ${uploadFailure}`;
+          }
+          else if(hotswapFailure){
+            progress.report({message: `Please wait for the Tomcat app restart (HotSwap failed with error: ${hotswapFailure}). See the README for more info on that`});
+            await sleep(20000);
+            function sleep(ms){
+              return new Promise((resolve) => {
+                setTimeout(resolve, ms);
+              });
+            }
+            var version = await this.getWorkflowVersion(url, username, password);
+            if(version != "undefined"){
+              return "success";
+            }
+            else return "Timeout trying to get workflow version";
+          }
+          return "success";
+        });
+
+      if(result == "success"){
+        successCount++;
       }
-    };
-
-    var result = await vscode.window.withProgress({
-      location: vscode.ProgressLocation.Notification,
-      title: "Importing Java Class... ",
-      cancellable: true
-    },
-      async (progress, cancellationToken) => {
-        var result = await this.postRequest(JSON.stringify(post_body));
-        var uploadFailure = result["payload"]["uploadFailure"];
-        var hotswapFailure = result["payload"]["hotswapFailure"];
-        if(uploadFailure){
-          return `Java class upload failed: ${uploadFailure}`;
-        }
-        else if(hotswapFailure){
-          progress.report({message: `Please wait for the Tomcat app restart (HotSwap failed with error: ${hotswapFailure}). See the README for more info on that`});
-          await sleep(20000);
-          function sleep(ms){
-            return new Promise((resolve) => {
-              setTimeout(resolve, ms);
-            });
-          }
-          var version = await this.getWorkflowVersion(url, username, password);
-          if(version != "undefined"){
-            return "success";
-          }
-          else return "Timeout trying to get workflow version";
-        }
-        return "success";
-      });
-
-    if(result == "success"){
-      vscode.window.showInformationMessage(`Operation succeded!`);
+      else{
+        errorCount++;
+        errorMessages += result;
+      }
+    }
+    var message = errorCount > 0 ? "There was an error: " + errorMessages: `Operation succeeded: ${successCount} files out of ${classFiles.length}`
+    if(errorCount > 0){
+      vscode.window.showErrorMessage(message);
     }
     else{
-      vscode.window.showErrorMessage(`${result}`);
+      vscode.window.showInformationMessage(message);
     }
+    fs.rmdirSync(outputClassDir, {recursive: true});
+
   }
 
   public async importFile(fileContent = null, resolveTokens = true): Promise<[boolean, {}]> {
@@ -1015,7 +1031,7 @@ export class IIQCommands {
     //  location: vscode.ProgressLocation.Notification,
     //  title: `Retrieving information for ${ruleName}`,
     //  cancellable: true
-    //  }, 
+    //  },
     //  progress => {
     //    return this.postRequest(JSON.stringify(post_body));
     //  });
