@@ -83,7 +83,7 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
 * **Import Java File** (Experimental)
   * A few stars need to align for a nice HotSwap (fast deployment) to happen:
     * You need to have a JDK to be installed on your dev system and "javac" should be on the PATH (if you use SSB you probably already have it)
-    * You Java runtime (on IIQ side) should support HotSwap (for best experience with HotSwap check out [https://github.com/TravaOpenJDK/trava-jdk-11-dcevm](DCEVM project)) and be able to redefine classes (if not see below)
+    * You Java runtime (on IIQ side) should support HotSwap (for best experience with HotSwap check out [DCEVM project](https://github.com/TravaOpenJDK/trava-jdk-11-dcevm)) and be able to redefine classes (if not see below)
       - Based on your class modification HotSwap of your JVM may fail for a few reasons:
         - delete method not implemented (when you deleted a method)
         - add method not implemented (when you added a method)
