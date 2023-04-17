@@ -34,7 +34,7 @@
         import org.apache.log4j.Logger;
         Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
         iidDevAccelLogger.debug("GetVersion is called");
-        return "1.0.44";
+        return "1.0.45";
       </Source>
     </Script>
     <Transition to="Stop"/>
@@ -624,6 +624,7 @@
           Map returnMap = new HashMap();
           String fullPath = Util.getApplicationHome() + "WEB-INF/classes/" + clazzPath;
           File file = new File(fullPath);
+          Files.createDirectories(Paths.get(file.getParent()));
           boolean fileDeleteResult = Files.deleteIfExists(file.toPath());
           iidDevAccelLogger.debug("Class path: " + fullPath + ". " + (fileDeleteResult == true ? "Old file was deleted":"Old file didn't exist"));
           byte[] classBytes = Base64.decodeBase64(clazzBytes.getBytes(StandardCharsets.US_ASCII));

@@ -14,6 +14,7 @@ import {DOMParser, XMLSerializer} from '@xmldom/xmldom'
 import {API as GitAPI, Repository, GitExtension, Status} from './typings/git';
 import {PathProposer} from './pathProposer';
 import {beautifyIIQObject} from './xmlUtils';
+import { integer } from 'vscode-languageclient';
 
 const fg = require('fast-glob');
 
@@ -718,39 +719,50 @@ export class IIQCommands {
       fs.rmdirSync(outputClassDir, {recursive: true});
       return;
     }
-    var successCount = 0;
-    var errorCount = 0;
+
     var errorMessages = "";
-    for (const classFile of classFiles){
-      var relativeClassPath = path.relative(outputClassDir, classFile).replace(/\\/g, "/");
-      var clazzName = relativeClassPath.substring(0, relativeClassPath.search('.class')).replace(/\//g, ".");
-      var clazzBytes = fs.readFileSync(classFile, {encoding: 'base64'});
+    var wasCancelled = false;
+    var successCount = 0;
+    const urls: string[] = await this.getURLs();
+    var result = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: `Uploading and hotswapping Java classes of ${javaClassBase}...\n`,
+      cancellable: true
+    },
+      async (progress, token) => {
+        token.onCancellationRequested(() => {
+        });
+        var incr = 100 / classFiles.length;
+        progress.report({increment: 0});
+        for (const classFile of classFiles){
+          if(token.isCancellationRequested){
+            wasCancelled = true;
+            break;
+          }
+          var relativeClassPath = path.relative(outputClassDir, classFile).replace(/\\/g, "/");
+          var clazzName = relativeClassPath.substring(0, relativeClassPath.search('.class')).replace(/\//g, ".");
+          var clazzBytes = fs.readFileSync(classFile, {encoding: 'base64'});
+          progress.report({increment: incr, message: `Importing Java Class: ${clazzName}`});
 
-      var post_body =
-      {
-        "workflowArgs":
-        {
-          "operation": "importJava",
-          "clazzName": clazzName,
-          "clazzPath": relativeClassPath,
-          "clazzBytes": clazzBytes,
-          "debugPort": "8000",
-          "debugTransport": "dt_socket",
-          "host": "localhost"
-        }
-      };
+          var post_body =
+          {
+            "workflowArgs":
+            {
+              "operation": "importJava",
+              "clazzName": clazzName,
+              "clazzPath": relativeClassPath,
+              "clazzBytes": clazzBytes,
+              "debugPort": "8000",
+              "debugTransport": "dt_socket",
+              "host": "localhost"
+            }
+          };
 
-      var result = await vscode.window.withProgress({
-        location: vscode.ProgressLocation.Notification,
-        title: "Importing Java Class: " + clazzName,
-        cancellable: true
-      },
-        async (progress, cancellationToken) => {
           var result = await this.postRequest(JSON.stringify(post_body));
           var uploadFailure = result["payload"]["uploadFailure"];
           var hotswapFailure = result["payload"]["hotswapFailure"];
           if(uploadFailure){
-            return `Java class upload failed: ${uploadFailure}`;
+            errorMessages +=  `Java class upload failed: ${uploadFailure}`;
           }
           else if(hotswapFailure){
             progress.report({message: `Please wait for the Tomcat app restart (HotSwap failed with error: ${hotswapFailure}). See the README for more info on that`});
@@ -761,28 +773,26 @@ export class IIQCommands {
               });
             }
             var version = await this.getWorkflowVersion(url, username, password);
-            if(version != "undefined"){
-              return "success";
+            if(version == "undefined"){
+              errorMessages += "Timeout trying to get workflow version";
+              return "failed";
             }
-            else return "Timeout trying to get workflow version";
           }
-          return "success";
-        });
+          else{
+            successCount++;
+          }
+        }
+        return "ok";
+      });
 
-      if(result == "success"){
-        successCount++;
-      }
-      else{
-        errorCount++;
-        errorMessages += result;
-      }
+    if(wasCancelled){
+      vscode.window.showWarningMessage("Operation was cancelled");
     }
-    var message = errorCount > 0 ? "There was an error: " + errorMessages: `Operation succeeded: ${successCount} files out of ${classFiles.length}`
-    if(errorCount > 0){
-      vscode.window.showErrorMessage(message);
+    else if(Number(successCount) < classFiles.length){
+      vscode.window.showErrorMessage("There was an error: " + errorMessages);
     }
     else{
-      vscode.window.showInformationMessage(message);
+      vscode.window.showInformationMessage(`Operation succeeded: ${successCount} files out of ${classFiles.length} were uploaded and hotswapped`);
     }
     fs.rmdirSync(outputClassDir, {recursive: true});
 

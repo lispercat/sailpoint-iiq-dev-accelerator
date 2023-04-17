@@ -1,5 +1,9 @@
 # Change Log
 
+## [1.0.45]
+### Fixed
+- Made sure when Java class file is uploaded, the class path will be created
+
 ## [1.0.44]
 ### Fixed
 - Make sure that Java import takes care of inner classes too
