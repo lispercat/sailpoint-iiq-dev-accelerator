@@ -1,5 +1,9 @@
 # Change Log
 
+## [1.0.46]
+### Updated
+- Dependabot: Bump xml2js from 0.4.23 to 0.5.0
+
 ## [1.0.45]
 ### Fixed
 - Made sure when Java class file is uploaded, the class path will be created
