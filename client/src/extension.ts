@@ -141,7 +141,6 @@ export async function activate(ctx: vscode.ExtensionContext) {
   ctx.subscriptions.push(statusBarEnvItem);
 
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.importFile', () => iiqCommands.importFile()));
-  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.importFileFromExplorer', iiqCommands.importFileFromExplorer, iiqCommands));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.runTask', () => iiqCommands.runTask()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.runTaskWithAttr', () => iiqCommands.runTaskWithAttr()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.runRule', () => iiqCommands.runRule()));
@@ -161,6 +160,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.importJava', () => iiqCommands.importJava()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.exportObjects', () => iiqCommands.exportObjects()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.switchMode', () => iiqCommands.switchMode()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.importCertificate', () => iiqCommands.importCertificate()));
 
   if (shouldStartLSP(ctx)) {
     await startLanguageClient(ctx);

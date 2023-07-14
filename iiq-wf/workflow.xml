@@ -26,6 +26,7 @@
     <Transition to="Reload Log File" when='"reloadLog".equals(operation);'/>
     <Transition to="Get System Info" when='"getSysInfo".equals(operation);'/>
     <Transition to="Import Java" when='"importJava".equals(operation);'/>
+    <Transition to="Import Certificate" when='"ImportCertificate".equals(operation);'/>
     <Transition to="Invalid operation"/>
   </Step>
   <Step icon="Default" name="Get Version" resultVariable="payload">
@@ -34,7 +35,7 @@
         import org.apache.log4j.Logger;
         Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
         iidDevAccelLogger.debug("GetVersion is called");
-        return "1.0.46";
+        return "1.0.47";
       </Source>
     </Script>
     <Transition to="Stop"/>
@@ -532,7 +533,8 @@
           Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
           iidDevAccelLogger.debug("Importing Java File");
 
-          private startRedeployment(){
+          private restartTomcat(){
+            iidDevAccelLogger.debug("Restarting Tomcat");         
             File webXML = new File(Util.getApplicationHome() + "WEB-INF/web.xml");
             long timestamp = System.currentTimeMillis();
             webXML.setLastModified(timestamp);
@@ -640,13 +642,13 @@
             String hotSwapResult = doHotSwap(classBytes, clazzName);
             if(!hotSwapResult.equals("success")){
               returnMap.put("hotswapFailure", hotSwapResult);
-              startRedeployment();
+              restartTomcat();
             }
           }
           else if(hotSwapNeededResult.equals("Failed to get hotswap environment")){
             //Something went wrong during determining if hot swap is needed, let's redeploy
             returnMap.put("hotswapFailure", hotSwapNeededResult);
-            startRedeployment();
+            restartTomcat();
           }
           else{
             iidDevAccelLogger.debug("HotSwap is not needed, we just uploaded the class file and you can use the new java class");
@@ -655,6 +657,148 @@
           iidDevAccelLogger.debug("Successfully imported a java file: " + returnMap.toString());
           return returnMap; 
           ]]>
+      </Source>
+    </Script>
+    <Transition to="Stop"/>
+  </Step>
+  
+  <Step icon="Provision" name="Import Certificate" resultVariable="payload">
+    <Script>
+      <Source>
+        <![CDATA[ 
+        import sailpoint.tools.GeneralException; 
+        import org.apache.log4j.Logger;
+        import java.util.*;
+        import java.io.*;
+        import java.nio.file.*;
+        import java.nio.charset.StandardCharsets;
+        import sailpoint.tools.Util;
+        import org.apache.commons.codec.binary.Base64;
+        import java.io.IOException;
+
+        Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
+
+        private void createDirectory(String directoryPath) {
+          Path path = Paths.get(directoryPath);
+          if (!Files.exists(path)) {
+            try {
+              Files.createDirectories(path);
+              iidDevAccelLogger.debug("Directory " + directoryPath + " created successfully!" ); 
+            } catch (IOException e) {
+              iidDevAccelLogger.error("Error creating directory: " + e.getMessage()); 
+            }
+          } else {
+            iidDevAccelLogger.debug("Directory " + directoryPath + " already exists" ); 
+          }
+        }
+
+        private String createFile(byte[] classBytes, String filePath){
+          String result = "success";
+          iidDevAccelLogger.debug("Trying to create a file " + filePath); 
+          File file = new File(filePath);
+          try
+          {
+            FileOutputStream fos = new FileOutputStream(file);
+            fos.write(classBytes);
+            fos.flush();
+            fos.close();
+          } catch (IOException e) {
+            iidDevAccelLogger.error("Failed to create a file " + e.getMessage()); 
+            result = e.getMessage();
+          }
+          iidDevAccelLogger.debug("File was successfully created!"); 
+          return result;
+        }
+        private String noExtension(String filename) {
+          Path path = Paths.get(filename);
+          String fileName = path.getFileName().toString();
+          int dotIndex = fileName.lastIndexOf('.');
+          if (dotIndex == -1) {
+            return fileName;
+          } else {
+            return fileName.substring(0, dotIndex);
+          }
+        }
+
+        private String importCertificate(String certFile, String certName, String password){
+          iidDevAccelLogger.debug("Enter importCertificate"); 
+          String result = "";
+          try {
+            String[] command = {
+                "keytool",
+                "-importcert",
+                "-cacerts",
+                "-noprompt",
+                "-alias",
+                certName,
+                "-file",
+                certFile,
+                "-storepass",
+                password
+            };
+
+            ProcessBuilder processBuilder = new ProcessBuilder(command);
+            Process process = processBuilder.start();
+
+            InputStream inputStream = process.getInputStream();
+            BufferedReader inputReader = new BufferedReader(new InputStreamReader(inputStream));
+            String line;
+            String output = "";
+            iidDevAccelLogger.debug("Output stream:"); 
+            while ((line = inputReader.readLine()) != null) {
+              iidDevAccelLogger.debug(line); 
+              result += line;
+            }
+            
+            InputStream errorStream = process.getErrorStream();
+            BufferedReader errorReader = new BufferedReader(new InputStreamReader(errorStream));
+            iidDevAccelLogger.debug("Error stream:"); 
+            while ((line = errorReader.readLine()) != null) {
+              iidDevAccelLogger.debug(line); 
+              result += line;
+            }
+
+            int exitCode = process.waitFor();
+            if (exitCode == 0) {
+              result = "success";
+              iidDevAccelLogger.debug("Command executed successfully."); 
+            } else {
+              iidDevAccelLogger.debug("Command execution failed. Exit code: " + exitCode); 
+            }
+            
+          } catch (Exception e) {
+            iidDevAccelLogger.error("Error executing keytool command: " + e.getMessage()); 
+            result = e.getMessage();
+          }
+          iidDevAccelLogger.debug("Exit importCertificate"); 
+          return result;
+        }
+
+        private restartTomcat(){
+          iidDevAccelLogger.debug("Restarting Tomcat");         
+          File webXML = new File(Util.getApplicationHome() + "WEB-INF/web.xml");
+          long timestamp = System.currentTimeMillis();
+          webXML.setLastModified(timestamp);
+        }
+        String tempDirPath = Util.getApplicationHome() + "certificatesTemp";
+        createDirectory(tempDirPath);
+
+        byte[] fileContentBytes = fileContent.getBytes(StandardCharsets.US_ASCII);
+        String certFile = tempDirPath + "/" + certFileName;
+        String result = createFile(fileContentBytes, certFile);
+        if(!result.equals("success")){
+          return result;
+        }
+        String certName = noExtension(certFileName);
+        result = importCertificate(certFile, certName, keyStorePassword);
+        if(!result.contains("success")){
+          return result;
+        }
+        if(restartTomcat){
+          restartTomcat();
+        }
+        return "success";
+      ]]>
       </Source>
     </Script>
     <Transition to="Stop"/>

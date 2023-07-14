@@ -80,7 +80,7 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
   * By default the BeanShell code will be highlighed like regular Java code
 * **Show System Information (About)**
   * Get some information about IIQ like version and Java properties
-* **Import Java File** (Experimental)
+* **Import Java File** 
   * A few stars need to align for a nice HotSwap (fast deployment) to happen:
     * You need to have a JDK to be installed on your dev system and "javac" should be on the PATH (if you use SSB you probably already have it)
     * You Java runtime (on IIQ side) should support HotSwap (for best experience with HotSwap check out [DCEVM project](https://github.com/TravaOpenJDK/trava-jdk-11-dcevm)) and be able to redefine classes (if not see below)
@@ -124,6 +124,10 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
     * specify the path to your target folder 
     * select object classes you are interested in (Rule, TaskDefinition etc)
     * choose if you need reverse tokenization or not
+* **Import Certificate**
+  * Oftentimes we need to execute a `keytool -importcert` command on the server side in order to import a new certificate to the keystore file. It's a bit of a hassle, since we need to do a few operations in a different environment.
+  * Now if you have your ***.cer** or **.crt** Base-64 encoded X.509 certificate file you can just press `Ctrl Alt s` and the file will be added to keystores on all of your servers specified by **%%IIQ_SERVERS%%** token in **your-target-environment**.target.properties file.
+  * By default the keystore password that is used is "changeit" but if you want to change it you can do it using **iiq.dev-accelerator.keyStorePassword** setting. Make sure it's the same on all your servers
 
 ## Shortcuts
   * `Ctrl Alt s` - will execute either "Import File" or "Import Java File" based on your currently open file
@@ -234,6 +238,13 @@ To specify the environment you may also add this to your settings.json:
   * If not defined, it will create folder in the temp directory.
 ```json
 "iiq-dev-accelerator.defaultExportObjectPattern": "%w/%e/%o/%n.xml"
+```
+
+* (optional) `iiq.dev-accelerator.keyStorePassword`: is your java keystore password
+  * Most of the time the default password **changeit** just works, but if you have a different password you can specify it in this option.
+  * One caveat: the password has to be the same on all servers if you are using multiple servers in your **%%IIQ_SERVERS%%** token
+```json
+"iiq.dev-accelerator.keyStorePassword": "changeit"
 ```
 
 ## Release Notes

@@ -1,5 +1,11 @@
 # Change Log
 
+## [1.0.47]
+### Updated
+- Bump semver from 7.3.5 to 7.5.4
+### Added
+- Certificate import. Now you can import a certificate (Base-64 encoded X.509) from VSCode. See readme file for details. 
+
 ## [1.0.46]
 ### Updated
 - Dependabot: Bump xml2js from 0.4.23 to 0.5.0

@@ -3,7 +3,7 @@
     "displayName": "Sailpoint IIQ Development Accelerator",
     "description": "Provides commands to facilitate/accelerate coding/interacting with remote Sailpoint IIQ server",
     "icon": "images/icon.png",
-    "version": "1.0.46",
+    "version": "1.0.47",
     "engines": {
         "vscode": "^1.60.0"
     },
@@ -183,6 +183,18 @@
                     "type": "string",
                     "description": "Define the pattern for the folder to get an object",
                     "scope": "application"
+                },
+                "iiq-dev-accelerator.keyStorePassword": {
+                    "type": "string",
+                    "description": "Password for the java store on the tomcat (server) side",
+                    "default": "changeit",
+                    "scope": "application"
+                },
+                "iiq-dev-accelerator.restartTomcatOnNewCertImport": {
+                    "type": "boolean",
+                    "description": "Set to true if you want tomcat to be restarted automatically, otherwise you'll need to restart it manually for new certificates to take effects",
+                    "default": false,
+                    "scope": "application"
                 }
             }
         },
@@ -190,10 +202,6 @@
             {
                 "command": "iiq-dev-accelerator.importFile",
                 "title": "iiq: Import Current File"
-            },
-            {
-                "command": "iiq-dev-accelerator.importFileFromExplorer",
-                "title": "iiq: Import Files"
             },
             {
                 "command": "iiq-dev-accelerator.runTask",
@@ -270,12 +278,10 @@
             {
                 "command": "iiq-dev-accelerator.switchMode",
                 "title": "iiq: Switch Mode"
-            }
-        ],
-        "commandPalette": [
+            },
             {
-                "command": "iiq-dev-accelerator.importFileFromExplorer",
-                "when": "never"
+                "command": "iiq-dev-accelerator.importCertificate",
+                "title": "iiq: Import Current Certificate"
             }
         ],
         "keybindings": [
@@ -308,7 +314,7 @@
         "menus": {
             "explorer/context": [
                 {
-                    "command": "iiq-dev-accelerator.importFileFromExplorer",
+                    "command": "iiq-dev-accelerator.importFile",
                     "when": "resourceExtname == .xml || explorerResourceIsFolder",
                     "group": "iiq"
                 }
@@ -316,7 +322,7 @@
             "editor/context": [
                 {
                     "command": "iiq-dev-accelerator.importFile",
-                    "when": "iiq.context == Rule || iiq.context == Task || iiq.context == ProjectXMLObject || iiq.context = TempXMLObject",
+                    "when": "iiq.context == Rule || iiq.context == Task || iiq.context == ProjectXMLObject || iiq.context == TempXMLObject",
                     "group": "iiq"
                 },
                 {
@@ -381,6 +387,7 @@
         "node-fetch": "^2.6.7",
         "properties-reader": "^2.2.0",
         "saxon-js": "^2.5.0",
+        "semver": "^7.5.4",
         "tmp": "^0.2.1",
         "vscode-languageclient": "^8.0.0-next.3",
         "vscode-languageserver": "^8.0.0-next.3",

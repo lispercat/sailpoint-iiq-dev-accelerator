@@ -45,6 +45,7 @@ enum ContextValue {
   TempXMLObject = "TempXMLObject",
   JavaFile = "JavaFile",
   LogConfig = "LogConfig",
+  CertificateFile = "CertificateFile"
 }
 
 class ContextManager {
@@ -198,6 +199,9 @@ export class IIQCommands {
       catch (error){
         vscode.window.showErrorMessage(`Error parsing ${editor.document.fileName}`);
       }
+    }
+    else if(ext === ".cer" || ext === ".crt"){
+      this.g_contextManager.set(ContextValue.CertificateFile);
     }
     else{
       this.g_contextManager.set(ContextValue.NotIIQContext);
@@ -537,29 +541,6 @@ export class IIQCommands {
     return this.postRequestInternal(post_body, url, username, password);
   }
 
-  public async importFileFromExplorer(fileUri: any, selectedPaths: vscode.Uri[]): Promise<void> {
-    console.log("> importFileFromExplorer");
-
-    const walkDir = (dir) => {
-      const items = fs.readdirSync(dir, {withFileTypes: true});
-      return items.flatMap(f => {
-        const newPath = path.join(dir, f.name);
-        return fs.statSync(newPath).isDirectory() ?
-            walkDir(newPath): newPath;
-      });
-    };
-
-    const paths = selectedPaths.flatMap(p =>{
-      if(fs.lstatSync(p.fsPath).isDirectory()){
-        return walkDir(p.fsPath);
-      }else{
-        return p.fsPath;
-      }
-    });
-    console.log({paths});
-    this.importFileList(paths)
-  }
-
   public async importFileList(filesToDeploy, resolveTokens = true){
     if(!filesToDeploy || filesToDeploy.length < 0){
       vscode.window.showInformationMessage('Nothing to deploy, exiting');
@@ -801,6 +782,10 @@ export class IIQCommands {
   public async importFile(fileContent = null, resolveTokens = true): Promise<[boolean, {}]> {
     if(this.g_contextManager.getContextValue() == ContextValue.JavaFile){
       this.importJava();
+      return;
+    }
+    if(this.g_contextManager.getContextValue() == ContextValue.CertificateFile){
+      this.importCertificate();
       return;
     }
 
@@ -1676,6 +1661,10 @@ export class IIQCommands {
         break;
       case ContextValue.TempXMLObject:
         this.refreshObject();
+        break;
+      case ContextValue.CertificateFile:
+        this.importCertificate();
+        break;
     }
   }
 
@@ -2090,6 +2079,91 @@ export class IIQCommands {
       });
 
     vscode.window.showInformationMessage(`${exportedCount} objects out of ${totalObjectCnt} were exported to ${exportFolder}`);
+  }
+
+  public async importCertificate(){
+    if(this.g_contextManager.getContextValue() != ContextValue.CertificateFile){
+      vscode.window.showWarningMessage("Can only import files with cer or crt extensions as certificates");
+      return;
+    }
+
+    //var fileContent = vscode.window.activeTextEditor.document.getText();
+    const [_, username, password] = await this.getSiteConfig();
+    const fileName = vscode.window.activeTextEditor.document.fileName;
+    const certName = path.parse(fileName).name;
+    const fileContent = vscode.window.activeTextEditor.document.getText();
+    const keyStorePassword = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('keyStorePassword');
+    const restartTomcat:boolean = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('restartTomcatOnNewCertImport');
+
+    var post_body = {
+      "workflowArgs": {
+        "operation": "ImportCertificate",
+        "certFileName": path.basename(fileName),
+        "fileContent": fileContent,
+        "keyStorePassword": keyStorePassword,
+        "restartTomcat": restartTomcat
+      }
+    };
+
+    var wasCancelled = false;
+    const urls: string[] = await this.getURLs();
+    var [success_count, errorMessage] = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: `Importing certificate `,
+      cancellable: true
+    },
+      async (progress, token) => {
+        token.onCancellationRequested(() => {
+        });
+        var incr = 100 / urls.length;
+        progress.report({increment: 0});
+        var success_count = 0;
+        var errorMsg = "";
+        var error_count = 1;
+
+        for (var url of urls){
+          progress.report({increment: incr, message: `on ${url} server`});
+          if(token.isCancellationRequested){
+            wasCancelled = true;
+            break;
+          }
+          var result = await this.postRequest(JSON.stringify(post_body), url);
+          if(result["payload"] == "success"){
+            success_count += 1;
+            if(restartTomcat){
+              progress.report({message: `Please wait for the Tomcat to restart on server ${url}`});
+              await sleep(20000);
+              function sleep(ms){
+                return new Promise((resolve) => {
+                  setTimeout(resolve, ms);
+                });
+              }
+              var version = await this.getWorkflowVersion(url, username, password);
+              if(version == "undefined"){
+                errorMsg += `${error_count}) Server ${url}: Timeout restarting\n`;
+                return "failed";
+              }
+            }
+          }
+          else{
+            errorMsg += `${error_count}) Server ${url}: ${result["payload"]}\n`;
+            error_count++;
+          }
+        }
+        return [success_count, errorMsg];
+      });
+
+    if(success_count == urls.length){
+      vscode.window.showInformationMessage(`Successfully imported certificate "${certName}", ${success_count} server(s) updated`);
+    }
+    else{
+      if(wasCancelled){
+        vscode.window.showErrorMessage(`Operation was cancelled ${success_count} server(s) reloaded`);
+      }
+      else{
+        vscode.window.showErrorMessage(`Operation failed with result:\n${errorMessage}`, { modal: true });
+      }
+    }
   }
 }
 
