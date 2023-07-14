@@ -161,6 +161,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.exportObjects', () => iiqCommands.exportObjects()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.switchMode', () => iiqCommands.switchMode()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.importCertificate', () => iiqCommands.importCertificate()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.restartTomcat', () => iiqCommands.restartTomcat()));
 
   if (shouldStartLSP(ctx)) {
     await startLanguageClient(ctx);

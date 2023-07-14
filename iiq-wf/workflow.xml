@@ -27,6 +27,7 @@
     <Transition to="Get System Info" when='"getSysInfo".equals(operation);'/>
     <Transition to="Import Java" when='"importJava".equals(operation);'/>
     <Transition to="Import Certificate" when='"ImportCertificate".equals(operation);'/>
+    <Transition to="Restart Tomcat" when='"RestartTomcat".equals(operation);'/>
     <Transition to="Invalid operation"/>
   </Step>
   <Step icon="Default" name="Get Version" resultVariable="payload">
@@ -35,7 +36,7 @@
         import org.apache.log4j.Logger;
         Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
         iidDevAccelLogger.debug("GetVersion is called");
-        return "1.0.47";
+        return "1.0.48";
       </Source>
     </Script>
     <Transition to="Stop"/>
@@ -797,6 +798,29 @@
         if(restartTomcat){
           restartTomcat();
         }
+        return "success";
+      ]]>
+      </Source>
+    </Script>
+    <Transition to="Stop"/>
+  </Step>
+  <Step icon="Provision" name="Restart Tomcat" resultVariable="payload">
+    <Script>
+      <Source>
+        <![CDATA[ 
+        import org.apache.log4j.Logger;
+        import java.util.*;
+        import java.io.*;
+        import java.nio.file.*;
+        import java.io.IOException;
+        Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
+        private restartTomcat(){
+          iidDevAccelLogger.debug("Restarting Tomcat");         
+          File webXML = new File(Util.getApplicationHome() + "WEB-INF/web.xml");
+          long timestamp = System.currentTimeMillis();
+          webXML.setLastModified(timestamp);
+        }
+        restartTomcat();
         return "success";
       ]]>
       </Source>

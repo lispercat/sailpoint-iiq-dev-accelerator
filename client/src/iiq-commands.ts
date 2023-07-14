@@ -2087,7 +2087,6 @@ export class IIQCommands {
       return;
     }
 
-    //var fileContent = vscode.window.activeTextEditor.document.getText();
     const [_, username, password] = await this.getSiteConfig();
     const fileName = vscode.window.activeTextEditor.document.fileName;
     const certName = path.parse(fileName).name;
@@ -2162,6 +2161,81 @@ export class IIQCommands {
       }
       else{
         vscode.window.showErrorMessage(`Operation failed with result:\n${errorMessage}`, { modal: true });
+      }
+    }
+  }
+
+  public async restartTomcat(){
+    const [_, username, password] = await this.getSiteConfig();
+    var urls: string[] = await this.getURLs();
+
+    urls = await vscode.window.showQuickPick(urls,
+      {placeHolder: `Pick servers that you want to restart the Tomcat instances on`, ignoreFocusOut: true, canPickMany: true});
+    if(!urls){
+      vscode.window.showInformationMessage("No servers were selected, exiting");
+      return;
+    }
+
+    var post_body = {
+      "workflowArgs": {
+        "operation": "RestartTomcat"
+      }
+    };
+
+    var wasCancelled = false;
+    var [success_count, errorMessage] = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: `Restarting Tomcat `,
+      cancellable: true
+    },
+      async (progress, token) => {
+        token.onCancellationRequested(() => {
+        });
+        var incr = 100 / urls.length;
+        progress.report({increment: 0});
+        var success_count = 0;
+        var errorMsg = "";
+        var error_count = 1;
+
+        for (var url of urls){
+          progress.report({increment: incr, message: `on ${url} server`});
+          if(token.isCancellationRequested){
+            wasCancelled = true;
+            break;
+          }
+          var result = await this.postRequest(JSON.stringify(post_body), url);
+          if(result["payload"] == "success"){
+            success_count += 1;
+            progress.report({message: `Please wait for the Tomcat to restart on server ${url}`});
+            await sleep(20000);
+            function sleep(ms){
+              return new Promise((resolve) => {
+                setTimeout(resolve, ms);
+              });
+            }
+            var version = await this.getWorkflowVersion(url, username, password);
+            if(version == "undefined"){
+              errorMsg += `${error_count}) Server ${url}: Timeout restarting\n`;
+              return "failed";
+            }
+          }
+          else{
+            errorMsg += `${error_count}) Server ${url}: ${result["payload"]}\n`;
+            error_count++;
+          }
+        }
+        return [success_count, errorMsg];
+      });
+
+    if(success_count == urls.length){
+      vscode.window.showInformationMessage(`Successfully restarted Tomcat instances`);
+    }
+    else{
+      if(wasCancelled){
+        vscode.window.showErrorMessage(`Operation was cancelled ${success_count} server(s) restarted`);
+      }
+      else{
+        vscode.window.showErrorMessage(`Operation failed`);
       }
     }
   }

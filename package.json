@@ -3,7 +3,7 @@
     "displayName": "Sailpoint IIQ Development Accelerator",
     "description": "Provides commands to facilitate/accelerate coding/interacting with remote Sailpoint IIQ server",
     "icon": "images/icon.png",
-    "version": "1.0.47",
+    "version": "1.0.48",
     "engines": {
         "vscode": "^1.60.0"
     },
@@ -282,6 +282,10 @@
             {
                 "command": "iiq-dev-accelerator.importCertificate",
                 "title": "iiq: Import Current Certificate"
+            },
+            {
+                "command": "iiq-dev-accelerator.restartTomcat",
+                "title": "iiq: Restart Tomcat"
             }
         ],
         "keybindings": [

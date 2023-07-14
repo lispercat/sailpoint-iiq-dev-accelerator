@@ -128,6 +128,8 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
   * Oftentimes we need to execute a `keytool -importcert` command on the server side in order to import a new certificate to the keystore file. It's a bit of a hassle, since we need to do a few operations in a different environment.
   * Now if you have your ***.cer** or **.crt** Base-64 encoded X.509 certificate file you can just press `Ctrl Alt s` and the file will be added to keystores on all of your servers specified by **%%IIQ_SERVERS%%** token in **your-target-environment**.target.properties file.
   * By default the keystore password that is used is "changeit" but if you want to change it you can do it using **iiq.dev-accelerator.keyStorePassword** setting. Make sure it's the same on all your servers
+* **Restart Tomcat**
+  * Sometimes you need to restart Tomcat instance(s) on your server(s) when you do some changes to your environment, for example import a new certificate.
 
 ## Shortcuts
   * `Ctrl Alt s` - will execute either "Import File" or "Import Java File" based on your currently open file

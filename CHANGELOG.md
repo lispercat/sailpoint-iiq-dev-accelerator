@@ -1,5 +1,9 @@
 # Change Log
 
+## [1.0.48]
+### Added
+- Tomcat restart
+
 ## [1.0.47]
 ### Updated
 - Bump semver from 7.3.5 to 7.5.4
