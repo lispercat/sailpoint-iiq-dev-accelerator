@@ -1,5 +1,10 @@
 # Change Log
 
+## [1.0.49]
+### Fixed
+- Fixed the extension activation errors when the extension activated not from an SSB (or any) workspace
+  - by workspace VSCode means "folder". From the File menu you can open a folder or close a folder. If the folder contains your SSB environment, you should be good to go
+
 ## [1.0.48]
 ### Added
 - Tomcat restart

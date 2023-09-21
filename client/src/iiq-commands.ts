@@ -134,6 +134,10 @@ export class IIQCommands {
   private g_baseSSBFolder: string = null;
 
   private initVariables(){
+    if(!vscode.workspace.workspaceFolders){
+      vscode.window.showInformationMessage(`No workspaces for was found. Usually it helps to have an SSB workspace open`);
+      return;
+    }
     this.g_workspaceFolder = vscode.workspace.workspaceFolders[0].uri.fsPath.replace(/\\/g, "/");
     //const buildProps = await vscode.workspace.findFiles("**/build.properties");
     var files: string[] = fg.sync(`${this.g_workspaceFolder}/**/build.properties`);
@@ -153,6 +157,7 @@ export class IIQCommands {
     }
   }
   constructor(){
+    this.initVariables();
     this.contextChange();
     vscode.window.onDidChangeActiveTextEditor((textEditor: vscode.TextEditor | undefined) => {
       if(!textEditor || undefined == textEditor){
@@ -163,7 +168,6 @@ export class IIQCommands {
     vscode.window.onDidChangeTextEditorSelection((e: vscode.TextEditorSelectionChangeEvent) => {
       // this.contextChange();
     });
-    this.initVariables();
   }
 
   public getContextManager(): ContextManager {
@@ -172,7 +176,7 @@ export class IIQCommands {
 
   private async contextChange(){
     var editor = vscode.window.activeTextEditor;
-    if(!editor.document){
+    if(!editor || !editor.document){
       vscode.window.showInformationMessage(`To execute based on context, please open file with some IIQ object or a logging config`);
       return;
     }
@@ -2171,7 +2175,7 @@ export class IIQCommands {
 
     urls = await vscode.window.showQuickPick(urls,
       {placeHolder: `Pick servers that you want to restart the Tomcat instances on`, ignoreFocusOut: true, canPickMany: true});
-    if(!urls){
+    if(0 == urls.length){
       vscode.window.showInformationMessage("No servers were selected, exiting");
       return;
     }
