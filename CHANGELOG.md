@@ -1,5 +1,9 @@
 # Change Log
 
+## [1.0.50]
+### Fixed
+- Fixed Java class path for Java file compile and import
+
 ## [1.0.49]
 ### Fixed
 - Fixed the extension activation errors when the extension activated not from an SSB (or any) workspace

@@ -607,14 +607,28 @@ export class IIQCommands {
     }
   }
 
-  private async findIIQLibFolder(){
-    const uris = await vscode.workspace.findFiles(`**/identityiq.jar`);
+  private async getIIQLibClassPaths(){
+    const uris = await vscode.workspace.findFiles('**/build/**/WEB-INF/**/*.jar');
     console.log("now trying to go over files...");
-    if(uris.length > 0){
-      var iiqJar = uris[0].fsPath;
-      return path.dirname(iiqJar).replace(/\\/g, "/");
+    var delim = ":";
+    switch(process.platform){
+      case "win32":
+        delim = ";";
+        break;
+      default:
+        delim = ":";
     }
-    return null;
+    var classPathsArray = [];
+    var classPathTotal = "";
+    for(var uri of uris){
+      var libPath = path.dirname(uri.fsPath).replace(/\\/g, "/");
+      if(!classPathsArray.includes(libPath)){
+         classPathsArray.push(libPath);
+         classPathTotal += libPath + "/*" + delim;
+      }
+    }
+
+    return classPathTotal;
   }
 
   private validateIIQLibPath(path){
@@ -639,7 +653,7 @@ export class IIQCommands {
   private async getIIQClassPath(): Promise<string> {
     var classPath: string = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('iiq_lib_path');
     if(!classPath){
-      classPath = await this.findIIQLibFolder();
+      classPath = await this.getIIQLibClassPaths();
       if(!classPath){
         classPath = await vscode.window.showInputBox({
           ignoreFocusOut: true,
@@ -651,11 +665,9 @@ export class IIQCommands {
           vscode.window.showErrorMessage(`Please specify the path to IIQ libraries so that you file can get compiled`);
           return;
         }
-        classPath = classPath.replace(/\\/g, "/");
         vscode.workspace.getConfiguration('iiq-dev-accelerator').update('iiq_lib_path', classPath, true);
       }
     }
-    classPath = classPath + "/*";
     return classPath;
   }
 
