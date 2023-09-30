@@ -36,7 +36,7 @@
         import org.apache.log4j.Logger;
         Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
         iidDevAccelLogger.debug("GetVersion is called");
-        return "1.0.50";
+        return "1.0.51";
       </Source>
     </Script>
     <Transition to="Stop"/>
@@ -169,13 +169,20 @@
           if(theClass.equals("Identity")){
             field = "displayName";
           }
-
-          SailPointObject obj = context.getUniqueObject(myClass, Filter.eq(field, objName));
+          SailPointObject obj = null;
+          if(void == objId || null == objId){
+            iidDevAccelLogger.info("Getting unique object");
+            obj = context.getUniqueObject(myClass, Filter.eq(field, objName));
+          }
+          else{
+            iidDevAccelLogger.info("Getting object by Id");
+            obj = context.getObjectById(myClass, objId); 
+          }
+          
           if(null == obj){
             iidDevAccelLogger.error("Couldn't find the object");
             return "fail"; 
           }
-          
           iidDevAccelLogger.debug("Finished getting an object"); 
           return obj.toXml(); 
           ]]>
@@ -204,23 +211,36 @@
             return "fail"; 
           }
 
-          String field = "name";
-          if(theClass.equals("Identity")){
-            field = "displayName";
-          }
-
-          iidDevAccelLogger.debug("Objects to delete: " + objNames); 
-          
-          for(String objName : objNames){
-            SailPointObject obj = context.getUniqueObject(myClass, Filter.eq(field, objName));
-            if(null == obj){
-              iidDevAccelLogger.error("Couldn't find the object: " + objName);
-              continue; 
+          Terminator terminator = new Terminator(context);
+          terminator.setTrace(true);
+          if(void == objId || null == objId){
+            iidDevAccelLogger.info("Deleting objects by names");
+            String field = "name";
+            if(theClass.equals("Identity")){
+              field = "displayName";
             }
-            Terminator terminator = new Terminator(context);
-            terminator.setTrace(true);
-            terminator.deleteObject(obj);
 
+            iidDevAccelLogger.debug("Objects to delete: " + objNames); 
+            
+            for(String objName : objNames){
+              SailPointObject obj = context.getUniqueObject(myClass, Filter.eq(field, objName));
+              if(null == obj){
+                iidDevAccelLogger.error("Couldn't find the object: " + objName);
+                continue; 
+              }
+              terminator.deleteObject(obj);
+
+              iidDevAccelLogger.debug("Finished deleting object"); 
+            }
+          }
+          else{
+            iidDevAccelLogger.info("Deleting an object by Id=" + objId);
+            SailPointObject obj = context.getObjectById(myClass, objId); 
+            if(null == obj){
+              iidDevAccelLogger.error("Couldn't find the object: " + objId);
+              return "Couldn't find the object of class=" + myClass + " and id=" + objId; 
+            }
+            terminator.deleteObject(obj);
             iidDevAccelLogger.debug("Finished deleting object"); 
           }
           return "success"; 
@@ -276,7 +296,27 @@
             Thread.sleep(50);
           } 
           iidDevAccelLogger.debug("Finished monitoring task results, result: " + tr); 
-          return "taskId=" + tr.getId(); 
+
+          SailPointObject obj = null;
+          int cnt = 0;
+          int max_cnt = 10;
+          while (null == obj) { 
+            String taskId = tr.getId();
+            iidDevAccelLogger.error("Tring to get TaskResult with id=" + taskId);
+            Thread.sleep(50);
+            obj = context.getObjectById(TaskResult.class, taskId);
+            tr = ts.getLatestResult(); 
+            if(cnt++ > max_cnt){
+              iidDevAccelLogger.error("Couldn't find the TaskResult object within a number of attempts");
+              break;
+            }
+          } 
+          if(null == obj){
+            iidDevAccelLogger.error("Couldn't find the TaskResult object");
+            return nill; 
+          }
+          iidDevAccelLogger.debug("Finished getting an object"); 
+          return obj.toXml(); 
           ]]>
       </Source>
     </Script>

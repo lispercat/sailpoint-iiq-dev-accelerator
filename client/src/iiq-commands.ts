@@ -52,6 +52,7 @@ class ContextManager {
   private _name: string;
   private _lastValue: ContextValue;
   private _objClass: string;
+  private _objId: string;
   private _objName: string;
   private _bsSource: string;
 
@@ -61,6 +62,7 @@ class ContextManager {
 
   public getParsedObjectAttr(parsedXml){
     var objClass = null;
+    var objId = null;
     var objName = null;
     var bsSource = null;
     if(!parsedXml){
@@ -76,16 +78,17 @@ class ContextManager {
     else{
       parsedXml = parsedXml[objClass];
     }
+    objId = parsedXml["ATTR"]["id"];
     objName = parsedXml["ATTR"]["name"];
     if(parsedXml["Source"]){
       bsSource = parsedXml["Source"][0];
     }
-    return [objClass, objName, bsSource];
+    return [objClass, objId, objName, bsSource];
   }
 
   public set(contextValue: ContextValue, parsedXml?: any, isProjectObject?: boolean): void {
     //reset objClass and objName
-    [this._objClass, this._objName, this._bsSource] = this.getParsedObjectAttr(parsedXml);
+    [this._objClass, this._objId, this._objName, this._bsSource] = this.getParsedObjectAttr(parsedXml);
 
     //try to deduce contextValue when only objClass and objNames are set
     if(null == contextValue && this._objClass){
@@ -112,6 +115,9 @@ class ContextManager {
   }
   public getObjClass(): string {
     return this._objClass;
+  }
+  public getObjId(): string {
+    return this._objId;
   }
   public getObjName(): string {
     return this._objName;
@@ -920,7 +926,77 @@ export class IIQCommands {
 
 
     if(result["payload"] !== undefined){
-      vscode.window.showInformationMessage(`Launched "${taskName} with result: ${result["payload"]}"`);
+      let xml = result["payload"];
+      //xml = beautifyIIQObject(xml, "TaskResult");
+      const theClass = "TaskResult"
+      const objName = "";
+      const filePath = PathProposer.getExportedObjectFilename(
+      (await this.getEnvironment()), theClass, objName);
+      fs.writeFileSync(filePath, xml);
+      const documentUri = await vscode.workspace.openTextDocument(filePath);
+
+      await vscode.window.showTextDocument(documentUri).then((document) => {
+        let refreshIntervalId = null;
+        const refreshIntervalMs = 5000;
+        const theClass = this.g_contextManager.getObjClass();
+        const objId = this.g_contextManager.getObjId();
+        const objName = this.g_contextManager.getObjName();
+        const searchObject = this.searchObject.bind(this);
+        const parseXMLObject = this.parseXMLObject.bind(this);
+        turnOnOffRefresh(true);
+
+        function isTaskComplete(xml){
+          var parsedXml = parseXMLObject(xml);
+          if(parsedXml){
+            var complete = parsedXml["TaskResult"]["ATTR"]["completed"];
+            if(null != complete){
+              return true;
+            }
+          }
+          return false;
+        }
+
+        async function refreshTaskResult() {
+          var new_xml_obj = await searchObject(theClass, objId, objName, false, UseTokenization.No);
+          if(!new_xml_obj){
+            vscode.window.showInformationMessage("Empty object, exiting");
+            return;
+          }
+          const activeDocument = document.document;
+          const edit = new vscode.WorkspaceEdit();
+          const fullText = activeDocument.getText();
+          const fullRange = new vscode.Range(activeDocument.positionAt(0), activeDocument.positionAt(fullText.length - 1));
+          edit.replace(activeDocument.uri, fullRange, new_xml_obj);
+          await vscode.workspace.applyEdit(edit);
+          vscode.window.showInformationMessage(`TaskResult is being refreshed every ${refreshIntervalMs/1000} sec till the task is completed or document is closed or not active`);
+
+          if (isTaskComplete(new_xml_obj)) {
+            await turnOnOffRefresh(false);
+            vscode.window.showInformationMessage(`Task is complete`);
+          }
+        }
+
+        async function turnOnOffRefresh(turnOn: boolean) {
+          if (turnOn) {
+            refreshIntervalId = setInterval(async () => {
+              await refreshTaskResult();
+            }, refreshIntervalMs);
+          }
+          else if(refreshIntervalId){
+            clearInterval(refreshIntervalId);
+            refreshIntervalId = null;
+          }
+        }
+        vscode.window.onDidChangeVisibleTextEditors(async (editors) => {
+          const activeDocument = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document : null;
+          if (activeDocument && activeDocument.uri.toString() === documentUri.uri.toString()) {
+            await turnOnOffRefresh(true);
+          } else {
+            await turnOnOffRefresh(false);
+          }
+        });
+      });
+      vscode.window.showInformationMessage(`Launched "${taskName}". You can terminate the task by executing "Delete Current Object" command on the document`);
     }
     else{
       vscode.window.showErrorMessage(`Operation failed`);
@@ -1424,13 +1500,15 @@ export class IIQCommands {
     }
   }
 
-  private async searchObject(cls, objName, showProgress = true, useTokenization: UseTokenization = UseTokenization.Ask){
+
+  private async searchObject(cls, objId, objName, showProgress = true, useTokenization: UseTokenization = UseTokenization.Ask){
     var post_body =
     {
       "workflowArgs":
       {
         "operation": "getObject",
         "theClass": cls,
+        "objId": objId,
         "objName": objName
       }
     };
@@ -1492,7 +1570,7 @@ export class IIQCommands {
       return;
     }
 
-    const xml = await this.searchObject(theClass, objName);
+    const xml = await this.searchObject(theClass, null, objName);
     if(!xml){
       vscode.window.showInformationMessage("Empty object, exiting");
       return;
@@ -1592,9 +1670,13 @@ export class IIQCommands {
       return;
     }
 
-    const answer = await vscode.window.showQuickPick(["Yes", "No"],
-      {placeHolder: `Are you sure you want to delete ${objNames.length} object(s)?`});
-    if(!answer || answer === "No"){
+    const answer = await vscode.window.showInformationMessage(
+      `Are you sure you want to delete ${objNames.length} object(s)?`,
+      { modal: true },
+      "Yes",
+      "No"
+    );
+    if (!answer || answer === "No") {
       vscode.window.showInformationMessage("No object was deleted");
       return;
     }
@@ -1612,8 +1694,52 @@ export class IIQCommands {
     }
   }
 
-  public async switchEnv(){
+  public async deleteCurrentObject(){
+    const theClass = this.g_contextManager.getObjClass();
+    const objId = this.g_contextManager.getObjId();
+    const objName = this.g_contextManager.getObjName();
 
+    if(null == theClass || null == objName || (theClass == "TaskResult" && null == objId)){
+      vscode.window.showWarningMessage(`Not a valid object to delete`);
+      return;
+    }
+    const answer = await vscode.window.showInformationMessage(
+      `Are you sure you want to delete the "${theClass}" object named "${objName}"?`,
+      { modal: true },
+      "Yes",
+      "No"
+    );
+    if (!answer || answer === "No") {
+      vscode.window.showInformationMessage("No object was deleted");
+      return;
+    }
+
+    var post_body =
+    {
+      "workflowArgs":
+      {
+        "operation": "deleteObject",
+        "theClass": theClass,
+        "objNames": Array.of(objName),
+        "objId": objId
+      }
+    };
+
+    var result = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: null != objId ? `Deleting object id=${objId} name=${objName} ...`: `Deleting object name=${objName} ...`,
+      cancellable: false
+    },
+      progress => {
+        return this.postRequest(JSON.stringify(post_body));
+      });
+
+    if(result["payload"]){
+      vscode.window.showInformationMessage(`Operation status: ${result["payload"]}`);
+    }
+  }
+
+  public async switchEnv(){
     var old_environment = vscode.workspace.getConfiguration('iiq-dev-accelerator').get('environment');
 
     var environments = await this.listEnvironments();
@@ -1858,7 +1984,7 @@ export class IIQCommands {
     }
 
     const objectName = parsedXml[objectClass].ATTR.name;
-    var xml = await this.searchObject(objectClass, objectName);
+    var xml = await this.searchObject(objectClass, null, objectName);
     if(!xml || xml === 'fail'){
       vscode.window.showInformationMessage("Couldn't find the deployed object in your target environment");
       return;
@@ -1961,9 +2087,10 @@ export class IIQCommands {
 
     var editor = vscode.window.activeTextEditor;
     var theClass = this.g_contextManager.getObjClass();
+    var objId = this.g_contextManager.getObjId();
     var objName = this.g_contextManager.getObjName();
 
-    var xml = await this.searchObject(theClass, objName);
+    var xml = await this.searchObject(theClass, objId, objName);
     if(!xml){
       vscode.window.showInformationMessage("Empty object, exiting");
       return;
@@ -2086,7 +2213,7 @@ export class IIQCommands {
               break;
             }
             progress.report({increment: incr, message: `${aClass} "${objName}"`});
-            var xml = await this.searchObject(aClass, objName, false, useTokenization);
+            var xml = await this.searchObject(aClass, null, objName, false, useTokenization);
             fs.writeFileSync(`${classFolder}/${objName}.xml`, xml, {encoding: 'utf8', flag: 'w'});
             exportedCount++;
           }

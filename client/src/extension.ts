@@ -149,6 +149,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.reloadLog', () => iiqCommands.reloadLog()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.getObject', () => iiqCommands.getObject()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.deleteObject', () => iiqCommands.deleteObject()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.deleteCurrentObject', () => iiqCommands.deleteCurrentObject()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.switchEnv', () => iiqCommands.switchEnv()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.runContext', () => iiqCommands.runContext()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.deployChange', () => iiqCommands.deployChange()));

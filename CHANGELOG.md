@@ -1,5 +1,10 @@
 # Change Log
 
+## [1.0.51]
+### Added
+- When you execute "Run Task" command a new document with TaskResult object will be open. It will refresh every 5 sec to update the status of the object.
+- "Delete Current Object" command, useful if you want to terminate a task by deleting the corresponding TaskResult ^ 
+
 ## [1.0.50]
 ### Fixed
 - Fixed Java class path for Java file compile and import

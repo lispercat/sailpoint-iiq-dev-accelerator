@@ -25,8 +25,14 @@ To get access to the followig features, press `F1` or `Ctrl + Shipt + p` to open
   * You can display it in a "diff" mode
 * **Delete Objects**
   * Will delete the selected objects from the target system
+* **Delete Current Object**
+  * Will delete the object belonging to the file you currently have open.
+    * This can be a useful operation to delete a TaskResult object to terminate a task (see **Context-based Execution** for more details)
 * **Run Task**
   * Given a list of taks you select one to execute
+  * If you currently have a file with a **TaskDefinition** object, pressing `Ctrl-Alt-x` will execute the task and show you a progress by refreshing a **TaskResult** object
+    * You can terminate the task by deleting **TaskResult** object (by means of executing **Delete Current Object** command on the file)
+  * When you execute "Run Task" command a new document with TaskResult object will be open. It will refresh every 5 sec to update the status of the object. You may terminate the task by deteting the object by running **Delete Current Object** command
 * **Run Task With Parameters**
   * Given a list of taks you select one to execute
   * Once you select a task you'll be presented with an input dialog to specify your arguments 
