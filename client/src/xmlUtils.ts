@@ -65,3 +65,12 @@ export function beautifyIIQObject(sourceXml: string, className: string): string 
     return xml
 }
 
+/**
+ * Replaces "illegal" characters (anything other than alphanumeric characters, dots, or hyphens) with underscores in the name of an IIQ Object.
+ * "Illegal" characters are defined as such in the documentation for the Sailpoint-provided XML Object Exporter Task. 
+ * @param objectName
+ * @returns object name with problematic characters changed to underscores
+ */
+export function sanitizeIIQObjectName(objectName: string): string {
+    return objectName.replace(/[^-a-zA-Z0-9_.]+/g, "_")
+}
