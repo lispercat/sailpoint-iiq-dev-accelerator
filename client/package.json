@@ -12,6 +12,12 @@
     "url": "https://github.com/lispercat/sailpoint-iiq-dev-accelerator/issues"
   },
   "homepage": "https://github.com/lispercat/sailpoint-iiq-dev-accelerator#readme",
-  "dependencies": {},
-  "devDependencies": {}
+  "scripts": {
+    "test": "mocha ./out/test/**.js",
+    "compile": "tsc -b",
+    "pretest": "npm run compile"
+  },
+  "devDependencies": {
+    "mocha": "^10.2.0"
+  }
 }
