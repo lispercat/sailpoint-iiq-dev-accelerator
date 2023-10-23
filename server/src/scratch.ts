@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 var xpath = require('xpath')
-import { DOMParser } from 'xmldom'
-import { XMLSerializer } from 'xmldom'
+import { DOMParser } from '@xmldom/xmldom'
+import { XMLSerializer } from '@xmldom/xmldom'
 
 let xml = fs.readFileSync("D:/Dev/sailpoint-iiq-ssd-base/config/Application/TestApp.xml",'utf8');
 var doc = new DOMParser().parseFromString(xml)
