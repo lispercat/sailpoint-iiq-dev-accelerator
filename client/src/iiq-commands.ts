@@ -13,7 +13,7 @@ var xpath = require('xpath')
 import {DOMParser, XMLSerializer} from '@xmldom/xmldom'
 import {API as GitAPI, Repository, GitExtension, Status} from './typings/git';
 import {PathProposer} from './pathProposer';
-import {beautifyIIQObject} from './xmlUtils';
+import {beautifyIIQObject, sanitizeIIQObjectName} from './xmlUtils';
 import { integer } from 'vscode-languageclient';
 
 const fg = require('fast-glob');
@@ -2214,7 +2214,8 @@ export class IIQCommands {
             }
             progress.report({increment: incr, message: `${aClass} "${objName}"`});
             var xml = await this.searchObject(aClass, null, objName, false, useTokenization);
-            fs.writeFileSync(`${classFolder}/${objName}.xml`, xml, {encoding: 'utf8', flag: 'w'});
+            const sanitizedName = sanitizeIIQObjectName(objName)
+            fs.writeFileSync(`${classFolder}/${sanitizedName}.xml`, xml, {encoding: 'utf8', flag: 'w'});
             exportedCount++;
           }
         }
