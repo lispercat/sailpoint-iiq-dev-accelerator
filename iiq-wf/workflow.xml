@@ -81,7 +81,7 @@
             boolean objExists = false;
             try{
               //make sure search operation works on this class and it has objects
-              Iterator it = context.search(cls, null, "name");
+              Iterator it = context.search(cls, new QueryOptions().setResultLimit(1), "name");
               objExists = it.hasNext();
             }
             catch(Exception e){
