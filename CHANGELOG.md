@@ -1,5 +1,9 @@
 # Change Log
 
+## [1.0.53]
+### Fixed
+- Java file import with multi-server scenario (when %%IIQ_SERVERS%% has multiple servers)
+
 ## [1.0.52]
 ### Fixed
 - Issue #59 and #60

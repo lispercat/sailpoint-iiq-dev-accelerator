@@ -735,54 +735,56 @@ export class IIQCommands {
       async (progress, token) => {
         token.onCancellationRequested(() => {
         });
-        var incr = 100 / classFiles.length;
+        var incr = 100 / (classFiles.length * urls.length);
         progress.report({increment: 0});
-        for (const classFile of classFiles){
-          if(token.isCancellationRequested){
-            wasCancelled = true;
-            break;
-          }
-          var relativeClassPath = path.relative(outputClassDir, classFile).replace(/\\/g, "/");
-          var clazzName = relativeClassPath.substring(0, relativeClassPath.search('.class')).replace(/\//g, ".");
-          var clazzBytes = fs.readFileSync(classFile, {encoding: 'base64'});
-          progress.report({increment: incr, message: `Importing Java Class: ${clazzName}`});
+        for (const url of urls){
+          for (const classFile of classFiles){
+            if(token.isCancellationRequested){
+              wasCancelled = true;
+              break;
+            }
+            var relativeClassPath = path.relative(outputClassDir, classFile).replace(/\\/g, "/");
+            var clazzName = relativeClassPath.substring(0, relativeClassPath.search('.class')).replace(/\//g, ".");
+            var clazzBytes = fs.readFileSync(classFile, {encoding: 'base64'});
+            progress.report({increment: incr, message: `Importing Java Class: ${clazzName} for ${url}`});
 
-          var post_body =
-          {
-            "workflowArgs":
+            var post_body =
             {
-              "operation": "importJava",
-              "clazzName": clazzName,
-              "clazzPath": relativeClassPath,
-              "clazzBytes": clazzBytes,
-              "debugPort": "8000",
-              "debugTransport": "dt_socket",
-              "host": "localhost"
-            }
-          };
+              "workflowArgs":
+              {
+                "operation": "importJava",
+                "clazzName": clazzName,
+                "clazzPath": relativeClassPath,
+                "clazzBytes": clazzBytes,
+                "debugPort": "8000",
+                "debugTransport": "dt_socket",
+                "host": "localhost"
+              }
+            };
 
-          var result = await this.postRequest(JSON.stringify(post_body));
-          var uploadFailure = result["payload"]["uploadFailure"];
-          var hotswapFailure = result["payload"]["hotswapFailure"];
-          if(uploadFailure){
-            errorMessages +=  `Java class upload failed: ${uploadFailure}`;
-          }
-          else if(hotswapFailure){
-            progress.report({message: `Please wait for the Tomcat app restart (HotSwap failed with error: ${hotswapFailure}). See the README for more info on that`});
-            await sleep(20000);
-            function sleep(ms){
-              return new Promise((resolve) => {
-                setTimeout(resolve, ms);
-              });
+            var result = await this.postRequest(JSON.stringify(post_body), url);
+            var uploadFailure = result["payload"]["uploadFailure"];
+            var hotswapFailure = result["payload"]["hotswapFailure"];
+            if(uploadFailure){
+              errorMessages +=  `Java class upload failed: ${uploadFailure}`;
             }
-            var version = await this.getWorkflowVersion(url, username, password);
-            if(version == "undefined"){
-              errorMessages += "Timeout trying to get workflow version";
-              return "failed";
+            else if(hotswapFailure){
+              progress.report({message: `Please wait for the Tomcat app restart (HotSwap failed with error: ${hotswapFailure}). See the README for more info on that`});
+              await sleep(20000);
+              function sleep(ms){
+                return new Promise((resolve) => {
+                  setTimeout(resolve, ms);
+                });
+              }
+              var version = await this.getWorkflowVersion(url, username, password);
+              if(version == "undefined"){
+                errorMessages += "Timeout trying to get workflow version";
+                return "failed";
+              }
             }
-          }
-          else{
-            successCount++;
+            else{
+              successCount++;
+            }
           }
         }
         return "ok";

@@ -36,7 +36,7 @@
         import org.apache.log4j.Logger;
         Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
         iidDevAccelLogger.debug("GetVersion is called");
-        return "1.0.52";
+        return "1.0.53";
       </Source>
     </Script>
     <Transition to="Stop"/>
@@ -625,7 +625,7 @@
             return result;
           }
 
-          private String isHotSwapNeeded(String className){
+          private String isHotSwapNeeded(VirtualMachine vm, String className){
             String result = "";
             if(null == vm){
               return "Failed to get hotswap environment";
@@ -639,7 +639,7 @@
             }
             return result;
           }
-          private String doHotSwap(byte[] classBytes, String className){
+          private String doHotSwap(VirtualMachine vm, byte[] classBytes, String className){
             if(null == vm){
               return "Failed to get hotswap environment";
             }
@@ -657,6 +657,7 @@
             try{
               iidDevAccelLogger.debug("Doing hotswap...");
               vm.redefineClasses(updatedMap);
+              vm.dispose();
             }
             catch(Exception e){
               return e.getMessage();
@@ -677,10 +678,10 @@
             return returnMap;
           }
           VirtualMachine vm = getVM();
-          String hotSwapNeededResult = isHotSwapNeeded(clazzName);
+          String hotSwapNeededResult = isHotSwapNeeded(vm, clazzName);
           if(hotSwapNeededResult.equals("needed")){
             iidDevAccelLogger.debug("HotSwap is needed, that means that the class is already loaded");
-            String hotSwapResult = doHotSwap(classBytes, clazzName);
+            String hotSwapResult = doHotSwap(vm, classBytes, clazzName);
             if(!hotSwapResult.equals("success")){
               returnMap.put("hotswapFailure", hotSwapResult);
               restartTomcat();
@@ -694,7 +695,6 @@
           else{
             iidDevAccelLogger.debug("HotSwap is not needed, we just uploaded the class file and you can use the new java class");
           }
-          vm.dispose();
           iidDevAccelLogger.debug("Successfully imported a java file: " + returnMap.toString());
           return returnMap; 
           ]]>
