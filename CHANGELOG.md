@@ -1,5 +1,9 @@
 # Change Log
 
+## [1.0.55]
+### Fixed
+- Some minor fixes to Java import
+
 ## [1.0.54]
 ### Fixed
 - Some more fixes to Java import

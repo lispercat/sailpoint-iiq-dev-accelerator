@@ -734,7 +734,7 @@ export class IIQCommands {
       async (progress, token) => {
         token.onCancellationRequested(() => {
         });
-        var incr = 100 / (classFiles.length * urls.length);
+        var incr = 100 / urls.length;
         progress.report({increment: 0});
         for (const url of urls){
           if(token.isCancellationRequested){
