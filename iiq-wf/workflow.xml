@@ -36,7 +36,7 @@
         import org.apache.log4j.Logger;
         Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
         iidDevAccelLogger.debug("GetVersion is called");
-        return "1.0.53";
+        return "1.0.54";
       </Source>
     </Script>
     <Transition to="Stop"/>
@@ -572,7 +572,7 @@
           import com.sun.jdi.connect.Connector.Argument;
 
           Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
-          iidDevAccelLogger.debug("Importing Java File");
+          iidDevAccelLogger.debug("Starting Java class import for " + numberOfFiles + " files. " + clazzPaths);
 
           private restartTomcat(){
             iidDevAccelLogger.debug("Restarting Tomcat");         
@@ -611,7 +611,9 @@
             return vm;
           }
 
-          private String uploadClass(byte[] classBytes){
+          private String uploadClass(File file, byte[] classBytes){
+            iidDevAccelLogger.debug("Uploading " + file);
+
             String result = "success";
             try
             {
@@ -621,39 +623,49 @@
               fos.close();
             } catch (IOException e) {
               result = e.getMessage();
+            iidDevAccelLogger.error("Error uploading file:  " + result);
             }
             return result;
           }
 
-          private String isHotSwapNeeded(VirtualMachine vm, String className){
-            String result = "";
+          private boolean isHotSwapNeeded(VirtualMachine vm, String[] classNames){
+            boolean result = false;
             if(null == vm){
-              return "Failed to get hotswap environment";
+              return false;
             }
-            List referenceTypes = vm.classesByName(className);
-            if (referenceTypes.size() > 0) {
-              result = "needed";
-            }
-            else{
-              result = "not needed";
+            for (String className: classNames){
+              List referenceTypes = vm.classesByName(className);
+              if (referenceTypes.size() > 0) {
+                result = true;
+              }
             }
             return result;
           }
-          private String doHotSwap(VirtualMachine vm, byte[] classBytes, String className){
+          private String doHotSwap(VirtualMachine vm, int numberOfFiles, byte[][] clazzBytess , String[] clazzNames){
             if(null == vm){
               return "Failed to get hotswap environment";
             }
 
             Map updatedMap = new HashMap();
-            List referenceTypes = vm.classesByName(className);
-            if (0 == referenceTypes.size()) {
-              return "Failed to find a loaded class in VM: " + className;
-            }
-            if(!vm.canRedefineClasses()) {
-              return "Can't redefine classes in this VM";
+            String status = "";
+
+            for (int i = 0; i < numberOfFiles; i++){
+              String className = clazzNames[i];
+              byte[] classBytes = clazzBytess[i];
+
+              List referenceTypes = vm.classesByName(className);
+              if (0 == referenceTypes.size()) {
+                status += "Failed to find a loaded class in VM: " + className + ";\n\r";
+                continue;
+              }
+              if(!vm.canRedefineClasses()) {
+                status +=  "Can't redefine classes in this VM: " + className + ";\n\r";
+                continue;
+              }
+
+              updatedMap.put(referenceTypes.get(0), classBytes);
             }
 
-            updatedMap.put(referenceTypes.get(0), classBytes);
             try{
               iidDevAccelLogger.debug("Doing hotswap...");
               vm.redefineClasses(updatedMap);
@@ -662,39 +674,56 @@
             catch(Exception e){
               return e.getMessage();
             }
-            return "success";
+            if(status.length() == 0){
+              status = "success";
+            }
+            return status;
           }
 
           Map returnMap = new HashMap();
-          String fullPath = Util.getApplicationHome() + "WEB-INF/classes/" + clazzPath;
-          File file = new File(fullPath);
-          Files.createDirectories(Paths.get(file.getParent()));
-          boolean fileDeleteResult = Files.deleteIfExists(file.toPath());
-          iidDevAccelLogger.debug("Class path: " + fullPath + ". " + (fileDeleteResult == true ? "Old file was deleted":"Old file didn't exist"));
-          byte[] classBytes = Base64.decodeBase64(clazzBytes.getBytes(StandardCharsets.US_ASCII));
-          String uploadResult = uploadClass(classBytes);
-          if(!uploadResult.equals("success")){
-            returnMap.put("uploadFailure", uploadResult);
-            return returnMap;
-          }
           VirtualMachine vm = getVM();
-          String hotSwapNeededResult = isHotSwapNeeded(vm, clazzName);
-          if(hotSwapNeededResult.equals("needed")){
-            iidDevAccelLogger.debug("HotSwap is needed, that means that the class is already loaded");
-            String hotSwapResult = doHotSwap(vm, classBytes, clazzName);
-            if(!hotSwapResult.equals("success")){
-              returnMap.put("hotswapFailure", hotSwapResult);
-              restartTomcat();
+          String uploadingErrors = "";
+          iidDevAccelLogger.debug("Number of files: " + numberOfFiles);
+          iidDevAccelLogger.debug("ClazzPaths: " + clazzPaths);
+          iidDevAccelLogger.debug("clazzBytess: " + clazzBytess);
+          for (int i = 0; i < numberOfFiles; i++){
+            String fullPath = Util.getApplicationHome() + "WEB-INF/classes/" + clazzPaths.get(i);
+            iidDevAccelLogger.debug("Full class path: " + fullPath);
+            File file = new File(fullPath);
+            Files.createDirectories(Paths.get(file.getParent()));
+            boolean fileDeleteResult = Files.deleteIfExists(file.toPath());
+            iidDevAccelLogger.debug("Class path: " + fullPath + ". " + (fileDeleteResult == true ? "Old file was deleted":"Old file didn't exist"));
+            byte[] classBytes = Base64.decodeBase64(clazzBytess.get(i).getBytes(StandardCharsets.US_ASCII));
+            String uploadResult = uploadClass(file, classBytes);
+            if(!uploadResult.equals("success")){
+              uploadingErrors += uploadResult + ";\n\r";
             }
           }
-          else if(hotSwapNeededResult.equals("Failed to get hotswap environment")){
-            //Something went wrong during determining if hot swap is needed, let's redeploy
-            returnMap.put("hotswapFailure", hotSwapNeededResult);
-            restartTomcat();
+          if(uploadingErrors.length() != 0){
+            iidDevAccelLogger.error("uploadFailure: " + uploadingErrors);
+            returnMap.put("uploadFailure", uploadingErrors);
+            return returnMap;
+          }
+
+          if(null != vm){
+            if(isHotSwapNeeded(vm, clazzNames)){
+              iidDevAccelLogger.debug("HotSwap is needed, that means that the class is already loaded");
+              String hotSwapResult = doHotSwap(vm, numberOfFiles, clazzBytess, clazzNames);
+              if(!hotSwapResult.equals("success")){
+                returnMap.put("hotswapFailure", hotSwapResult);
+                restartTomcat();
+              }
+            }
+            else{
+              iidDevAccelLogger.debug("HotSwap is not needed, we just uploaded the class file and you can use the new java class");
+            }
           }
           else{
-            iidDevAccelLogger.debug("HotSwap is not needed, we just uploaded the class file and you can use the new java class");
+            iidDevAccelLogger.debug("Failed to get hotswap environment, restarting tomcat");
+            returnMap.put("hotswapFailure", "Failed to get hotswap environment");
+            restartTomcat();
           }
+
           iidDevAccelLogger.debug("Successfully imported a java file: " + returnMap.toString());
           return returnMap; 
           ]]>

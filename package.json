@@ -3,7 +3,7 @@
     "displayName": "Sailpoint IIQ Development Accelerator",
     "description": "Provides commands to facilitate/accelerate coding/interacting with remote Sailpoint IIQ server",
     "icon": "images/icon.png",
-    "version": "1.0.53",
+    "version": "1.0.54",
     "engines": {
         "vscode": "^1.60.0"
     },
@@ -200,7 +200,7 @@
         },
         "commands": [
             {
-                "command": "iiq-dev-accelerator.importFile",
+                "command": "iiq-dev-accelerator.importFileRoot",
                 "title": "iiq: Import Current File"
             },
             {

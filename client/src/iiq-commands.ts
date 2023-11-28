@@ -575,7 +575,7 @@ export class IIQCommands {
             var f = filesToDeploy[i];
             progress.report({increment: incr, message: `${path.basename(f)}`});
             const fileContent = fs.readFileSync(f, {encoding: 'utf8', flag: 'r'});
-            let [success, processFileErrors] = await this.importFile(fileContent, resolveTokens);
+            let [success, processFileErrors] = await this.importFileXML(fileContent, resolveTokens);
             if(token.isCancellationRequested){
               wasCancelled = true;
               break;
@@ -725,7 +725,6 @@ export class IIQCommands {
 
     var errorMessages = "";
     var wasCancelled = false;
-    var successCount = 0;
     const urls: string[] = await this.getURLs();
     var result = await vscode.window.withProgress({
       location: vscode.ProgressLocation.Notification,
@@ -738,14 +737,22 @@ export class IIQCommands {
         var incr = 100 / (classFiles.length * urls.length);
         progress.report({increment: 0});
         for (const url of urls){
+          if(token.isCancellationRequested){
+            wasCancelled = true;
+            break;
+          }
+          var clazzNames = [];
+          var relativeClassPaths = [];
+          var clazzBytess = [];
           for (const classFile of classFiles){
-            if(token.isCancellationRequested){
-              wasCancelled = true;
-              break;
-            }
             var relativeClassPath = path.relative(outputClassDir, classFile).replace(/\\/g, "/");
             var clazzName = relativeClassPath.substring(0, relativeClassPath.search('.class')).replace(/\//g, ".");
             var clazzBytes = fs.readFileSync(classFile, {encoding: 'base64'});
+
+            relativeClassPaths.push(relativeClassPath);
+            clazzNames.push(clazzName);
+            clazzBytess.push(clazzBytes);
+          }
             progress.report({increment: incr, message: `Importing Java Class: ${clazzName} for ${url}`});
 
             var post_body =
@@ -753,9 +760,10 @@ export class IIQCommands {
               "workflowArgs":
               {
                 "operation": "importJava",
-                "clazzName": clazzName,
-                "clazzPath": relativeClassPath,
-                "clazzBytes": clazzBytes,
+                "clazzNames": clazzNames,
+                "clazzPaths": relativeClassPaths,
+                "clazzBytess": clazzBytess,
+                "numberOfFiles": clazzNames.length,
                 "debugPort": "8000",
                 "debugTransport": "dt_socket",
                 "host": "localhost"
@@ -782,10 +790,6 @@ export class IIQCommands {
                 return "failed";
               }
             }
-            else{
-              successCount++;
-            }
-          }
         }
         return "ok";
       });
@@ -793,25 +797,21 @@ export class IIQCommands {
     if(wasCancelled){
       vscode.window.showWarningMessage("Operation was cancelled");
     }
-    else if(Number(successCount) < classFiles.length){
-      vscode.window.showErrorMessage("There was an error: " + errorMessages);
-    }
     else{
-      vscode.window.showInformationMessage(`Operation succeeded: ${successCount} files out of ${classFiles.length} were uploaded and hotswapped`);
+      var msg = "";
+      if(errorMessages.length > 0){
+        msg = "Operation is finished but there were some errors: " + errorMessages;
+      }
+      else{
+        msg = `Operation succeeded: ${classFiles.length} were uploaded and hotswapped`;
+      }
+      vscode.window.showInformationMessage(msg);
     }
     fs.rmdirSync(outputClassDir, {recursive: true});
 
   }
 
-  public async importFile(fileContent = null, resolveTokens = true): Promise<[boolean, {}]> {
-    if(this.g_contextManager.getContextValue() == ContextValue.JavaFile){
-      this.importJava();
-      return;
-    }
-    if(this.g_contextManager.getContextValue() == ContextValue.CertificateFile){
-      this.importCertificate();
-      return;
-    }
+  private async importFileXML(fileContent = null, resolveTokens = true): Promise<[boolean, {}]> {
 
     var withProgress = false;
     var processFileErrors = {};
@@ -874,6 +874,19 @@ export class IIQCommands {
     }
     return [isSuccess, processFileErrors];
   }
+
+  public async importFileRoot(): Promise<[boolean, {}]> {
+    if(this.g_contextManager.getContextValue() == ContextValue.JavaFile){
+      this.importJava();
+      return;
+    }
+    if(this.g_contextManager.getContextValue() == ContextValue.CertificateFile){
+      this.importCertificate();
+      return;
+    }
+    return this.importFileXML();
+  }
+
 
   public async getTasksNames(){
     var post_body =

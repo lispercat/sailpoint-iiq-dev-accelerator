@@ -140,7 +140,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
   statusBarEnvItem.command = 'iiq-dev-accelerator.switchEnv';
   ctx.subscriptions.push(statusBarEnvItem);
 
-  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.importFile', () => iiqCommands.importFile()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.importFile', () => iiqCommands.importFileRoot()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.runTask', () => iiqCommands.runTask()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.runTaskWithAttr', () => iiqCommands.runTaskWithAttr()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.runRule', () => iiqCommands.runRule()));
