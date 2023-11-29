@@ -1,5 +1,9 @@
 # Change Log
 
+## [1.0.56]
+### Fixed
+- Fixed importing current file command
+
 ## [1.0.55]
 ### Fixed
 - Some minor fixes to Java import
