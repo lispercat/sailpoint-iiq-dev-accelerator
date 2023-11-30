@@ -9,7 +9,7 @@ import * as tmp from 'tmp';
 import {URL} from 'url';
 import * as path from 'path';
 
-var xpath = require('xpath')
+import * as xpath from 'xpath'
 import {DOMParser, XMLSerializer} from '@xmldom/xmldom'
 import {API as GitAPI, Repository, GitExtension, Status} from './typings/git';
 import {PathProposer} from './pathProposer';
@@ -1477,50 +1477,53 @@ export class IIQCommands {
     return xml;
   }
 
-  private async tokenizeWithRerverseTokens(xml: string){
+  private async tokenizeWithReverseTokens(xml: string): Promise<string>{
     const reverseTokens = await this.loadReverseTokens();
-    const props = await this.loadTargetProps();
+    const targetProperties = await this.loadTargetProps();
+    let result: string;
 
     try {
-      var doc = new DOMParser().parseFromString(xml);
+      let xmlDoc = new DOMParser().parseFromString(xml);
       for (let key in reverseTokens) {
-        //   var element = xpath.select(reverseTokens[key], doc)
-        let elements = xpath.select(reverseTokens[key], doc) as Node[]
-        for (let element of elements) {
-          const directReplacement = props[key];
+        const selector = reverseTokens[key];
+        const selectedValues = xpath.select(selector, xmlDoc)
+
+        for (let selectedValue of selectedValues) {
+          if (typeof selectedValue === 'string' || typeof selectedValue === 'number' || typeof selectedValue === 'boolean') {
+            throw new Error('Selected value is not an XML node.');
+          }
+          let node = selectedValue as Node | Attr
+          const directReplacement = targetProperties[key];
           //check if we have "direct token" in our target.properties file, only then do the replacement
           if (directReplacement) {
-            var val = key;
-            if (vscode.workspace.getConfiguration('iiq-dev-accelerator').get('mode') == "devsecops") {
-              val = "${" + key + "}"
+            let token = key;
+            if (vscode.workspace.getConfiguration('iiq-dev-accelerator').get('mode') === "devsecops") {
+              token = "${" + key + "}"
             }
-            // Change Node.ELEMENT_NODE to 1 and Node.TEXT_NODE to 3 to make this work (for now)
-            // This will remove ALL child nodes of your target, and then replace with your token. Get your target correct!
-            if(element.nodeType === 1) {
-              while (element.firstChild) {
-                element.removeChild(element.firstChild)
-              }
-              const textNode = doc.createTextNode(val)
-              element.appendChild(textNode)
+            if ('value' in node) {
+              let attributeNode = node as Attr;
+              attributeNode.value = token;
+            } else {
+              let elementNode = node as Node;
+              elementNode.textContent = token;
             }
-            else{
-              element.textContent = val
-            } 
           }
         }
       }
-      xml = new XMLSerializer().serializeToString(doc)
+      result = new XMLSerializer().serializeToString(xmlDoc);
     }
     catch (e){
-      vscode.window.showErrorMessage(`tokenizeWithRerverseTokens failed: ${e}`);
+      vscode.window.showErrorMessage(`tokenizeWithReverseTokens failed: ${e}`);
+      // Return XML input as is, no tokenization, if there is a problem with tokens
+      return xml;
     }
-    return xml;
+    return result;
   }
 
   private async tokenizeIIQObject(xml){
     const reverseTokens = await this.loadReverseTokens();
     if(reverseTokens){
-      return await this.tokenizeWithRerverseTokens(xml);
+      return await this.tokenizeWithReverseTokens(xml);
     }
     else{
       return await this.tokenizeWithDirectTokens(xml);
