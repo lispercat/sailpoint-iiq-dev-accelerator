@@ -36,7 +36,7 @@
         import org.apache.log4j.Logger;
         Logger iidDevAccelLogger=Logger.getLogger("sailpoint.IIQDevAcceleratorWF"); 
         iidDevAccelLogger.debug("GetVersion is called");
-        return "1.0.55";
+        return "10.0.57";
       </Source>
     </Script>
     <Transition to="Stop"/>
@@ -602,6 +602,9 @@
                   iidDevAccelLogger.debug("before conn.attach");
                   vm = conn.attach(args);
                   iidDevAccelLogger.debug("after conn.attach");
+                  if(null != vm){
+                    break;
+                  }
                 }
               }
             }
@@ -623,7 +626,7 @@
               fos.close();
             } catch (IOException e) {
               result = e.getMessage();
-            iidDevAccelLogger.error("Error uploading file:  " + result);
+              iidDevAccelLogger.error("Error uploading file:  " + result);
             }
             return result;
           }
@@ -641,7 +644,7 @@
             }
             return result;
           }
-          private String doHotSwap(VirtualMachine vm, int numberOfFiles, byte[][] clazzBytess , String[] clazzNames){
+          private String doHotSwap(VirtualMachine vm){
             if(null == vm){
               return "Failed to get hotswap environment";
             }
@@ -650,8 +653,8 @@
             String status = "";
 
             for (int i = 0; i < numberOfFiles; i++){
-              String className = clazzNames[i];
-              byte[] classBytes = clazzBytess[i];
+              String className = clazzNames.get(i);
+              byte[] classBytes = Base64.decodeBase64(clazzBytess.get(i).getBytes(StandardCharsets.US_ASCII));
 
               List referenceTypes = vm.classesByName(className);
               if (0 == referenceTypes.size()) {
@@ -669,9 +672,9 @@
             try{
               iidDevAccelLogger.debug("Doing hotswap...");
               vm.redefineClasses(updatedMap);
-              vm.dispose();
             }
             catch(Exception e){
+              iidDevAccelLogger.error("Exceptoin in doHotSwap: " + e.getMessage());
               return e.getMessage();
             }
             if(status.length() == 0){
@@ -705,23 +708,35 @@
             return returnMap;
           }
 
-          if(null != vm){
-            if(isHotSwapNeeded(vm, clazzNames)){
-              iidDevAccelLogger.debug("HotSwap is needed, that means that the class is already loaded");
-              String hotSwapResult = doHotSwap(vm, numberOfFiles, clazzBytess, clazzNames);
-              if(!hotSwapResult.equals("success")){
-                returnMap.put("hotswapFailure", hotSwapResult);
-                restartTomcat();
+          try{
+            if(null != vm){
+              if(isHotSwapNeeded(vm, clazzNames)){
+                iidDevAccelLogger.debug("HotSwap is needed, that means that the class is already loaded");
+                String hotSwapResult = doHotSwap(vm);
+                if(!hotSwapResult.equals("success")){
+                  returnMap.put("hotswapFailure", hotSwapResult);
+                  restartTomcat();
+                }
+              }
+              else{
+                iidDevAccelLogger.debug("HotSwap is not needed, we just uploaded the class file and you can use the new java class");
               }
             }
             else{
-              iidDevAccelLogger.debug("HotSwap is not needed, we just uploaded the class file and you can use the new java class");
+              iidDevAccelLogger.debug("Failed to get hotswap environment, restarting tomcat");
+              returnMap.put("hotswapFailure", "Failed to get hotswap environment");
+              restartTomcat();
             }
           }
-          else{
-            iidDevAccelLogger.debug("Failed to get hotswap environment, restarting tomcat");
-            returnMap.put("hotswapFailure", "Failed to get hotswap environment");
-            restartTomcat();
+          catch(Exception e){
+            iidDevAccelLogger.error("Exception during hotswapping...: " + e.getMessage());
+          }
+          finally{
+            if(null != vm){
+              iidDevAccelLogger.debug("Finally disposing vm...");
+              vm.dispose();
+            }
+
           }
 
           iidDevAccelLogger.debug("Successfully imported a java file: " + returnMap.toString());
