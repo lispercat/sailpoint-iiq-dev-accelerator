@@ -43,4 +43,10 @@ describe('Sanitize Object Names', () => {
         const sanitized = sanitizeIIQObjectName(objName)
         assert.strictEqual(sanitized, "some_Object_N_me123", "object name does not match expected output")
     })
+
+    it("should not replace or remove unicode characters", () => {
+        const objName = "ЭКСПЕРТНЫЙ ОТДЕЛ"
+        const sanitized = sanitizeIIQObjectName(objName)
+        assert.strictEqual(sanitized, "ЭКСПЕРТНЫЙ_ОТДЕЛ", "object name does not match expected output")
+    })
 })
