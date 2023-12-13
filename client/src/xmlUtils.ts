@@ -72,5 +72,5 @@ export function beautifyIIQObject(sourceXml: string, className: string): string 
  * @returns object name with problematic characters changed to underscores
  */
 export function sanitizeIIQObjectName(objectName: string): string {
-    return objectName.replace(/[^-a-zA-Z0-9_.]+/g, "_")
+    return objectName.replace(/[^-0-9\p{L}._]+/gu, "_")
 }
