@@ -1,5 +1,9 @@
 # Change Log
 
+## [10.0.58]
+### Fixed
+- Some reverse tokenization issuese #58, #63, #64
+
 ## [10.0.57]
 ### Fixed
 - VSCode can't go back to the 1.0.57 once a higher major version is published, so fixing it this ugly way
