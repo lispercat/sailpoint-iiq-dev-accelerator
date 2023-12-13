@@ -1,5 +1,9 @@
 # Change Log
 
+## [1.0.57]
+### Fixed
+- Fixed importing current Java file (when hotswapping was used) 
+
 ## [1.0.56]
 ### Fixed
 - Fixed importing current file command
