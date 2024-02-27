@@ -7,7 +7,7 @@
         </xsl:attribute>
     </xsl:template>
     <!--empty template suppresses this attribute-->
-    <xsl:template match="@created|@id|@modified|@assignmentId|@targetId|@identityId|@policyId" />
+    <xsl:template match="@created|@id|@modified|@assignmentId|@targetId|@identityId|@policyId|@significantModified" />
     <!--identity template copies everything forward by default-->
     <xsl:template match="@*|node()">
         <xsl:copy>
