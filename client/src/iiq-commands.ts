@@ -3,7 +3,7 @@ import fetch from 'node-fetch';
 import {Headers} from 'node-fetch';
 import * as base64 from 'base-64';
 import * as fs from 'fs';
-import * as propertiesReader from 'properties-reader';
+import {getProperties} from 'properties-file';
 import * as xml2js from 'xml2js';
 import * as tmp from 'tmp';
 import {URL} from 'url';
@@ -293,15 +293,19 @@ export class IIQCommands {
         let env = uri.fsPath.split(path.sep);
         result.push(env[env.length - 2].substring(4));
       });
-      return result;
     }else{
       const uris = await vscode.workspace.findFiles(`**/*.target.properties`);
       uris.forEach((uri) => {
         let [env, rest] = path.basename(uri.fsPath).split(".");
         result.push(env);
       });
-      return result;
     }
+
+    // Unique values only
+    result = [...new Set(result)];
+
+    return result;
+
   }
 
   public getBaseSSBFolder(): string | null {
@@ -346,8 +350,8 @@ export class IIQCommands {
     if(0 == uris.length){
       return null;
     }
-    var uri = uris[0];
-    var filePath: string = uri.fsPath;
+    const uri = uris[0];
+    const filePath: string = uri.fsPath;
 
     if(this.canUseCachedProp(filePath)){
       return this.g_props[filePath]["props"];
@@ -355,10 +359,12 @@ export class IIQCommands {
 
     this.g_props[filePath] = {"mtime": null, "props": {}};
     this.g_props[filePath]["mtime"] = fs.statSync(filePath).mtime;
-    console.log(`Trying to read ${filePath} file`);
-    var properties = propertiesReader(filePath).getAllProperties();
-    for (var key in properties){
-      var val: string = properties[key].toString();
+    this.g_iiqOutput.appendLine(`Trying to read ${filePath} file`);
+    let properties = getProperties(fs.readFileSync(filePath));
+
+    // Is this needed?
+    for (let key in properties){
+      let val: string = properties[key].toString();
       properties[key] = val.replace(/\\\\/g, "\\");
     };
 
@@ -388,7 +394,7 @@ export class IIQCommands {
     }else{
       secretProps = await this.getFileProperties(`${environment}.target.secret.properties`);
     }
-    var allProps = Object.assign({}, mainProps, secretProps);
+    const allProps = Object.assign({}, mainProps, secretProps);
     return allProps;
   }
 
@@ -1453,7 +1459,12 @@ export class IIQCommands {
 
   }
 
-  private async tokenizeWithDirectTokens(xml){
+  /**
+   * Tokenizes the given XML string by replacing the tokens in the XML with their values from the properties
+   * @param xml The XML string to tokenize.
+   * @returns The tokenized XML string.
+   */
+  private async tokenizeWithDirectTokens(xml: string): Promise<string> {
     const exclusions = [
       "%%ECLIPSE_URL%%",
       "%%ECLIPSE_USER%%",
@@ -1462,7 +1473,7 @@ export class IIQCommands {
     ];
     const props = await this.loadTargetProps();
     const ignoreProps = await this.loadTokensToIgnore();
-    var ignorePropsList = Object.keys(ignoreProps);
+    let ignorePropsList = Object.keys(ignoreProps);
     try {
       for (let key in props){
         if(exclusions.includes(key) || ignorePropsList.includes(key)){
@@ -1520,12 +1531,11 @@ export class IIQCommands {
     return result;
   }
 
-  private async tokenizeIIQObject(xml){
+  private async tokenizeIIQObject(xml: string): Promise<string> {
     const reverseTokens = await this.loadReverseTokens();
-    if(reverseTokens){
+    if (reverseTokens) {
       return await this.tokenizeWithReverseTokens(xml);
-    }
-    else{
+    } else {
       return await this.tokenizeWithDirectTokens(xml);
     }
   }
