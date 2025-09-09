@@ -396,7 +396,7 @@
         "properties-file": "^3.6.0",
         "saxon-js": "^2.6.0",
         "semver": "^7.5.4",
-        "tmp": "^0.2.1",
+        "tmp": "^0.2.4",
         "vscode-languageclient": "^8.0.0-next.3",
         "vscode-languageserver": "^8.0.0-next.3",
         "vscode-languageserver-textdocument": "^1.0.2",
