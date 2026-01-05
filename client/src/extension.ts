@@ -140,7 +140,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
   statusBarEnvItem.command = 'iiq-dev-accelerator.switchEnv';
   ctx.subscriptions.push(statusBarEnvItem);
 
-  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.importFileRoot', () => iiqCommands.importFileRoot()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.importFileRoot', (uri?: vscode.Uri) => iiqCommands.importFileRoot(uri)));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.runTask', () => iiqCommands.runTask()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.runTaskWithAttr', () => iiqCommands.runTaskWithAttr()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.runRule', () => iiqCommands.runRule()));
@@ -157,7 +157,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.compareLocalWithDeployed', () => iiqCommands.compareLocalWithDeployed()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.deployOpenFiles', () => iiqCommands.deployOpenFiles()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.showSysInfo', () => iiqCommands.showSysInfo()));
-  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.refreshObject', () => iiqCommands.refreshObject()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.refreshObject', (uri?: vscode.Uri) => iiqCommands.refreshObject(uri)));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.importJava', () => iiqCommands.importJava()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.exportObjects', () => iiqCommands.exportObjects()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.switchMode', () => iiqCommands.switchMode()));
