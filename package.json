@@ -290,6 +290,14 @@
             {
                 "command": "iiq-dev-accelerator.restartTomcat",
                 "title": "iiq: Restart Tomcat"
+            },
+            {
+                "command": "iiq-dev-accelerator.encryptValue",
+                "title": "iiq: Encrypt Value"
+            },
+            {
+                "command": "iiq-dev-accelerator.encryptSelectedValue",
+                "title": "iiq: Encrypt Selected Value"
             }
         ],
         "keybindings": [

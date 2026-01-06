@@ -163,6 +163,12 @@ export async function activate(ctx: vscode.ExtensionContext) {
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.switchMode', () => iiqCommands.switchMode()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.importCertificate', () => iiqCommands.importCertificate()));
   ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.restartTomcat', () => iiqCommands.restartTomcat()));
+  ctx.subscriptions.push(vscode.commands.registerCommand('iiq-dev-accelerator.encryptValue', () => iiqCommands.encryptValue()));
+  ctx.subscriptions.push(
+    vscode.commands.registerCommand("iiq-dev-accelerator.encryptSelectedValue", () =>
+      iiqCommands.encryptValue(true)
+    )
+  );
 
   if (shouldStartLSP(ctx)) {
     await startLanguageClient(ctx);
