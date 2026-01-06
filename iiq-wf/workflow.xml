@@ -28,6 +28,7 @@
     <Transition to="Import Java" when='"importJava".equals(operation);'/>
     <Transition to="Import Certificate" when='"ImportCertificate".equals(operation);'/>
     <Transition to="Restart Tomcat" when='"RestartTomcat".equals(operation);'/>
+    <Transition to="Encrypt" when='"EncryptValue".equals(operation);'/>
     <Transition to="Invalid operation"/>
   </Step>
   <Step icon="Default" name="Get Version" resultVariable="payload">
@@ -40,6 +41,19 @@
       </Source>
     </Script>
     <Transition to="Stop"/>
+  </Step>
+  <Step icon="Provision" name="Encrypt" resultVariable="payload">
+    <Script>
+      <Source>
+        <![CDATA[
+          if (valueToEncrypt instanceof String) {
+            return context.encrypt(valueToEncrypt);
+          } else {
+            return "fail: invalid input";
+          }
+        ]]>
+      </Source>
+    </Script>
   </Step>
   <Step icon="Provision" name="Import" resultVariable="payload">
     <Script>

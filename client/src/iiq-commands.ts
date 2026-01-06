@@ -2265,6 +2265,72 @@ export class IIQCommands {
     vscode.window.showInformationMessage(`${exportedCount} objects out of ${totalObjectCnt} were exported to ${exportFolder}`);
   }
 
+  public async encryptValue(highlighted: boolean = false) {
+    let valueToEncrypt = null;
+    if (highlighted) {
+      let editor = vscode.window.activeTextEditor;
+      if(!editor || !editor.document){
+        vscode.window.showInformationMessage(`Please open a document and select the text to encrypt`);
+        return;
+      }
+
+      let selection = editor.selection;
+      valueToEncrypt = editor.document.getText(selection);
+      if (!valueToEncrypt) {
+        vscode.window.showInformationMessage(`Please select any text to encrypt`);
+        return;
+      }
+
+      valueToEncrypt = valueToEncrypt.trim();
+    } else {
+      valueToEncrypt = await vscode.window.showInputBox({
+        ignoreFocusOut: true,
+        prompt: 'Enter the value to encrypt'
+      });
+    }
+
+    if (!valueToEncrypt) {
+      vscode.window.showErrorMessage('No value was provided to encrypt');
+      return;
+    }
+
+    const [_, username, password] = await this.getSiteConfig();
+
+    const postBody =
+    {
+      "workflowArgs":
+      {
+        "operation": "EncryptValue",
+        "valueToEncrypt": valueToEncrypt
+      }
+    };
+
+    let wasCancelled = false;
+    const result = await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: `Encrypting value...`,
+        cancellable: false,
+      },
+      (progress) => {
+        return this.postRequest(JSON.stringify(postBody));
+      }
+    );
+
+    if (result["payload"] !== undefined) {
+      let payload = result["payload"];
+      if (payload.startsWith("fail")) {
+        vscode.window.showErrorMessage(`Encryption failed: ${payload}`);
+      } else {
+        // Copy to clipboard
+        await vscode.env.clipboard.writeText(payload);
+        vscode.window.showInformationMessage(`Value encrypted successfully and copied to clipboard.`);
+      }
+    } else {
+      vscode.window.showErrorMessage(`Operation failed (no payload received)`);
+    }
+  }
+
   public async importCertificate(){
     if(this.g_contextManager.getContextValue() != ContextValue.CertificateFile){
       vscode.window.showWarningMessage("Can only import files with cer or crt extensions as certificates");
