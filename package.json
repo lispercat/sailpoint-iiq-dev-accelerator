@@ -195,6 +195,18 @@
                     "description": "Set to true if you want tomcat to be restarted automatically, otherwise you'll need to restart it manually for new certificates to take effects",
                     "default": false,
                     "scope": "application"
+                },
+                "iiq-dev-accelerator.refreshObjectOverwriteFile": {
+                    "type": "boolean",
+                    "description": "When set to true, the refreshObject command will overwrite the current file instead of opening a temporary file",
+                    "default": false,
+                    "scope": "application"
+                },
+                "iiq-dev-accelerator.refreshAlwaysShowDiffPrompt": {
+                    "type": "boolean",
+                    "description": "When set to true, the refreshObject command will always ask whether to show diff or overwrite, even if 'refreshObjectOverwriteFile' is set to true",
+                    "default": false,
+                    "scope": "application"
                 }
             }
         },
@@ -356,6 +368,11 @@
                 {
                     "command": "iiq-dev-accelerator.evalBS",
                     "when": "iiq.context == BeanShellSelection",
+                    "group": "iiq"
+                },
+                {
+                    "command": "iiq-dev-accelerator.refreshObject",
+                    "when": "iiq.context == Rule || iiq.context == Task || iiq.context == ProjectXMLObject || iiq.context == TempXMLObject",
                     "group": "iiq"
                 }
             ]

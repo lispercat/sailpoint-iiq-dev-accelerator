@@ -881,7 +881,15 @@ export class IIQCommands {
     return [isSuccess, processFileErrors];
   }
 
-  public async importFileRoot(): Promise<[boolean, {}]> {
+  public async importFileRoot(resourceUri?: vscode.Uri): Promise<[boolean, {}]> {
+    // If a URI was provided from right-click context, open that file first
+    if (resourceUri) {
+      const document = await vscode.workspace.openTextDocument(resourceUri);
+      await vscode.window.showTextDocument(document);
+      // Wait a moment for the context to update
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
     if(this.g_contextManager.getContextValue() == ContextValue.JavaFile){
       this.importJava();
       return;
@@ -2119,9 +2127,19 @@ export class IIQCommands {
     return false;
   }
 
-  public async refreshObject(){
-    if(!this.g_contextManager.getObjName()){
-      vscode.window.showInformationMessage(`Couldn't determine the object name`);
+  public async refreshObject(resourceUri?: vscode.Uri){
+    // If a URI was provided from right-click context, open that file first
+    if (resourceUri) {
+      const document = await vscode.workspace.openTextDocument(resourceUri);
+      await vscode.window.showTextDocument(document);
+      // Wait a moment for the context to update
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    if (!this.g_contextManager.getObjName()) {
+      vscode.window.showInformationMessage(
+        `Couldn't determine the object name`
+      );
       return;
     }
 
@@ -2131,30 +2149,59 @@ export class IIQCommands {
     var objName = this.g_contextManager.getObjName();
 
     var xml = await this.searchObject(theClass, objId, objName);
-    if(!xml){
+    if (!xml) {
       vscode.window.showInformationMessage("Empty object, exiting");
       return;
     }
 
-    var showDiff = false;
-    const answer = await vscode.window.showQuickPick(["Yes", "No"],
-      {placeHolder: `Would you like to display it in a diff mode?`});
-    if(answer === "Yes"){
-      showDiff = true;
+    const alwaysShowDiffPrompt = vscode.workspace
+      .getConfiguration("iiq-dev-accelerator")
+      .get("refreshAlwaysShowDiffPrompt");
+
+    const overwriteFile: boolean = vscode.workspace
+      .getConfiguration("iiq-dev-accelerator")
+      .get("refreshObjectOverwriteFile");
+
+    let showDiff = false;
+    if (alwaysShowDiffPrompt || !overwriteFile) {
+      const answer = await vscode.window.showQuickPick(["Yes", "No"], {
+        placeHolder: `Would you like to display it in a diff mode?`,
+      });
+      if (answer === "Yes") {
+        showDiff = true;
+      }
     }
 
-    const oldFileName = editor.document.fileName;
-    const newFile = tmp.fileSync({prefix: `${theClass}-${objName}`, postfix: '.xml'});
-    const newFileName = newFile.name;
-    fs.writeFileSync(newFileName, xml);
+    if (overwriteFile && !showDiff) {
+      // Overwrite the current file directly
+      const oldFileName = editor.document.fileName;
+      console.info(`Overwriting file ${oldFileName} with refreshed content`);
+      fs.writeFileSync(oldFileName, xml);
+      vscode.window.showInformationMessage(
+        `File ${path.basename(oldFileName)} has been refreshed`
+      );
+    } else {
+      // Show diff between current file and refreshed content, or just show the temp file directly
+      const oldFileName = editor.document.fileName;
+      const newFile = tmp.fileSync({
+        prefix: `${theClass}-${objName}`,
+        postfix: ".xml",
+      });
+      const newFileName = newFile.name;
+      fs.writeFileSync(newFileName, xml);
 
-    if(showDiff){
-      const title = "Old vs new " + theClass + ":'" + objName + "'";
-      await vscode.commands.executeCommand("vscode.diff", vscode.Uri.file(oldFileName), vscode.Uri.file(newFileName), title);
-    }
-    else{
-      let doc = await vscode.workspace.openTextDocument(newFileName);
-      await vscode.window.showTextDocument(doc);
+      if (showDiff) {
+        const title = "Old vs new " + theClass + ":'" + objName + "'";
+        await vscode.commands.executeCommand(
+          "vscode.diff",
+          vscode.Uri.file(oldFileName),
+          vscode.Uri.file(newFileName),
+          title
+        );
+      } else {
+        let doc = await vscode.workspace.openTextDocument(newFileName);
+        await vscode.window.showTextDocument(doc);
+      }
     }
   }
 
